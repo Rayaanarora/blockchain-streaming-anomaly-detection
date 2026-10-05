@@ -1,0 +1,1 @@
+{"model_name": "Temporal Graph Attention Network (TGAT / Spatio-Temporal GAT)", "precision": 0.258, "recall": 0.697, "f1_score": 0.376, "auc_roc": 0.867, "ap_score": 0.294, "training_time": 18.84}

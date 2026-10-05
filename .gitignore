@@ -1,0 +1,7 @@
+# Ignore massive dataset and Python virtual environments
+data/
+venv/
+*.csv
+.DS_Store
+__pycache__/
+*.pyc

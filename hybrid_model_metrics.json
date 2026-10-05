@@ -1,0 +1,1 @@
+{"model_name": "TGAT-BoostNet (Spatio-Temporal Graph Attention Boosting Network)", "precision": 0.538, "recall": 0.739, "f1_score": 0.622, "auc_roc": 0.919, "ap_score": 0.77, "pipeline_time": 100.15}
