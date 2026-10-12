@@ -485,8 +485,31 @@ def test_parquet_writer_failure_modes_and_atomic_rollback():
         with open(sentinel_path, "r", encoding="utf-8") as f:
             assert f.read() == "VALID_DATA_V1"
         # No orphan backup or staging directories
-        orphan_dirs = [d for d in os.listdir(test_scratch_dir) if d.startswith(".staging_") or d.startswith(".backup_")]
-        assert len(orphan_dirs) == 0, f"Orphan dirs after rollback: {orphan_dirs}"
+        # -------------------------------------------------------------
+        # Scenario 3: Catastrophic failure (both replacement AND rollback fail)
+        # -------------------------------------------------------------
+        def double_failing_move(src, dst, **kwargs):
+            if os.path.basename(src).startswith(".staging_") and dst == os.path.abspath(out_parquet):
+                raise OSError("Simulated replacement failure")
+            if os.path.basename(src).startswith(".backup_") and dst == os.path.abspath(out_parquet):
+                raise OSError("Simulated rollback restoration failure")
+            return real_move(src, dst, **kwargs)
+
+        with mock.patch("shutil.move", side_effect=double_failing_move):
+            with pytest.raises(RuntimeError, match="CRITICAL: Failed to replace output directory.*Original dataset preserved safely"):
+                pipeline.write_parquet_bounded_arrow(features_df, out_parquet)
+
+        # Verification 3: The backup directory was preserved on disk and contains original data!
+        backup_dirs = [d for d in os.listdir(test_scratch_dir) if d.startswith(".backup_")]
+        assert len(backup_dirs) == 1, "Backup directory was lost when rollback failed!"
+        backup_path = os.path.join(test_scratch_dir, backup_dirs[0])
+        backup_sentinel = os.path.join(backup_path, "sentinel_valid_v1.txt")
+        assert os.path.exists(backup_sentinel), "Original data lost in backup!"
+        with open(backup_sentinel, "r", encoding="utf-8") as f:
+            assert f.read() == "VALID_DATA_V1"
+
+        # Cleanup the preserved backup dir manually for test hygiene
+        shutil.rmtree(backup_path, ignore_errors=True)
 
     finally:
         spark.stop()

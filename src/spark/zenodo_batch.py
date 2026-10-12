@@ -424,9 +424,16 @@ class ZenodoSparkBatchPipeline:
             except Exception as replace_err:
                 # Rollback! Restore original target from backup directory
                 if backup_dir and os.path.exists(backup_dir):
-                    if os.path.exists(output_abs):
-                        shutil.rmtree(output_abs, ignore_errors=True)
-                    shutil.move(backup_dir, output_abs)
+                    try:
+                        if os.path.exists(output_abs):
+                            shutil.rmtree(output_abs, ignore_errors=True)
+                        shutil.move(backup_dir, output_abs)
+                    except Exception as rollback_err:
+                        raise RuntimeError(
+                            f"CRITICAL: Failed to replace output directory '{output_abs}', and automated rollback "
+                            f"also failed. Original dataset preserved safely at backup path: '{backup_dir}'. "
+                            f"Primary error: {replace_err}; Rollback error: {rollback_err}"
+                        ) from replace_err
                 raise replace_err
 
         except Exception as e:
