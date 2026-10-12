@@ -1,6 +1,13 @@
 # Ignore massive dataset and Python virtual environments
 data/raw/
 venv/
+.venv/
+data/spark_temp/
+data/spark_warehouse/
+data/spark_smoke_test/
+data/spark_smoke_testspark_temp/
+data/test_spark_scratch/
+data/temp/
 *.csv
 .DS_Store
 __pycache__/

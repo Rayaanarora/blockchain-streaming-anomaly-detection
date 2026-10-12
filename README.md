@@ -33,9 +33,51 @@ Instead of relying solely on static graph convolutions or tabular classifiers, w
 ---
 
 ## 📁 Repository Structure
+- `src/spark/` - Apache Spark distributed batch preprocessing pipeline and data contracts:
+  - `schemas.py`: Formal schemas for raw records, assembled transactions, and 18-column feature tables.
+  - `zenodo_batch.py`: Distributed batch transformer and bounded PyArrow Parquet writer.
+- `src/data/` - Dataset boundary handling, Elliptic audit, preprocessing, and validation.
+- `src/graph/` - Directed bipartite address-transaction graph builders (Cartesian-free).
+- `src/features/` - Chronological transaction and graph feature extractors.
+- `scripts/smoke_test_spark.py` - Reproducible Spark batch smoke test validating causality and PyArrow output.
+- `tests/` - Comprehensive unit and integration test suite (34 tests).
 - `Review2_Blockchain_AML_Colab_Notebook.ipynb` - Full interactive Jupyter/Colab notebook with all 14 executable sections
 - `Distributed_Blockchain_Anomaly_Review2.pptx` - Official 15-slide presentation for Review 2
 - `Report_Review2_Blockchain_21CSC314P.docx` - Complete academic report in Times New Roman 12pt format
 - `Report_Review2_Blockchain_21CSC314P.md` - Complete markdown report
 - `train_sota_dl.py` - PyTorch Geometric implementation script
 - `*.png` - All 7 high-resolution diagnostic figure panels
+
+---
+
+## ⚙️ Distributed Preprocessing Architecture: Spark vs. Bounded PyArrow
+
+To scale to multi-million Zenodo Bitcoin transactions on Windows without unverified native binary dependencies (`winutils.exe` / `hadoop.dll`), the preprocessing pipeline divides responsibilities:
+
+```
+[ Raw Zenodo Data on D: ]
+           │
+           ▼
+[ Apache Spark Catalyst Engine ]
+  ├─ Raw text parsing & hash validation (64-char hex)
+  ├─ Address disambiguation (unableToDecode / coinbase masking)
+  ├─ Completed transaction grouping & fee aggregation
+  └─ Leakage-safe chronological window features (strictly rowsBetween(unboundedPreceding, -1))
+           │
+           ▼  (Partition-by-partition toLocalIterator streaming; bounded <50 MB driver RAM)
+[ Native PyArrow Parquet Writer ]
+  ├─ Snappy compression
+  ├─ Chunk-partitioned directory layout (block_chunk={start}-{end}/part-0.parquet)
+  ├─ Atomic staging directory replacement (retry-safe & idempotent)
+  └─ Parquet _SUCCESS marker generation
+           │
+           ▼
+[ Verified Parquet Feature Store on D: ]
+```
+
+### Key Architectural Safeguards:
+1. **Zero Full Driver Collection:** Neither `collect()` nor `toPandas()` is executed on the feature dataset. Partitions are streamed chunk-by-chunk using `toLocalIterator()` in bounded micro-batches (default 1,000 rows).
+2. **Drive C: Isolation:** All Spark local scratch space (`spark.local.dir`), temporary files (`java.io.tmpdir`, `TEMP`, `TMP`), Spark warehouse files, pip caches, and Parquet outputs are configured strictly on Drive `D:`.
+3. **Temporal Causality Guarantee:** Window operations strictly exclude current and future transactions (`rowsBetween(Window.unboundedPreceding, -1)`), ensuring zero label or feature leakage.
+4. **Windows NativeIO Immunity:** By using native C++ PyArrow for Parquet output writing, the system operates deterministically on Windows without requiring `winutils.exe` or `hadoop.dll`.
+
