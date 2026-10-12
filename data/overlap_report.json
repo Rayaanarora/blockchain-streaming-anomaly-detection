@@ -1,0 +1,19 @@
+{
+  "heist_rows": 2916697,
+  "heist_ransomware_addresses": 20849,
+  "heist_white_addresses": 2610246,
+  "heist_ransomware_addresses_2017_2018": 3332,
+  "files": [
+    "btc-tx-480000-489999-aa"
+  ],
+  "zenodo_rows": 5000000,
+  "zenodo_distinct_addresses": 2222941,
+  "matched_positives": 16,
+  "matched_white": 22237,
+  "rows_touching_positive": 31,
+  "positives_by_family": {
+    "princetonCerber": 14,
+    "montrealDMALockerv3": 1,
+    "montrealRazy": 1
+  }
+}

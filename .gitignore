@@ -1,7 +1,9 @@
 # Ignore massive dataset and Python virtual environments
-data/
+data/raw/
 venv/
 *.csv
 .DS_Store
 __pycache__/
 *.pyc
+.pytest_cache/
+

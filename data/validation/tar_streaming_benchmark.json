@@ -1,0 +1,48 @@
+{
+  "timestamp": "2026-10-13T00:52:20.269989",
+  "metrics": {
+    "benchmark_config": {
+      "input_paths": [
+        "data/raw/a.tar.bz2"
+      ],
+      "max_records": 10000,
+      "batch_sizes": [
+        500
+      ]
+    },
+    "isolated_parser_benchmark": {
+      "mode": "isolated_parser",
+      "records_parsed": 10000,
+      "elapsed_seconds": 0.1243,
+      "throughput_records_per_sec": 80435.32,
+      "memory_start_mb": 30.69,
+      "memory_end_mb": 34.22,
+      "memory_delta_mb": 3.53
+    },
+    "end_to_end_microbatch_benchmarks": [
+      {
+        "mode": "end_to_end_replay",
+        "batch_size": 500,
+        "raw_records_read": 10001,
+        "completed_transactions": 2205,
+        "features_extracted": 2205,
+        "total_elapsed_seconds": 0.1748,
+        "throughput_transactions_per_sec": 12616.0,
+        "throughput_raw_records_per_sec": 57221.13,
+        "micro_batches_processed": 5,
+        "latency_ms_p50": 7.519,
+        "latency_ms_p95": 11.377,
+        "latency_ms_p99": 12.01,
+        "latency_ms_mean": 8.069,
+        "latency_ms_min": 5.8,
+        "latency_ms_max": 12.168,
+        "graph_addresses_tracked": 8112,
+        "graph_transactions_tracked": 2205,
+        "graph_edges_tracked": 9999,
+        "memory_start_mb": 30.79,
+        "memory_end_mb": 38.33,
+        "memory_delta_mb": 7.54
+      }
+    ]
+  }
+}

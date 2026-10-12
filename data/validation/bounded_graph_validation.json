@@ -1,0 +1,38 @@
+{
+  "total_lines_parsed": 200000,
+  "malformed_records": 0,
+  "type_counts": {
+    "BTC-IN": 85942,
+    "BTC-OUT": 114058
+  },
+  "bad_tx_hash_slots": 0,
+  "bad_address_slots": 0,
+  "special_endpoints": {
+    "0": 19,
+    "unableToDecode": 2020
+  },
+  "ordering_violations": 0,
+  "address_nodes_count": 144329,
+  "transaction_nodes_count": 40595,
+  "total_nodes_bipartite": 184924,
+  "in_edges_address_to_tx": 85942,
+  "out_edges_tx_to_address": 114058,
+  "total_edges": 200000,
+  "multi_utxo_same_address_spends": 9929,
+  "distinct_transactions_parsed": 40595,
+  "complete_user_transactions": 40573,
+  "incomplete_boundary_transactions": 3,
+  "coinbase_transactions": 19,
+  "negative_fee_violations": 1,
+  "throughput_records_per_sec": 119393,
+  "memory_delta_mb": 72.3,
+  "peak_memory_mb": 91.13,
+  "fee_min_satoshis": -14878833716,
+  "fee_median_satoshis": 65495,
+  "fee_p99_satoshis": 910283,
+  "fee_max_satoshis": 22831244,
+  "coinbase_reward_min_satoshis": 1250000000,
+  "coinbase_reward_median_satoshis": 1470845936,
+  "coinbase_reward_max_satoshis": 1607452421,
+  "all_coinbase_ge_12_5_btc": true
+}
