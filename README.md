@@ -101,13 +101,37 @@ The pipeline enforces a strict four-layer column taxonomy across preprocessing, 
 - `src/features/` - Chronological transaction and graph feature extractors (deduplicated participation, no change double-counting).
 - `scripts/smoke_test_spark.py` - Reproducible Spark batch smoke test validating causality and PyArrow output.
 - `scripts/run_spark_scale_benchmark.py` - Automated bounded scale benchmark with continuous memory tracking and dataset validation.
-- `tests/` - Comprehensive unit and integration test suite (37 tests).
+- `scripts/run_zenodo_preprocessing.py` - Dedicated multi-chunk batch preprocessor with cross-boundary reconstruction, preflight test, and bounded validation.
+- `tests/` - Comprehensive unit and integration test suite (41 tests).
 - `Review2_Blockchain_AML_Colab_Notebook.ipynb` - Full interactive Jupyter/Colab notebook with all 14 executable sections
 - `Distributed_Blockchain_Anomaly_Review2.pptx` - Official 15-slide presentation for Review 2
 - `Report_Review2_Blockchain_21CSC314P.docx` - Complete academic report in Times New Roman 12pt format
 - `Report_Review2_Blockchain_21CSC314P.md` - Complete markdown report
 - `train_sota_dl.py` - PyTorch Geometric implementation script
 - `*.png` - All 7 high-resolution diagnostic figure panels
+
+---
+
+## 🚀 Zenodo Batch Preprocessing Results (Multi-Chunk Real Dataset)
+
+The dedicated batch preprocessor (`scripts/run_zenodo_preprocessing.py`) executed across all 4 contiguous real Zenodo chunks on Drive `D:`, verifying boundary continuity and generating the partitioned feature store:
+
+| Metric | Measured Value | Methodology & Caveats |
+|---|---|---|
+| **Deposit Context** | Zenodo Record 7157854 (Block 480000–489999) | Full deposit range comprises 18 chunk parts (`aa`–`ar`, ~10.6 GB uncompressed). |
+| **Chunks Processed** | 4 contiguous chunks (`aa`, `ab`, `ac`, `ad`) | Processed parts present on disk; parts `ae`–`ar` (2.58 GB compressed) remain on Zenodo. |
+| **Raw Input Data** | **2,535,662,744 bytes (2.536 GB)** | 4 uncompressed text slices in chronological block order (blocks 480000 to ~482080). |
+| **Raw Lines Ingested** | **20,000,000 lines** | Exactly 20M lines parsed; 0 malformed lines. |
+| **Completed Transactions** | **4,045,123 transactions** | Grouped by `(block_number, tx_index, tx_hash)` across chunks; 1 incomplete end-boundary transaction dropped. |
+| **Output Parquet Size** | **507.69 MB** (532,347,696 bytes) | Snappy-compressed, written via bounded PyArrow streaming writer. |
+| **Hive Partitions** | **3 partitions** | `block_chunk=480000-480999`, `481000-481999`, `482000-482999`. |
+| **Preflight Boundary Check** | **PASSED** | Verified cross-chunk transaction `(480521, 839)` assembled with 2 inputs from `aa` and 2 outputs from `ab`. |
+| **Bounded PyArrow Validation** | **PASSED** | Verified all 4,045,123 rows, 18 physical columns, zero null primary keys, zero negative fee violations. |
+| **Spark Processing Time** | **1,384.58 s (~23.08 min)** | Measured via `ZenodoSparkBatchPipeline` end-to-end execution. |
+| **Peak Process Tree Memory** | **4,630.75 MB (~4.63 GB)** | Combined footprint of Python driver (324.68 MB peak) and JVM Catalyst worker (4,554.38 MB peak). |
+| **Drive C: Containment** | **0.23 GB delta (9.42 GB free)** | Driver and JVM temp directories strictly pinned to Drive `D:` scratch space. |
+| **Drive D: Free Space** | **130.64 GB free** | All output Parquet, unpacked inputs, and Spark scratch directories reside on Drive `D:`. |
+| **Reproducible Report** | `data/validation/zenodo_preprocessing_report.json` | Fully verifiable JSON report generated at run completion. |
 
 ---
 

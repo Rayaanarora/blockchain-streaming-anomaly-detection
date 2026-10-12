@@ -1,0 +1,163 @@
+{
+  "report_title": "Zenodo Bitcoin Batch Preprocessing Run Report",
+  "execution_timestamp": "2026-10-12T22:28:32Z",
+  "status": "SUCCESS",
+  "dataset_audit": {
+    "zenodo_record_id": "7157854",
+    "block_range": "480000-489999",
+    "total_deposit_parts_in_range": 18,
+    "deposit_parts_range_names": [
+      "aa",
+      "ab",
+      "ac",
+      "ad",
+      "ae",
+      "af",
+      "ag",
+      "ah",
+      "ai",
+      "aj",
+      "ak",
+      "al",
+      "am",
+      "an",
+      "ao",
+      "ap",
+      "aq",
+      "ar"
+    ],
+    "parts_present_on_disk": [
+      "aa",
+      "ab",
+      "ac",
+      "ad"
+    ],
+    "parts_present_count": 4,
+    "parts_missing_from_deposit": [
+      "ae",
+      "af",
+      "ag",
+      "ah",
+      "ai",
+      "aj",
+      "ak",
+      "al",
+      "am",
+      "an",
+      "ao",
+      "ap",
+      "aq",
+      "ar"
+    ],
+    "total_uncompressed_input_bytes": 2535662744,
+    "total_uncompressed_input_gb": 2.362,
+    "files": [
+      {
+        "part": "aa",
+        "filename": "btc-tx-480000-489999-aa",
+        "file_path": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\data\\raw\\sample_a\\btc-tx-480000-489999-aa",
+        "size_bytes": 633804865,
+        "size_mb": 604.44
+      },
+      {
+        "part": "ab",
+        "filename": "btc-tx-480000-489999-ab",
+        "file_path": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\data\\temp\\unpacked_raw\\btc-tx-480000-489999-ab",
+        "size_bytes": 633756902,
+        "size_mb": 604.4
+      },
+      {
+        "part": "ac",
+        "filename": "btc-tx-480000-489999-ac",
+        "file_path": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\data\\temp\\unpacked_raw\\btc-tx-480000-489999-ac",
+        "size_bytes": 633173369,
+        "size_mb": 603.84
+      },
+      {
+        "part": "ad",
+        "filename": "btc-tx-480000-489999-ad",
+        "file_path": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\data\\temp\\unpacked_raw\\btc-tx-480000-489999-ad",
+        "size_bytes": 634927608,
+        "size_mb": 605.51
+      }
+    ]
+  },
+  "input_statistics": {
+    "total_input_files": 4,
+    "total_input_bytes": 2535662744,
+    "total_input_gb": 2.362,
+    "raw_lines_read": 20000000,
+    "valid_records_parsed": 20000000,
+    "malformed_lines_filtered": 0,
+    "attempted_transactions": 4045124,
+    "completed_transactions": 4045123,
+    "incomplete_boundary_transactions_dropped": 1
+  },
+  "preflight_verification": {
+    "status": "PASS",
+    "preflight_lines": 4000,
+    "boundary_tx_verified": {
+      "block_number": 480521,
+      "tx_index": 839,
+      "num_inputs": 2,
+      "num_outputs": 2,
+      "fee_satoshi": 128100
+    }
+  },
+  "output_statistics": {
+    "output_parquet_directory": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\data\\parquet\\zenodo_features",
+    "compression": "snappy",
+    "physical_columns": 18,
+    "partition_column": "block_chunk",
+    "total_output_rows": 4045123,
+    "partitions_count": 3,
+    "partition_chunks": [
+      "480000-480999",
+      "481000-481999",
+      "482000-482999"
+    ],
+    "total_output_bytes": 532347696,
+    "total_output_mb": 507.69
+  },
+  "performance_metrics": {
+    "total_elapsed_seconds": 1472.76,
+    "spark_processing_seconds": 1384.58,
+    "lines_per_second": 13579.98,
+    "mb_per_second": 1.64
+  },
+  "memory_profile_mb": {
+    "driver_start_rss_mb": 90.16,
+    "driver_spark_peak_rss_mb": 90.11,
+    "driver_validation_peak_rss_mb": 324.68,
+    "driver_overall_peak_rss_mb": 324.68,
+    "driver_ending_rss_mb": 242.57,
+    "driver_peak_growth_mb": 234.52,
+    "jvm_child_peak_rss_mb": 4554.38,
+    "process_tree_peak_rss_mb": 4630.75
+  },
+  "storage_profile_gb": {
+    "drive_c_free_before_gb": 9.65,
+    "drive_c_free_after_gb": 9.42,
+    "drive_c_delta_gb": 0.23,
+    "drive_d_free_before_gb": 131.14,
+    "drive_d_free_after_gb": 130.64,
+    "drive_d_delta_gb": 0.5
+  },
+  "validation_summary": {
+    "status": "PASS",
+    "parquet_directory": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\data\\parquet\\zenodo_features",
+    "success_marker_present": true,
+    "partitions_found": 3,
+    "partition_chunks": [
+      "480000-480999",
+      "481000-481999",
+      "482000-482999"
+    ],
+    "physical_column_count": 18,
+    "total_scanned_rows": 4045123,
+    "null_key_violations": 0,
+    "negative_fee_violations": 0,
+    "total_output_bytes": 532347696,
+    "total_output_mb": 507.69
+  }
+}

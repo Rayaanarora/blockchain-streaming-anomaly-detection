@@ -13,4 +13,5 @@ data/temp/
 __pycache__/
 *.pyc
 .pytest_cache/
+data/parquet/
 

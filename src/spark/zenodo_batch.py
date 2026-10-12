@@ -74,17 +74,23 @@ def build_spark_session(
     """
     check_pyspark_available()
 
-    # Ensure temp/scratch directories are rooted strictly on Drive D:
-    os.makedirs(spark_tmp_dir, exist_ok=True)
-    os.makedirs(spark_warehouse_dir, exist_ok=True)
-    os.environ["TEMP"] = spark_tmp_dir
-    os.environ["TMP"] = spark_tmp_dir
-    os.environ["SPARK_LOCAL_DIRS"] = spark_tmp_dir
-    os.environ["_JAVA_OPTIONS"] = f"-Djava.io.tmpdir={spark_tmp_dir}"
+    # Ensure Python worker executables are explicitly pinned to current environment
+    os.environ["PYSPARK_PYTHON"] = sys.executable
+    os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
+
+    # Ensure temp/scratch directories are rooted strictly on Drive D: and normalized
+    spark_tmp_abs = os.path.abspath(spark_tmp_dir)
+    spark_warehouse_abs = os.path.abspath(spark_warehouse_dir)
+    os.makedirs(spark_tmp_abs, exist_ok=True)
+    os.makedirs(spark_warehouse_abs, exist_ok=True)
+    os.environ["TEMP"] = spark_tmp_abs
+    os.environ["TMP"] = spark_tmp_abs
+    os.environ["SPARK_LOCAL_DIRS"] = spark_tmp_abs
+    os.environ["_JAVA_OPTIONS"] = f"-Djava.io.tmpdir={spark_tmp_abs}"
 
     # JVM options required for modern Java compatibility and scratch redirection
     jvm_opens = (
-        f"-Djava.io.tmpdir={spark_tmp_dir} "
+        f"-Djava.io.tmpdir={spark_tmp_abs} "
         "--add-opens=java.base/java.lang=ALL-UNNAMED "
         "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED "
         "--add-opens=java.base/java.io=ALL-UNNAMED "
@@ -99,8 +105,8 @@ def build_spark_session(
         SparkSession.builder
         .appName(app_name)
         .master(local_cores)
-        .config("spark.local.dir", spark_tmp_dir)
-        .config("spark.sql.warehouse.dir", spark_warehouse_dir)
+        .config("spark.local.dir", spark_tmp_abs)
+        .config("spark.sql.warehouse.dir", spark_warehouse_abs)
         .config("spark.sql.shuffle.partitions", "16")
         .config("spark.sql.execution.arrow.pyspark.enabled", "true")
         .config("spark.driver.memory", "4g")

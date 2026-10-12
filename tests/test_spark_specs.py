@@ -677,5 +677,37 @@ def test_benchmark_report_consistency_and_memory_coherence():
         assert jvm_str in analysis_text, f"Measured JVM peak {jvm_str} missing from bound_analysis narrative"
 
 
+def test_zenodo_preprocessor_discovery_and_boundary_preflight():
+    """
+    Test input discovery and boundary preflight verification logic in run_zenodo_preprocessing.
+    """
+    import os
+    import shutil
+    from scripts.run_zenodo_preprocessing import audit_and_discover_input_files, run_boundary_preflight
+    from src.spark.zenodo_batch import build_spark_session
+
+    input_paths, audit_meta = audit_and_discover_input_files()
+    assert len(input_paths) >= 2, f"Expected at least 2 input files, found {len(input_paths)}"
+    assert audit_meta["zenodo_record_id"] == "7157854"
+    assert "aa" in audit_meta["parts_present_on_disk"]
+    assert "ab" in audit_meta["parts_present_on_disk"]
+    assert audit_meta["total_uncompressed_input_bytes"] > 0
+
+    # Test boundary preflight execution
+    scratch = "D:/blockchainbigdata/blockchain-streaming-anomaly-detection/data/test_spark_scratch_preflight"
+    spark = build_spark_session("TestPreflight", local_cores="local[2]", spark_tmp_dir=scratch, spark_warehouse_dir=f"{scratch}/wh")
+    try:
+        res = run_boundary_preflight(spark, input_paths[0], input_paths[1], scratch)
+        assert res["status"] == "PASS"
+        assert res["boundary_tx_verified"]["block_number"] == 480521
+        assert res["boundary_tx_verified"]["tx_index"] == 839
+        assert res["boundary_tx_verified"]["fee_satoshi"] == 128100
+    finally:
+        spark.stop()
+        if os.path.exists(scratch):
+            shutil.rmtree(scratch, ignore_errors=True)
+
+
+
 
 
