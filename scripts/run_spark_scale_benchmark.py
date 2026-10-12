@@ -205,7 +205,7 @@ def compute_ground_truth_for_keys(lines, target_keys):
     return ground_truth
 
 
-def run_benchmark(target_lines: int):
+def run_benchmark(target_lines: int, report_suffix: str = ""):
     print("=" * 80)
     print(f"BOUNDED SCALE-UP BENCHMARK: {target_lines:,} REAL ZENODO LINES")
     print("=" * 80)
@@ -295,22 +295,23 @@ def run_benchmark(target_lines: int):
             for f in files
         )
 
-        # 5. Read back Parquet and validate
-        print("\n[Step 5/6] Validating written Parquet output...")
-        table = pq.read_table(parquet_out)
-        pa_num_rows = table.num_rows
-        print(f"  PyArrow read-back rows: {pa_num_rows:,} (matches Spark completed txs: {pa_num_rows == tx_count})")
+        # 5. Read back Parquet metadata and validate without full-dataset RAM materialization
+        print("\n[Step 5/6] Validating written Parquet output via bounded streaming...")
+        import pyarrow.dataset as ds
+        dataset = ds.dataset(parquet_out, format="parquet", partitioning="hive")
+        pa_num_rows = dataset.count_rows()
+        print(f"  PyArrow metadata row count: {pa_num_rows:,} (matches Spark completed txs: {pa_num_rows == tx_count})")
         assert pa_num_rows == tx_count, f"Row count mismatch: PyArrow {pa_num_rows} vs Spark {tx_count}"
 
         # Schema validation: all 18 feature columns match expected_schema
         expected_schema = get_transaction_features_pyarrow_schema()
         for field in expected_schema:
-            assert field.name in table.schema.names, f"Missing feature field: {field.name}"
-            pa_field = table.schema.field(field.name)
+            assert field.name in dataset.schema.names, f"Missing feature field: {field.name}"
+            pa_field = dataset.schema.field(field.name)
             assert pa_field.type == field.type, f"Field type mismatch for {field.name}: {pa_field.type} vs {field.type}"
 
         # Partition column block_chunk is also present in partitioned dataset
-        assert "block_chunk" in table.schema.names, "Missing partition column: block_chunk"
+        assert "block_chunk" in dataset.schema.names, "Missing partition column: block_chunk"
 
         # Verify _SUCCESS marker
         assert os.path.exists(os.path.join(parquet_out, "_SUCCESS")), "Missing _SUCCESS marker"
@@ -320,25 +321,32 @@ def run_benchmark(target_lines: int):
         print(f"  Partition chunk directories: {chunks}")
         assert len(chunks) > 0, "No block_chunk partition directories created"
 
-        # Numerical sanity & null handling on PyArrow dataset
-        fee_col = table["fee_satoshi"].to_pylist()
-        cb_col = table["is_coinbase"].to_pylist()
-        in_sat_col = table["total_input_satoshi"].to_pylist()
-        out_sat_col = table["total_output_satoshi"].to_pylist()
-        null_counts = {name: table[name].null_count for name in table.column_names}
+        # Numerical sanity & null handling: stream in micro-batches (never buffers full dataset in memory)
+        null_counts = {name: 0 for name in dataset.schema.names}
+        for batch in dataset.to_batches(batch_size=5000):
+            for col_name in dataset.schema.names:
+                null_counts[col_name] += batch[col_name].null_count
 
-        # Fee sanity: coinbase fees = 0; non-coinbase fees >= 0 in standard transactions
-        for fee, cb, in_s, out_s in zip(fee_col, cb_col, in_sat_col, out_sat_col):
-            if cb == 1:
-                assert fee == 0, "Coinbase fee must be 0"
-            else:
-                assert fee >= 0, f"Standard transaction fee cannot be negative: {fee} (in={in_s}, out={out_s})"
+            fee_vals = batch["fee_satoshi"].to_pylist()
+            cb_vals = batch["is_coinbase"].to_pylist()
+            in_vals = batch["total_input_satoshi"].to_pylist()
+            out_vals = batch["total_output_satoshi"].to_pylist()
+            for fee, cb, in_s, out_s in zip(fee_vals, cb_vals, in_vals, out_vals):
+                if cb == 1:
+                    assert fee == 0, "Coinbase fee must be 0"
+                else:
+                    assert fee >= 0, f"Standard transaction fee cannot be negative: {fee} (in={in_s}, out={out_s})"
 
         # 6. Independent validation against pure-Python ground truth
         print("\n[Step 6/6] Independent validation against pure-Python reference implementation...")
-        # Select representative sample: first 20, middle 20, last 20
-        all_keys = list(zip(table["block_number"].to_pylist(), table["tx_index"].to_pylist()))
+        # Stream keys only to select representative sample: first 20, middle 20, last 20
+        key_batches = [
+            list(zip(b["block_number"].to_pylist(), b["tx_index"].to_pylist()))
+            for b in dataset.to_batches(columns=["block_number", "tx_index"], batch_size=5000)
+        ]
+        all_keys = [k for b_keys in key_batches for k in b_keys]
         sample_keys = all_keys[:20] + all_keys[len(all_keys)//2 - 10 : len(all_keys)//2 + 10] + all_keys[-20:]
+        sample_keys_set = set(sample_keys)
         print(f"  Selected representative sample of {len(sample_keys)} transactions across slice.")
 
         with open(raw_slice_path, "r", encoding="ascii") as f_slice:
@@ -349,9 +357,20 @@ def run_benchmark(target_lines: int):
         t_gt1 = time.perf_counter()
         print(f"  Ground truth computed in {t_gt1 - t_gt0:.2f} s for {len(gt)} transactions.")
 
-        # Map pyarrow rows by (block, tx_idx)
-        pa_rows = table.to_pylist()
-        pa_dict = {(r["block_number"], r["tx_index"]): r for r in pa_rows}
+        # Stream batches to extract ONLY the sample rows into memory (bounded < 1 MB)
+        pa_dict = {}
+        first_tx = None
+        last_tx = None
+        for batch in dataset.to_batches(batch_size=2000):
+            b_dict = batch.to_pydict()
+            n_rows = len(batch)
+            for i in range(n_rows):
+                if first_tx is None:
+                    first_tx = {col: b_dict[col][i] for col in b_dict}
+                last_tx = {col: b_dict[col][i] for col in b_dict}
+                k = (b_dict["block_number"][i], b_dict["tx_index"][i])
+                if k in sample_keys_set:
+                    pa_dict[k] = {col: b_dict[col][i] for col in b_dict}
 
         matches = 0
         for k in sample_keys:
@@ -380,8 +399,6 @@ def run_benchmark(target_lines: int):
         print(f"  Representative sample validation: {matches}/{len(sample_keys)} matched 100% against Python ground truth.")
 
         # Inspect boundary conditions
-        first_tx = pa_rows[0]
-        last_tx = pa_rows[-1]
         boundary_report = {
             "slice_start": {
                 "first_row_block": first_tx["block_number"],
@@ -430,10 +447,11 @@ def run_benchmark(target_lines: int):
             "boundary_conditions": boundary_report,
             "sample_ground_truth_matches": f"{matches}/{len(sample_keys)}",
             "representative_sample_verified": True,
+            "validation_memory_mode": "bounded_pyarrow_dataset_streaming",
             "caveat": "Bounded slice benchmark of local Zenodo data on Windows. Not production throughput or streaming latency."
         }
 
-        out_report_file = f"data/validation/spark_scale_benchmark_{target_lines}.json"
+        out_report_file = f"data/validation/spark_scale_benchmark_{target_lines}{report_suffix}.json"
         os.makedirs(os.path.dirname(os.path.abspath(out_report_file)), exist_ok=True)
         with open(out_report_file, "w", encoding="utf-8") as f_rep:
             json.dump(report, f_rep, indent=2)
@@ -460,8 +478,9 @@ def run_benchmark(target_lines: int):
 def main():
     parser = argparse.ArgumentParser(description="Bounded Scale-Up Benchmark for Spark + PyArrow Pipeline.")
     parser.add_argument("--lines", type=int, default=50000, help="Number of raw Zenodo lines to benchmark (e.g. 50000 or 100000).")
+    parser.add_argument("--report-suffix", type=str, default="", help="Optional suffix for the output report JSON (e.g. '_v2').")
     args = parser.parse_args()
-    run_benchmark(args.lines)
+    run_benchmark(args.lines, report_suffix=args.report_suffix)
 
 
 if __name__ == "__main__":

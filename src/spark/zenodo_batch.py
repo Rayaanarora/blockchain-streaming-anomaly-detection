@@ -316,12 +316,22 @@ class ZenodoSparkBatchPipeline:
         """
         Write Snappy-compressed partitioned Parquet files using a bounded PyArrow iterator.
 
-        Guarantees:
+        Architectural Guarantees & Memory Bounds:
         1. Never uses df.collect() or df.toPandas() on the entire dataset.
-        2. Iterates partition by partition (chunk by chunk), streaming at most `batch_size` rows in memory.
-        3. Peak driver RAM is strictly bounded (< 50 MB), independent of total dataset volume.
-        4. Writes atomically into a staging directory on Drive D: before committing to output_parquet_dir,
-           preventing partial/corrupt outputs and making writes idempotent and retry-safe.
+        2. Iterates partition by partition (chunk by chunk), streaming at most `batch_size` rows (default 1,000)
+           in Python memory per batch (~1 MB buffer).
+        3. Memory Bounds:
+           - toLocalIterator() yields one partition at a time to the driver via socket streaming, preventing
+             full-dataset materialization. However, Spark's driver process maintains JVM internal buffers
+             and PySpark communication sockets, typically resulting in an operating RSS of ~100-150 MB.
+           - Catalyst distributed sorting (orderBy block_number, tx_index) executes external merge-sort
+             across worker executors, spilling to Drive D: scratch if executor memory thresholds are reached.
+        4. Safe Two-Phase Directory Replacement:
+           - Writes atomically into a staging directory on Drive D: (.staging_{uuid}).
+           - If destination already exists, moves destination to a temporary backup directory (.backup_{uuid})
+             BEFORE moving the verified staging directory into place.
+           - If replacement fails at any point, automatically rolls back from the backup directory, guaranteeing
+             that a failed replacement can NEVER destroy or corrupt the previous valid output.
         5. Preserves exact block_chunk partition structure: output_dir/block_chunk={chunk}/part-0.parquet.
         """
         import uuid
@@ -337,6 +347,7 @@ class ZenodoSparkBatchPipeline:
 
         # Staging directory strictly on Drive D: for atomic commit
         staging_dir = os.path.join(parent_dir, f".staging_{uuid.uuid4().hex[:8]}")
+        backup_dir = None
         os.makedirs(staging_dir, exist_ok=True)
 
         try:
@@ -398,12 +409,28 @@ class ZenodoSparkBatchPipeline:
             with open(os.path.join(staging_dir, "_SUCCESS"), "w", encoding="utf-8") as f:
                 f.write("")
 
-            # 3. Atomic commit: Replace destination directory safely
+            # 3. Two-Phase Safe Directory Replacement:
+            # Step A: If target exists, move it to a temporary backup directory first.
             if os.path.exists(output_abs):
-                shutil.rmtree(output_abs)
-            shutil.move(staging_dir, output_abs)
+                backup_dir = os.path.join(parent_dir, f".backup_{uuid.uuid4().hex[:8]}")
+                shutil.move(output_abs, backup_dir)
+
+            try:
+                # Step B: Move fully staged and verified directory to target path
+                shutil.move(staging_dir, output_abs)
+                # Step C: Success! Clean up backup directory
+                if backup_dir and os.path.exists(backup_dir):
+                    shutil.rmtree(backup_dir, ignore_errors=True)
+            except Exception as replace_err:
+                # Rollback! Restore original target from backup directory
+                if backup_dir and os.path.exists(backup_dir):
+                    if os.path.exists(output_abs):
+                        shutil.rmtree(output_abs, ignore_errors=True)
+                    shutil.move(backup_dir, output_abs)
+                raise replace_err
 
         except Exception as e:
+            # Clean up temporary staging directory on any failure
             if os.path.exists(staging_dir):
                 shutil.rmtree(staging_dir, ignore_errors=True)
             raise e

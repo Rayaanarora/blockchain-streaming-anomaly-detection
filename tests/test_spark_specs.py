@@ -402,4 +402,97 @@ def test_pyspark_temporal_leakage_regression_scenarios():
             shutil.rmtree(test_scratch_dir, ignore_errors=True)
 
 
+@pytest.mark.skipif(not HAS_PYSPARK, reason="PySpark is not installed in local environment")
+def test_parquet_writer_failure_modes_and_atomic_rollback():
+    """
+    Test failure modes in write_parquet_bounded_arrow:
+    1. Failure during staging: original output is preserved; staging dir is deleted.
+    2. Failure during final replacement: two-phase replacement rolls back from backup;
+       original output is preserved intact.
+    """
+    import os
+    import shutil
+    from unittest import mock
+    from src.spark.zenodo_batch import build_spark_session, ZenodoSparkBatchPipeline
+
+    test_scratch_dir = "D:/blockchainbigdata/blockchain-streaming-anomaly-detection/data/test_spark_fail_modes"
+    if os.path.exists(test_scratch_dir):
+        shutil.rmtree(test_scratch_dir, ignore_errors=True)
+    os.makedirs(test_scratch_dir, exist_ok=True)
+
+    spark = build_spark_session(
+        app_name="TestPySparkFailureModes",
+        local_cores="local[2]",
+        spark_tmp_dir=f"{test_scratch_dir}/spark_temp",
+        spark_warehouse_dir=f"{test_scratch_dir}/spark_warehouse"
+    )
+
+    try:
+        pipeline = ZenodoSparkBatchPipeline(spark)
+        out_parquet = os.path.join(test_scratch_dir, "valid_parquet_output")
+
+        # 1. Establish an initial valid output directory with a sentinel file
+        os.makedirs(out_parquet, exist_ok=True)
+        sentinel_path = os.path.join(out_parquet, "sentinel_valid_v1.txt")
+        with open(sentinel_path, "w", encoding="utf-8") as f:
+            f.write("VALID_DATA_V1")
+
+        # Create a small valid features DataFrame
+        sample_lines = [
+            "BTC-IN 480000 1 1Alice 1111111111111111111111111111111111111111111111111111111111110001 50000",
+            "BTC-OUT 480000 1 1111111111111111111111111111111111111111111111111111111111110001 1Bob 45000"
+        ]
+        sample_file = os.path.join(test_scratch_dir, "sample.txt")
+        with open(sample_file, "w", encoding="ascii") as f:
+            f.write("\n".join(sample_lines))
+        raw_text_df = spark.read.text([sample_file])
+        records_df = pipeline.parse_raw_zenodo_text(raw_text_df)
+        tx_df = pipeline.assemble_completed_transactions(records_df)
+        features_df = pipeline.compute_leakage_safe_features(records_df, tx_df)
+
+        # -------------------------------------------------------------
+        # Scenario 1: Failure during staging (e.g. iterator crashes)
+        # -------------------------------------------------------------
+        with mock.patch.object(features_df, "select", side_effect=RuntimeError("Simulated staging crash")):
+            with pytest.raises(RuntimeError, match="Simulated staging crash"):
+                pipeline.write_parquet_bounded_arrow(features_df, out_parquet)
+
+        # Verification 1: Original valid output is completely untouched!
+        assert os.path.exists(out_parquet), "Output directory was prematurely deleted during staging failure!"
+        assert os.path.exists(sentinel_path), "Sentinel file missing after staging failure!"
+        with open(sentinel_path, "r", encoding="utf-8") as f:
+            assert f.read() == "VALID_DATA_V1"
+        # No orphan staging directories
+        staging_dirs = [d for d in os.listdir(test_scratch_dir) if d.startswith(".staging_")]
+        assert len(staging_dirs) == 0, f"Orphan staging dir found: {staging_dirs}"
+
+        # -------------------------------------------------------------
+        # Scenario 2: Failure during final replacement (move fails, triggers rollback)
+        # -------------------------------------------------------------
+        real_move = shutil.move
+        def failing_move(src, dst, **kwargs):
+            if os.path.basename(src).startswith(".staging_") and dst == os.path.abspath(out_parquet):
+                raise OSError("Simulated filesystem locked during final replacement")
+            return real_move(src, dst, **kwargs)
+
+        with mock.patch("shutil.move", side_effect=failing_move):
+            with pytest.raises(OSError, match="Simulated filesystem locked during final replacement"):
+                pipeline.write_parquet_bounded_arrow(features_df, out_parquet)
+
+        # Verification 2: Rollback restored the original valid output from backup!
+        assert os.path.exists(out_parquet), "Output directory missing after failed replacement!"
+        assert os.path.exists(sentinel_path), "Sentinel missing: rollback failed to restore original directory!"
+        with open(sentinel_path, "r", encoding="utf-8") as f:
+            assert f.read() == "VALID_DATA_V1"
+        # No orphan backup or staging directories
+        orphan_dirs = [d for d in os.listdir(test_scratch_dir) if d.startswith(".staging_") or d.startswith(".backup_")]
+        assert len(orphan_dirs) == 0, f"Orphan dirs after rollback: {orphan_dirs}"
+
+    finally:
+        spark.stop()
+        if os.path.exists(test_scratch_dir):
+            shutil.rmtree(test_scratch_dir, ignore_errors=True)
+
+
+
 

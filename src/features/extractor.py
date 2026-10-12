@@ -92,14 +92,22 @@ class HistoricalFeatureExtractor:
 
         feature_vec = np.array([feature_dict[name] for name in FEATURE_NAMES], dtype=np.float32)
 
-        # 3. Post-extraction state update (Strict temporal causality)
+        # 3. Post-extraction state update (Strict temporal causality & deduplicated transaction participation)
+        # In Bitcoin's UTXO model, an address's participation in a single transaction constitutes exactly ONE event:
+        # - An address's prior_tx_count increments by 1 per transaction participation (not per input/output UTXO).
+        # - An address's transferred volume is max(in_satoshi, out_satoshi). This captures the full mobilized funds
+        #   for senders and recipients, while preventing change outputs from being double-counted on top of input spend.
+        in_by_addr = defaultdict(int)
         for addr, val in tx.inputs:
-            self.address_prior_tx_count[addr] += 1
-            self.address_prior_volume[addr] += val
-
+            in_by_addr[addr] += val
+        out_by_addr = defaultdict(int)
         for addr, val in tx.outputs:
+            out_by_addr[addr] += val
+
+        all_participating_addrs = set(in_by_addr.keys()) | set(out_by_addr.keys())
+        for addr in all_participating_addrs:
             self.address_prior_tx_count[addr] += 1
-            self.address_prior_volume[addr] += val
+            self.address_prior_volume[addr] += max(in_by_addr[addr], out_by_addr[addr])
 
         self.total_transactions_processed += 1
 

@@ -1,0 +1,62 @@
+{
+  "benchmark_status": "PASSED",
+  "target_raw_lines": 50000,
+  "raw_lines_processed": 50000,
+  "valid_records_parsed": 50000,
+  "completed_transactions": 8149,
+  "parquet_output_rows": 8149,
+  "parquet_output_size_bytes": 1027777,
+  "parquet_output_size_mb": 0.98,
+  "parquet_partitions": [
+    "block_chunk=480000-480999"
+  ],
+  "null_counts": {
+    "block_number": 0,
+    "tx_index": 0,
+    "tx_hash": 0,
+    "num_inputs": 0,
+    "num_outputs": 0,
+    "total_input_satoshi": 0,
+    "total_output_satoshi": 0,
+    "fee_satoshi": 0,
+    "fee_rate": 0,
+    "is_coinbase": 0,
+    "avg_input_val": 0,
+    "avg_output_val": 0,
+    "input_output_count_ratio": 0,
+    "input_output_val_ratio": 0,
+    "max_input_prior_tx_count": 0,
+    "avg_input_prior_tx_count": 0,
+    "max_input_prior_volume_satoshi": 0,
+    "new_address_fraction": 0,
+    "block_chunk": 0
+  },
+  "wall_clock_elapsed_seconds": 20.27,
+  "throughput_lines_per_sec": 2467.08,
+  "throughput_transactions_per_sec": 402.09,
+  "memory_start_rss_mb": 49.54,
+  "memory_peak_rss_mb": 100.8,
+  "memory_end_rss_mb": 142.64,
+  "memory_growth_mb": 51.27,
+  "drive_c_free_gb_before": 2.34,
+  "drive_c_free_gb_after": 2.34,
+  "drive_d_free_gb_before": 132.21,
+  "drive_d_free_gb_after": 132.21,
+  "boundary_conditions": {
+    "slice_start": {
+      "first_row_block": 480000,
+      "first_row_tx_index": 0,
+      "is_coinbase": true,
+      "note": "Block 480000 genesis-of-slice Coinbase transaction cleanly initialized."
+    },
+    "slice_end": {
+      "last_row_block": 480004,
+      "last_row_tx_index": 1866,
+      "note": "Any partial transaction at slice EOF missing matching inputs/outputs was filtered out as incomplete."
+    }
+  },
+  "sample_ground_truth_matches": "60/60",
+  "representative_sample_verified": true,
+  "validation_memory_mode": "bounded_pyarrow_dataset_streaming",
+  "caveat": "Bounded slice benchmark of local Zenodo data on Windows. Not production throughput or streaming latency."
+}

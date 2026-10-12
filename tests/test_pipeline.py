@@ -286,6 +286,91 @@ def test_feature_extractor_temporal_causality():
     assert fresh_dict1 == dict1
 
 
+def test_address_history_volume_and_deduplication_methodology():
+    """
+    Independent reference test for the address-history volume and participation methodology.
+    Validates pure-Python behavior without invoking Spark:
+    1. Change address: max(in, out) prevents double-counting change outputs.
+       Participation increments tx count by 1 (not 2).
+    2. Multi-UTXO input consolidation: increments tx count by 1 (not N).
+       Total consolidated volume is accurately summed.
+    3. Multi-UTXO outputs to same address: increments recipient tx count by 1 (not N).
+    """
+    extractor = HistoricalFeatureExtractor()
+
+    # Tx 1: 1Alice spends 100,000 sat (1 input), sends 10,000 sat to 1Bob,
+    # and returns 88,000 sat as change to 1Alice (fee = 2,000 sat).
+    tx1 = CompletedTransaction(
+        block_number=480000,
+        tx_index=1,
+        tx_hash="aa" * 32,
+        inputs=[("1Alice", 100000)],
+        outputs=[("1Bob", 10000), ("1Alice", 88000)],
+        is_coinbase=False
+    )
+    _, d1 = extractor.extract_features(tx1)
+    # Tx 1 features for 1Alice: brand new address
+    assert d1["max_input_prior_tx_count"] == 0.0
+    assert d1["max_input_prior_volume_satoshi"] == 0.0
+    assert d1["new_address_fraction"] == 1.0
+
+    # Post Tx 1 state:
+    # 1Alice participated as both input and output.
+    # Prior tx count must be 1 (NOT 2).
+    # Prior volume must be max(100000, 88000) = 100,000 (NOT 188,000; change not double-counted).
+    assert extractor.address_prior_tx_count["1Alice"] == 1
+    assert extractor.address_prior_volume["1Alice"] == 100000
+    assert extractor.address_prior_tx_count["1Bob"] == 1
+    assert extractor.address_prior_volume["1Bob"] == 10000
+
+    # Tx 2: 1Charlie consolidates 3 input UTXOs (30k + 40k + 50k = 120,000 sat) to pay 1Alice 115,000 sat.
+    tx2 = CompletedTransaction(
+        block_number=480000,
+        tx_index=2,
+        tx_hash="bb" * 32,
+        inputs=[("1Charlie", 30000), ("1Charlie", 40000), ("1Charlie", 50000)],
+        outputs=[("1Alice", 115000)],
+        is_coinbase=False
+    )
+    _, d2 = extractor.extract_features(tx2)
+    # Tx 2 features for 1Charlie: brand new address across all 3 inputs
+    assert d2["num_inputs"] == 3
+    assert d2["max_input_prior_tx_count"] == 0.0
+    assert d2["avg_input_prior_tx_count"] == 0.0
+    assert d2["new_address_fraction"] == 1.0
+
+    # Post Tx 2 state:
+    # 1Charlie had 3 inputs in 1 transaction -> prior_tx_count is 1 (NOT 3).
+    # 1Charlie's volume is full consolidated input: 120,000 sat.
+    assert extractor.address_prior_tx_count["1Charlie"] == 1
+    assert extractor.address_prior_volume["1Charlie"] == 120000
+    # 1Alice received 115,000 sat -> now has 2 transactions (Tx 1 + Tx 2).
+    assert extractor.address_prior_tx_count["1Alice"] == 2
+    assert extractor.address_prior_volume["1Alice"] == 100000 + 115000  # 215,000 sat
+
+    # Tx 3: 1Alice pays 1Bob via 2 separate output UTXOs (50,000 + 60,000 = 110,000 sat).
+    tx3 = CompletedTransaction(
+        block_number=480000,
+        tx_index=3,
+        tx_hash="cc" * 32,
+        inputs=[("1Alice", 115000)],
+        outputs=[("1Bob", 50000), ("1Bob", 60000)],
+        is_coinbase=False
+    )
+    _, d3 = extractor.extract_features(tx3)
+    # 1Alice in Tx 3 reflects both prior transactions:
+    assert d3["max_input_prior_tx_count"] == 2.0
+    assert d3["max_input_prior_volume_satoshi"] == 215000.0
+    assert d3["new_address_fraction"] == 0.0
+
+    # Post Tx 3 state:
+    # 1Bob received 2 outputs in Tx 3 -> prior_tx_count increments by 1 (NOT 2).
+    # 1Bob had 1 tx previously, so now has exactly 2 prior transactions.
+    assert extractor.address_prior_tx_count["1Bob"] == 2
+    assert extractor.address_prior_volume["1Bob"] == 10000 + 110000  # 120,000 sat
+
+
+
 # ==============================================================================
 # 6. Cost-Sensitive Anomaly Model Baselines
 # ==============================================================================
