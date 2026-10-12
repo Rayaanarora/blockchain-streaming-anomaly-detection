@@ -1,7 +1,57 @@
 """
 Explicit schemas and data contracts for Apache Spark Zenodo Bitcoin transaction processing.
+
+SCHEMA COLUMN TAXONOMY & COUNT SPECIFICATION:
+=============================================
+1. Physical Parquet Columns (18 columns):
+   The columns physically serialized into binary Parquet files (part-0.parquet) via get_transaction_features_pyarrow_schema():
+   - Identifiers (3): block_number, tx_index, tx_hash
+   - Numerical Model Features (15): num_inputs, num_outputs, total_input_satoshi, total_output_satoshi,
+     fee_satoshi, fee_rate, is_coinbase, avg_input_val, avg_output_val, input_output_count_ratio,
+     input_output_val_ratio, max_input_prior_tx_count, avg_input_prior_tx_count,
+     max_input_prior_volume_satoshi, new_address_fraction.
+
+2. Hive Partition Directory Key (1 column):
+   - block_chunk (e.g. 'block_chunk=480000-480999'):
+     Encoded strictly in the filesystem directory hierarchy to enable chunk-pruning partition discovery.
+     Not duplicated inside the physical row payload of each Parquet file.
+
+3. Partitioned Dataset Columns (19 columns):
+   When loaded via pyarrow.dataset.dataset(..., partitioning='hive') or spark.read.parquet(...),
+   the 18 physical Parquet columns plus the synthesized partition column 'block_chunk' yield
+   exactly 19 dataset columns.
+
+4. Machine Learning Model Features (15 features):
+   The 15 numerical and structural features consumed by anomaly detection models (excluding
+   the 4 identifiers/metadata keys: block_number, tx_index, tx_hash, block_chunk).
 """
 from typing import Dict, Any, List
+
+# Explicit feature list used by downstream machine learning models
+MODEL_FEATURE_COLUMNS: List[str] = [
+    "num_inputs",
+    "num_outputs",
+    "total_input_satoshi",
+    "total_output_satoshi",
+    "fee_satoshi",
+    "fee_rate",
+    "is_coinbase",
+    "avg_input_val",
+    "avg_output_val",
+    "input_output_count_ratio",
+    "input_output_val_ratio",
+    "max_input_prior_tx_count",
+    "avg_input_prior_tx_count",
+    "max_input_prior_volume_satoshi",
+    "new_address_fraction"
+]
+
+METADATA_IDENTIFIER_COLUMNS: List[str] = [
+    "block_number",
+    "tx_index",
+    "tx_hash",
+    "block_chunk"
+]
 
 # ------------------------------------------------------------------------------
 # 1. Platform-Agnostic Schema Specifications

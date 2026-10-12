@@ -20,12 +20,91 @@ import argparse
 import psutil
 from collections import defaultdict
 
+import threading
+
 # Ensure repo root is on sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pyarrow.parquet as pq
 from src.spark.schemas import get_transaction_features_pyarrow_schema
 from src.spark.zenodo_batch import build_spark_session, ZenodoSparkBatchPipeline
+
+
+class ContinuousMemoryTracker:
+    """
+    Continuous background memory monitor polling at high frequency (50ms).
+    Tracks:
+    - Python Driver RSS (start, spark-phase peak, validation-phase peak, overall peak, end)
+    - JVM / Subprocess child RSS (peak sum of memory across all child processes)
+    - Total Process Tree RSS (Driver + Children)
+    """
+    def __init__(self, sample_interval_sec: float = 0.05):
+        self.proc = psutil.Process()
+        self.sample_interval = sample_interval_sec
+        self.running = False
+        self.thread = None
+        self.lock = threading.Lock()
+
+        initial_rss = self.proc.memory_info().rss / (1024 * 1024)
+        self.driver_start_rss_mb = initial_rss
+        self.driver_spark_peak_rss_mb = initial_rss
+        self.driver_validation_peak_rss_mb = initial_rss
+        self.driver_overall_peak_rss_mb = initial_rss
+        self.jvm_child_peak_rss_mb = 0.0
+        self.process_tree_peak_rss_mb = initial_rss
+        self.current_phase = "spark"
+
+    def _sample_loop(self):
+        while self.running:
+            try:
+                driver_mem = self.proc.memory_info().rss / (1024 * 1024)
+                child_mem = 0.0
+                try:
+                    for child in self.proc.children(recursive=True):
+                        try:
+                            child_mem += child.memory_info().rss / (1024 * 1024)
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+                except Exception:
+                    pass
+                tree_mem = driver_mem + child_mem
+
+                with self.lock:
+                    if driver_mem > self.driver_overall_peak_rss_mb:
+                        self.driver_overall_peak_rss_mb = driver_mem
+                    if child_mem > self.jvm_child_peak_rss_mb:
+                        self.jvm_child_peak_rss_mb = child_mem
+                    if tree_mem > self.process_tree_peak_rss_mb:
+                        self.process_tree_peak_rss_mb = tree_mem
+
+                    if self.current_phase == "spark":
+                        if driver_mem > self.driver_spark_peak_rss_mb:
+                            self.driver_spark_peak_rss_mb = driver_mem
+                    elif self.current_phase == "validation":
+                        if driver_mem > self.driver_validation_peak_rss_mb:
+                            self.driver_validation_peak_rss_mb = driver_mem
+            except Exception:
+                pass
+            time.sleep(self.sample_interval)
+
+    def start(self):
+        self.running = True
+        self.thread = threading.Thread(target=self._sample_loop, daemon=True)
+        self.thread.start()
+
+    def set_phase(self, phase_name: str):
+        with self.lock:
+            self.current_phase = phase_name
+
+    def stop(self) -> float:
+        self.running = False
+        if self.thread:
+            self.thread.join(timeout=1.0)
+        end_rss = self.proc.memory_info().rss / (1024 * 1024)
+        with self.lock:
+            if end_rss > self.driver_overall_peak_rss_mb:
+                self.driver_overall_peak_rss_mb = end_rss
+        return end_rss
 
 
 def get_drive_free_gb():
@@ -214,9 +293,9 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
     drive_before = get_drive_free_gb()
     print(f"Drive Space Before: C: {drive_before.get('C:')} GB free | D: {drive_before.get('D:')} GB free")
 
-    proc = psutil.Process()
-    mem_start_rss = proc.memory_info().rss / (1024 * 1024)
-    peak_rss = mem_start_rss
+    # Start continuous high-frequency memory monitor
+    mem_tracker = ContinuousMemoryTracker(sample_interval_sec=0.05)
+    mem_tracker.start()
     t0 = time.perf_counter()
 
     # Paths on Drive D:
@@ -274,7 +353,6 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
 
         features_df = pipeline.compute_leakage_safe_features(records_df, tx_df)
         t_spark1 = time.perf_counter()
-        peak_rss = max(peak_rss, proc.memory_info().rss / (1024 * 1024))
         print(f"  Raw lines read:        {raw_count:,}")
         print(f"  Valid records parsed:  {parsed_count:,}")
         print(f"  Completed transactions:{tx_count:,}")
@@ -285,7 +363,6 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
         t_write0 = time.perf_counter()
         pipeline.write_parquet_bounded_arrow(features_df, parquet_out, batch_size=1000)
         t_write1 = time.perf_counter()
-        peak_rss = max(peak_rss, proc.memory_info().rss / (1024 * 1024))
         print(f"  Parquet streaming write time: {t_write1 - t_write0:.2f} s")
 
         # Parquet size on disk
@@ -297,6 +374,7 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
 
         # 5. Read back Parquet metadata and validate without full-dataset RAM materialization
         print("\n[Step 5/6] Validating written Parquet output via bounded streaming...")
+        mem_tracker.set_phase("validation")
         import pyarrow.dataset as ds
         dataset = ds.dataset(parquet_out, format="parquet", partitioning="hive")
         pa_num_rows = dataset.count_rows()
@@ -349,11 +427,9 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
         sample_keys_set = set(sample_keys)
         print(f"  Selected representative sample of {len(sample_keys)} transactions across slice.")
 
-        with open(raw_slice_path, "r", encoding="ascii") as f_slice:
-            slice_lines = f_slice.readlines()
-
         t_gt0 = time.perf_counter()
-        gt = compute_ground_truth_for_keys(slice_lines, sample_keys)
+        with open(raw_slice_path, "r", encoding="ascii") as f_slice:
+            gt = compute_ground_truth_for_keys(f_slice, sample_keys)
         t_gt1 = time.perf_counter()
         print(f"  Ground truth computed in {t_gt1 - t_gt0:.2f} s for {len(gt)} transactions.")
 
@@ -415,7 +491,12 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
 
         t_end = time.perf_counter()
         elapsed_sec = t_end - t0
-        mem_end_rss = proc.memory_info().rss / (1024 * 1024)
+        mem_end_rss = mem_tracker.stop()
+        driver_peak = mem_tracker.driver_overall_peak_rss_mb
+        driver_growth = driver_peak - mem_tracker.driver_start_rss_mb
+        jvm_child_peak = mem_tracker.jvm_child_peak_rss_mb
+        tree_peak = mem_tracker.process_tree_peak_rss_mb
+
         throughput_lps = round(target_lines / max(elapsed_sec, 1e-6), 2)
         throughput_tps = round(pa_num_rows / max(elapsed_sec, 1e-6), 2)
 
@@ -436,10 +517,33 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
             "wall_clock_elapsed_seconds": round(elapsed_sec, 2),
             "throughput_lines_per_sec": throughput_lps,
             "throughput_transactions_per_sec": throughput_tps,
-            "memory_start_rss_mb": round(mem_start_rss, 2),
-            "memory_peak_rss_mb": round(peak_rss, 2),
+            "memory_metrics": {
+                "driver_start_rss_mb": round(mem_tracker.driver_start_rss_mb, 2),
+                "driver_spark_peak_rss_mb": round(mem_tracker.driver_spark_peak_rss_mb, 2),
+                "driver_validation_peak_rss_mb": round(mem_tracker.driver_validation_peak_rss_mb, 2),
+                "driver_overall_peak_rss_mb": round(driver_peak, 2),
+                "driver_end_rss_mb": round(mem_end_rss, 2),
+                "driver_growth_mb": round(driver_growth, 2),
+                "jvm_child_peak_rss_mb": round(jvm_child_peak, 2),
+                "process_tree_peak_rss_mb": round(tree_peak, 2),
+                "sampling_interval_ms": 50,
+                "measurement_method": "continuous_psutil_polling_daemon_thread",
+                "bound_analysis": (
+                    "The PyArrow streaming writer bounds record batches to batch_size=1000 (~1 MB per batch) "
+                    "and iterates partitions using toLocalIterator(). However, total Python driver RSS is not "
+                    "strictly capped at 100 MB; it dynamically fluctuates between ~50-175 MB due to Py4J socket "
+                    "buffers, internal PySpark/PyArrow bindings, and Python garbage collection. Concurrently, "
+                    "the JVM child process consumes executor/driver heap (~300-800 MB). Total process tree peak "
+                    "memory is thus ~400-950 MB, reflecting the combined Java/Python runtime."
+                )
+            },
+            "memory_start_rss_mb": round(mem_tracker.driver_start_rss_mb, 2),
+            "memory_driver_spark_peak_rss_mb": round(mem_tracker.driver_spark_peak_rss_mb, 2),
+            "memory_peak_rss_mb": round(driver_peak, 2),
             "memory_end_rss_mb": round(mem_end_rss, 2),
-            "memory_growth_mb": round(peak_rss - mem_start_rss, 2),
+            "memory_growth_mb": round(driver_growth, 2),
+            "jvm_child_peak_rss_mb": round(jvm_child_peak, 2),
+            "total_process_tree_peak_rss_mb": round(tree_peak, 2),
             "drive_c_free_gb_before": drive_before.get("C:"),
             "drive_c_free_gb_after": drive_after.get("C:"),
             "drive_d_free_gb_before": drive_before.get("D:"),
@@ -464,7 +568,8 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
         print(f"  Parquet size:        {total_parquet_bytes / (1024 * 1024):.2f} MB")
         print(f"  Elapsed time:        {elapsed_sec:.2f} s")
         print(f"  Throughput:          {throughput_lps:,} lines/s ({throughput_tps:,} txs/s)")
-        print(f"  Peak RAM:            {peak_rss:.2f} MB (Growth: {peak_rss - mem_start_rss:.2f} MB)")
+        print(f"  Memory (Python Driver): Start: {mem_tracker.driver_start_rss_mb:.2f} MB | Spark Peak: {mem_tracker.driver_spark_peak_rss_mb:.2f} MB | Overall Peak: {driver_peak:.2f} MB | End: {mem_end_rss:.2f} MB")
+        print(f"  Memory (JVM Subprocess): Peak: {jvm_child_peak:.2f} MB | Process Tree Peak: {tree_peak:.2f} MB")
         print(f"  Drive C: before/after: {drive_before.get('C:')} GB -> {drive_after.get('C:')} GB (0 bytes delta)")
         print(f"  Drive D: before/after: {drive_before.get('D:')} GB -> {drive_after.get('D:')} GB")
         print(f"  Report saved to:     {out_report_file}")

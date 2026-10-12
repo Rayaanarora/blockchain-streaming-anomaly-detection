@@ -62,6 +62,40 @@ def test_transaction_feature_schema_spec():
         assert feat in TRANSACTION_FEATURE_SPEC
 
 
+def test_schema_column_counts_and_taxonomy():
+    """
+    Formally verify the exact column count taxonomy:
+    - 18 Physical Parquet columns
+    - 1 Hive partition directory key (block_chunk)
+    - 19 Partitioned dataset columns (18 physical + 1 partition key)
+    - 15 Numerical machine learning features
+    - 4 Metadata/identifier columns
+    """
+    from src.spark.schemas import (
+        MODEL_FEATURE_COLUMNS,
+        METADATA_IDENTIFIER_COLUMNS,
+        get_transaction_features_pyarrow_schema
+    )
+
+    pa_schema = get_transaction_features_pyarrow_schema()
+    # 1. Physical Parquet columns
+    assert len(pa_schema) == 18, f"Expected 18 physical Parquet columns, got {len(pa_schema)}"
+    assert "block_chunk" not in pa_schema.names, "Partition key block_chunk must NOT be stored in physical Parquet file"
+
+    # 2. Partitioned dataset columns
+    assert len(TRANSACTION_FEATURE_SPEC) == 19, f"Expected 19 dataset columns, got {len(TRANSACTION_FEATURE_SPEC)}"
+    assert "block_chunk" in TRANSACTION_FEATURE_SPEC, "Partition key block_chunk must be in dataset specification"
+
+    # 3. Model features vs Metadata identifiers
+    assert len(MODEL_FEATURE_COLUMNS) == 15, f"Expected 15 model features, got {len(MODEL_FEATURE_COLUMNS)}"
+    assert len(METADATA_IDENTIFIER_COLUMNS) == 4, f"Expected 4 metadata columns, got {len(METADATA_IDENTIFIER_COLUMNS)}"
+    assert set(MODEL_FEATURE_COLUMNS).isdisjoint(set(METADATA_IDENTIFIER_COLUMNS)), "Feature and metadata columns overlap!"
+
+    # 4. Total dataset columns = 15 features + 4 metadata
+    all_dataset_cols = set(MODEL_FEATURE_COLUMNS) | set(METADATA_IDENTIFIER_COLUMNS)
+    assert all_dataset_cols == set(TRANSACTION_FEATURE_SPEC.keys()), "Mismatch in dataset column specification"
+
+
 def test_spark_absent_error_actionability():
     """Verify check_pyspark_available raises actionable message if PySpark is absent."""
     if not HAS_PYSPARK:
@@ -510,6 +544,26 @@ def test_parquet_writer_failure_modes_and_atomic_rollback():
 
         # Cleanup the preserved backup dir manually for test hygiene
         shutil.rmtree(backup_path, ignore_errors=True)
+
+        # -------------------------------------------------------------
+        # Scenario 4: Successful replacement cleanly overwrites previous output
+        # -------------------------------------------------------------
+        # Recreate original target directory with sentinel
+        os.makedirs(out_parquet, exist_ok=True)
+        with open(sentinel_path, "w", encoding="utf-8") as f:
+            f.write("VALID_DATA_V1")
+
+        # Normal successful write
+        pipeline.write_parquet_bounded_arrow(features_df, out_parquet)
+
+        # Verification 4: Target replaced with Parquet structure, sentinel gone, no backup/staging left
+        assert os.path.exists(out_parquet), "Output directory missing after successful write!"
+        assert not os.path.exists(sentinel_path), "Old sentinel file was not replaced!"
+        assert os.path.exists(os.path.join(out_parquet, "_SUCCESS")), "Missing _SUCCESS marker!"
+        remaining_backups = [d for d in os.listdir(test_scratch_dir) if d.startswith(".backup_")]
+        assert len(remaining_backups) == 0, f"Leftover backup directory found: {remaining_backups}"
+        remaining_stagings = [d for d in os.listdir(test_scratch_dir) if d.startswith(".staging_")]
+        assert len(remaining_stagings) == 0, f"Leftover staging directory found: {remaining_stagings}"
 
     finally:
         spark.stop()
