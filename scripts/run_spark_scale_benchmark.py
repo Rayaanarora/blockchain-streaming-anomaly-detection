@@ -19,6 +19,7 @@ import time
 import argparse
 import psutil
 from collections import defaultdict
+from typing import List, Dict, Any, Tuple
 
 import threading
 
@@ -119,96 +120,120 @@ def get_drive_free_gb():
     return free_info
 
 
-def compute_ground_truth_for_keys(lines, target_keys):
+def parse_zenodo_line(line: str):
+    """Parse a single raw Zenodo space-delimited text line."""
+    parts = line.strip().split()
+    if len(parts) != 6:
+        return None
+    kind, block_str, tx_idx_str, src, dst, val_str = parts
+    try:
+        block = int(block_str)
+        tx_idx = int(tx_idx_str)
+        val = int(val_str)
+    except ValueError:
+        return None
+    if kind not in ("BTC-IN", "BTC-OUT") or block < 0 or tx_idx < 0 or val < 0:
+        return None
+    tx_hash = dst if kind == "BTC-IN" else src
+    if len(tx_hash) != 64:
+        return None
+    raw_addr = src if kind == "BTC-IN" else dst
+    if raw_addr == "unableToDecode":
+        addr = f"unableToDecode_{tx_hash[:16]}"
+    elif raw_addr == "0":
+        addr = f"coinbase_source_{tx_hash[:16]}"
+    else:
+        addr = raw_addr
+    return kind, block, tx_idx, tx_hash, addr, val
+
+
+def compute_ground_truth_for_keys(lines_or_path, target_keys):
     """
     Independently compute ground truth completed transactions and historical features
     in pure Python for a specified subset of transaction keys.
+
+    GENUINELY BOUNDED MEMORY O(sample_size):
+    1. Pass 1: Streams raw records, retaining ONLY transactions in `target_keys`
+       and discovering their specific input addresses (`tracked_input_addresses`).
+    2. Pass 2: Streams raw records, tracking historical events ONLY for addresses in
+       `tracked_input_addresses`.
+    Avoids constructing full-dataset parsed, tx_map, addr_tx, and by_addr structures.
     """
     target_keys_set = set(target_keys)
+    target_tx_data = defaultdict(lambda: {"inputs": [], "outputs": [], "tx_hash": ""})
 
-    # 1. Parse raw lines
-    parsed = []
-    for line in lines:
-        parts = line.strip().split()
-        if len(parts) != 6:
-            continue
-        kind, block, tx_idx, src, dst, val = parts[0], int(parts[1]), int(parts[2]), parts[3], parts[4], int(parts[5])
-        if kind not in ("BTC-IN", "BTC-OUT") or block < 0 or tx_idx < 0 or val < 0:
-            continue
-        tx_hash = dst if kind == "BTC-IN" else src
-        if len(tx_hash) != 64:
-            continue
-        raw_addr = src if kind == "BTC-IN" else dst
-        if raw_addr == "unableToDecode":
-            addr = f"unableToDecode_{tx_hash[:16]}"
-        elif raw_addr == "0":
-            addr = f"coinbase_source_{tx_hash[:16]}"
-        else:
-            addr = raw_addr
+    def _pass1_record(line):
+        rec = parse_zenodo_line(line)
+        if not rec:
+            return
+        kind, block, tx_idx, tx_hash, addr, val = rec
+        k = (block, tx_idx)
+        if k in target_keys_set:
+            target_tx_data[k]["tx_hash"] = tx_hash
+            if kind == "BTC-IN":
+                target_tx_data[k]["inputs"].append((addr, val))
+            else:
+                target_tx_data[k]["outputs"].append((addr, val))
 
-        parsed.append({
-            "kind": kind,
-            "block_number": block,
-            "tx_index": tx_idx,
-            "tx_hash": tx_hash,
-            "address": addr,
-            "value_satoshi": val
-        })
+    if isinstance(lines_or_path, str) and os.path.isfile(lines_or_path):
+        with open(lines_or_path, "r", encoding="ascii") as f:
+            for line in f:
+                _pass1_record(line)
+    else:
+        lines_list = list(lines_or_path)
+        for line in lines_list:
+            _pass1_record(line)
 
-    # 2. Assemble transactions
-    tx_map = defaultdict(lambda: {
-        "tx_hash": "",
-        "inputs": [],
-        "outputs": [],
-        "in_val": 0,
-        "out_val": 0,
-        "in_addrs": []
-    })
-
-    for r in parsed:
-        k = (r["block_number"], r["tx_index"])
-        tx_map[k]["tx_hash"] = r["tx_hash"]
-        if r["kind"] == "BTC-IN":
-            tx_map[k]["inputs"].append(r)
-            tx_map[k]["in_val"] += r["value_satoshi"]
-            tx_map[k]["in_addrs"].append(r["address"])
-        else:
-            tx_map[k]["outputs"].append(r)
-            tx_map[k]["out_val"] += r["value_satoshi"]
-
-    # Filter completed transactions
     completed = {}
-    for k, v in tx_map.items():
+    tracked_input_addresses = set()
+    for k, v in target_tx_data.items():
         is_coinbase = (k[1] == 0)
         n_in = len(v["inputs"])
         n_out = len(v["outputs"])
         if (is_coinbase and n_out > 0) or (not is_coinbase and n_in > 0 and n_out > 0):
-            fee = 0 if is_coinbase else (v["in_val"] - v["out_val"])
+            tot_in = sum(val for _, val in v["inputs"])
+            tot_out = sum(val for _, val in v["outputs"])
+            fee = 0 if is_coinbase else (tot_in - tot_out)
+            in_addrs = [addr for addr, _ in v["inputs"]]
             completed[k] = {
                 "block_number": k[0],
                 "tx_index": k[1],
                 "tx_hash": v["tx_hash"],
                 "num_inputs": n_in,
                 "num_outputs": n_out,
-                "total_input_satoshi": v["in_val"],
-                "total_output_satoshi": v["out_val"],
+                "total_input_satoshi": tot_in,
+                "total_output_satoshi": tot_out,
                 "fee_satoshi": fee,
                 "is_coinbase": 1 if is_coinbase else 0,
-                "input_addresses": v["in_addrs"]
+                "input_addresses": in_addrs
             }
+            if not is_coinbase:
+                tracked_input_addresses.update(in_addrs)
 
-    # 3. Compute temporal features with strictly prior causality
-    # Aggregate address participation strictly per (address, block_number, tx_index)
+    # Pass 2: Only track address participation for tracked_input_addresses!
     addr_tx = defaultdict(lambda: {"in": 0, "out": 0, "has_in": False})
-    for r in parsed:
-        k_addr = (r["address"], r["block_number"], r["tx_index"])
-        if r["kind"] == "BTC-IN":
-            addr_tx[k_addr]["in"] += r["value_satoshi"]
-            addr_tx[k_addr]["has_in"] = True
-        else:
-            addr_tx[k_addr]["out"] += r["value_satoshi"]
 
-    # Sort each address's transaction events chronologically
+    def _pass2_record(line):
+        rec = parse_zenodo_line(line)
+        if not rec:
+            return
+        kind, block, tx_idx, tx_hash, addr, val = rec
+        if addr in tracked_input_addresses:
+            k_addr = (addr, block, tx_idx)
+            if kind == "BTC-IN":
+                addr_tx[k_addr]["in"] += val
+                addr_tx[k_addr]["has_in"] = True
+            else:
+                addr_tx[k_addr]["out"] += val
+
+    if isinstance(lines_or_path, str) and os.path.isfile(lines_or_path):
+        with open(lines_or_path, "r", encoding="ascii") as f:
+            for line in f:
+                _pass2_record(line)
+    else:
+        for line in lines_list:
+            _pass2_record(line)
+
     by_addr = defaultdict(list)
     for (addr, blk, tidx), data in addr_tx.items():
         tx_vol = max(data["in"], data["out"])
@@ -282,6 +307,45 @@ def compute_ground_truth_for_keys(lines, target_keys):
         }
 
     return ground_truth
+
+
+def select_bounded_sample_keys(dataset, target_sample_size: int = 60) -> List[tuple]:
+    """
+    Select up to `target_sample_size` representative transaction keys (block_number, tx_index)
+    from a PyArrow dataset in strictly bounded O(sample_size) memory, without collecting
+    all dataset keys into an unbounded list.
+    """
+    total_rows = dataset.count_rows()
+    if total_rows <= target_sample_size:
+        target_indices = set(range(total_rows))
+    else:
+        k_chunk = target_sample_size // 3
+        first_indices = set(range(k_chunk))
+        mid_start = max(k_chunk, (total_rows // 2) - (k_chunk // 2))
+        mid_indices = set(range(mid_start, min(total_rows - k_chunk, mid_start + k_chunk)))
+        last_indices = set(range(max(0, total_rows - k_chunk), total_rows))
+        target_indices = first_indices | mid_indices | last_indices
+
+    sample_dict = {}
+    current_offset = 0
+    max_target_idx = max(target_indices) if target_indices else -1
+
+    for batch in dataset.to_batches(columns=["block_number", "tx_index"], batch_size=2000):
+        batch_len = len(batch)
+        batch_end = current_offset + batch_len
+        needed = [idx for idx in target_indices if current_offset <= idx < batch_end]
+        if needed:
+            blks = batch["block_number"]
+            tidxs = batch["tx_index"]
+            for idx in needed:
+                rel = idx - current_offset
+                sample_dict[idx] = (blks[rel].as_py(), tidxs[rel].as_py())
+
+        current_offset = batch_end
+        if current_offset > max_target_idx and len(sample_dict) == len(target_indices):
+            break
+
+    return [sample_dict[idx] for idx in sorted(sample_dict.keys())]
 
 
 def run_benchmark(target_lines: int, report_suffix: str = ""):
@@ -417,21 +481,14 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
 
         # 6. Independent validation against pure-Python ground truth
         print("\n[Step 6/6] Independent validation against pure-Python reference implementation...")
-        # Stream keys only to select representative sample: first 20, middle 20, last 20
-        key_batches = [
-            list(zip(b["block_number"].to_pylist(), b["tx_index"].to_pylist()))
-            for b in dataset.to_batches(columns=["block_number", "tx_index"], batch_size=5000)
-        ]
-        all_keys = [k for b_keys in key_batches for k in b_keys]
-        sample_keys = all_keys[:20] + all_keys[len(all_keys)//2 - 10 : len(all_keys)//2 + 10] + all_keys[-20:]
+        sample_keys = select_bounded_sample_keys(dataset, target_sample_size=60)
         sample_keys_set = set(sample_keys)
-        print(f"  Selected representative sample of {len(sample_keys)} transactions across slice.")
+        print(f"  Selected representative sample of {len(sample_keys)} transactions across slice (bounded O(1) sample memory).")
 
         t_gt0 = time.perf_counter()
-        with open(raw_slice_path, "r", encoding="ascii") as f_slice:
-            gt = compute_ground_truth_for_keys(f_slice, sample_keys)
+        gt = compute_ground_truth_for_keys(raw_slice_path, sample_keys)
         t_gt1 = time.perf_counter()
-        print(f"  Ground truth computed in {t_gt1 - t_gt0:.2f} s for {len(gt)} transactions.")
+        print(f"  Ground truth computed in {t_gt1 - t_gt0:.2f} s for {len(gt)} transactions (streaming bounded address history).")
 
         # Stream batches to extract ONLY the sample rows into memory (bounded < 1 MB)
         pa_dict = {}
@@ -523,18 +580,30 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
                 "driver_validation_peak_rss_mb": round(mem_tracker.driver_validation_peak_rss_mb, 2),
                 "driver_overall_peak_rss_mb": round(driver_peak, 2),
                 "driver_end_rss_mb": round(mem_end_rss, 2),
+                "driver_peak_growth_mb": round(driver_growth, 2),
                 "driver_growth_mb": round(driver_growth, 2),
                 "jvm_child_peak_rss_mb": round(jvm_child_peak, 2),
                 "process_tree_peak_rss_mb": round(tree_peak, 2),
                 "sampling_interval_ms": 50,
                 "measurement_method": "continuous_psutil_polling_daemon_thread",
+                "metric_definitions": {
+                    "driver_start_rss_mb": "Python driver RSS before Spark and benchmark execution",
+                    "driver_spark_peak_rss_mb": "Peak Python driver RSS during Spark transformation and Parquet streaming write",
+                    "driver_validation_peak_rss_mb": "Peak Python driver RSS during bounded dataset streaming validation and ground-truth check",
+                    "driver_overall_peak_rss_mb": "Absolute peak Python driver RSS observed across entire lifecycle",
+                    "driver_end_rss_mb": "Python driver RSS at end of benchmark execution",
+                    "driver_peak_growth_mb": "Peak driver RSS minus starting RSS (driver_overall_peak_rss_mb - driver_start_rss_mb)",
+                    "driver_growth_mb": "Synonym for driver_peak_growth_mb (peak driver RSS minus starting RSS)",
+                    "jvm_child_peak_rss_mb": "Peak sum of RSS across all child processes spawned by Spark (java.exe)",
+                    "process_tree_peak_rss_mb": "Peak combined RSS of the process tree (Python driver + child JVM processes)"
+                },
                 "bound_analysis": (
-                    "The PyArrow streaming writer bounds record batches to batch_size=1000 (~1 MB per batch) "
-                    "and iterates partitions using toLocalIterator(). However, total Python driver RSS is not "
-                    "strictly capped at 100 MB; it dynamically fluctuates between ~50-175 MB due to Py4J socket "
-                    "buffers, internal PySpark/PyArrow bindings, and Python garbage collection. Concurrently, "
-                    "the JVM child process consumes executor/driver heap (~300-800 MB). Total process tree peak "
-                    "memory is thus ~400-950 MB, reflecting the combined Java/Python runtime."
+                    f"The PyArrow streaming writer bounds record batches to batch_size=1000 (~1 MB per batch) "
+                    f"and iterates partitions using toLocalIterator(). Python driver process RSS operates between "
+                    f"{round(mem_tracker.driver_start_rss_mb, 2)} MB and {round(driver_peak, 2)} MB. Concurrently, "
+                    f"the JVM child process utilizes approximately {round(jvm_child_peak, 2)} MB for Spark's "
+                    f"Catalyst engine, internal shuffle buffers, and Java heap. Total process tree peak memory "
+                    f"reaches {round(tree_peak, 2)} MB, reflecting the combined Java/Python runtime."
                 )
             },
             "memory_start_rss_mb": round(mem_tracker.driver_start_rss_mb, 2),
@@ -542,6 +611,7 @@ def run_benchmark(target_lines: int, report_suffix: str = ""):
             "memory_peak_rss_mb": round(driver_peak, 2),
             "memory_end_rss_mb": round(mem_end_rss, 2),
             "memory_growth_mb": round(driver_growth, 2),
+            "driver_peak_growth_mb": round(driver_growth, 2),
             "jvm_child_peak_rss_mb": round(jvm_child_peak, 2),
             "total_process_tree_peak_rss_mb": round(tree_peak, 2),
             "drive_c_free_gb_before": drive_before.get("C:"),

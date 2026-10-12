@@ -571,5 +571,111 @@ def test_parquet_writer_failure_modes_and_atomic_rollback():
             shutil.rmtree(test_scratch_dir, ignore_errors=True)
 
 
+def test_bounded_sample_selection_logic():
+    """
+    Verify that select_bounded_sample_keys selects representative samples
+    in O(sample_size) memory without materializing the full dataset.
+    """
+    import pyarrow as pa
+    import pyarrow.dataset as ds
+    from scripts.run_spark_scale_benchmark import select_bounded_sample_keys
+
+    # Case A: Small dataset (N = 30 <= 60)
+    rows_30 = {
+        "block_number": list(range(100, 130)),
+        "tx_index": [i % 5 for i in range(30)]
+    }
+    table_30 = pa.Table.from_pydict(rows_30)
+    dataset_30 = ds.InMemoryDataset(table_30)
+    keys_30 = select_bounded_sample_keys(dataset_30, target_sample_size=60)
+    assert len(keys_30) == 30
+    assert keys_30[0] == (100, 0)
+    assert keys_30[-1] == (129, 29 % 5)
+
+    # Case B: Large dataset (N = 300 > 60)
+    rows_300 = {
+        "block_number": list(range(1000, 1300)),
+        "tx_index": [i % 10 for i in range(300)]
+    }
+    table_300 = pa.Table.from_pydict(rows_300)
+    dataset_300 = ds.InMemoryDataset(table_300)
+    keys_300 = select_bounded_sample_keys(dataset_300, target_sample_size=60)
+    assert len(keys_300) == 60
+    # First 20 are from start
+    assert keys_300[0] == (1000, 0)
+    assert keys_300[19] == (1019, 19 % 10)
+    # Middle 20 are around index 150
+    assert (1140, 0) <= keys_300[20] <= (1160, 9)
+    # Last 20 are at end
+    assert keys_300[-1] == (1299, 299 % 10)
+
+
+def test_bounded_ground_truth_validator_isolation():
+    """
+    Verify compute_ground_truth_for_keys only computes history for tracked addresses
+    and does not fail or inflate memory when extraneous transactions exist.
+    """
+    from scripts.run_spark_scale_benchmark import compute_ground_truth_for_keys
+
+    lines = [
+        # Target transaction (480000, 1)
+        "BTC-IN 480000 1 1Alice 1111111111111111111111111111111111111111111111111111111111110001 50000",
+        "BTC-OUT 480000 1 1111111111111111111111111111111111111111111111111111111111110001 1Bob 45000",
+        # Extraneous transaction with unrelated addresses (must NOT inflate memory or affect Alice)
+        "BTC-IN 480000 2 1Other 2222222222222222222222222222222222222222222222222222222222220002 80000",
+        "BTC-OUT 480000 2 2222222222222222222222222222222222222222222222222222222222220002 1OtherOut 75000",
+        # 1Alice spends again in (480001, 1)
+        "BTC-IN 480001 1 1Alice 3333333333333333333333333333333333333333333333333333333333330003 40000",
+        "BTC-OUT 480001 1 3333333333333333333333333333333333333333333333333333333333330003 1Carol 38000",
+    ]
+
+    # Validate ground truth for target key (480001, 1) only
+    gt = compute_ground_truth_for_keys(lines, target_keys=[(480001, 1)])
+    assert (480001, 1) in gt
+    res = gt[(480001, 1)]
+    assert res["num_inputs"] == 1
+    assert res["num_outputs"] == 1
+    assert res["total_input_satoshi"] == 40000
+    assert res["fee_satoshi"] == 2000
+    assert res["max_input_prior_tx_count"] == 1  # From (480000, 1)
+    assert res["max_input_prior_volume_satoshi"] == 50000
+
+
+def test_benchmark_report_consistency_and_memory_coherence():
+    """
+    Verify that benchmark JSON reports have mutually consistent memory metrics,
+    and documented bound_analysis estimates cannot contradict measured numbers.
+    """
+    import os
+    import json
+    import glob
+
+    report_files = glob.glob("data/validation/spark_scale_benchmark_*_v3.json")
+    for rpath in report_files:
+        with open(rpath, "r", encoding="utf-8") as f:
+            rep = json.load(f)
+
+        assert rep["benchmark_status"] == "PASSED"
+        mem = rep["memory_metrics"]
+
+        # 1. Driver memory monotonicity and growth
+        assert mem["driver_overall_peak_rss_mb"] >= mem["driver_start_rss_mb"]
+        assert mem["driver_overall_peak_rss_mb"] >= mem["driver_end_rss_mb"]
+        expected_growth = round(mem["driver_overall_peak_rss_mb"] - mem["driver_start_rss_mb"], 2)
+        assert mem["driver_peak_growth_mb"] == expected_growth
+        assert rep["driver_peak_growth_mb"] == expected_growth
+
+        # 2. Process tree coherence
+        assert mem["process_tree_peak_rss_mb"] >= mem["jvm_child_peak_rss_mb"]
+        assert mem["process_tree_peak_rss_mb"] >= mem["driver_overall_peak_rss_mb"]
+
+        # 3. Documented bound_analysis must not contradict measured peaks
+        analysis_text = mem["bound_analysis"]
+        assert "300-800 MB" not in analysis_text, "Outdated contradiction detected in bound_analysis!"
+        assert "400-950 MB" not in analysis_text, "Outdated contradiction detected in bound_analysis!"
+        jvm_str = str(round(mem["jvm_child_peak_rss_mb"], 2))
+        assert jvm_str in analysis_text, f"Measured JVM peak {jvm_str} missing from bound_analysis narrative"
+
+
 
 

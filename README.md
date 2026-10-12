@@ -43,24 +43,25 @@ To maintain scientific integrity, experimental results in this repository are di
 3. **Continuous High-Frequency Monitoring Revision (`*_v3.json`):**
    - Integrated continuous 50ms background daemon polling tracker capturing true peak memory across all execution phases.
    - Separated Python Driver Spark-phase peak from overall peak, JVM child process RSS, and total process tree RSS.
+   - Replaced full-dataset key aggregation and full-dataset ground truth parsing with genuinely bounded $O(\text{sample\_size})$ streaming key selection and two-pass address history extraction.
 
-#### Measured Results (Latest `_v3` Reports with Continuous Polling):
+#### Measured Results (Latest `_v3` Reports with Bounded Validation & Continuous Polling):
 - **100,000 Raw Lines Benchmark (`spark_scale_benchmark_100000_v3.json`):**
-  - **Throughput:** **4,315.18 lines/sec** (**784.20 completed transactions/sec**).
-  - **Wall-Clock Runtime:** 23.17 s (8.01 s Spark Catalyst transforms, 11.54 s streaming Parquet write).
-  - **Python Driver Memory:** Start: **49.69 MB** | Spark Write Peak: **101.11 MB** | Overall Peak: **237.39 MB** (during pure-Python 100k ground-truth validation) | End: **153.18 MB**.
-  - **JVM Child Subprocess Peak:** **2,029.49 MB** (Spark Java executor/driver heap).
-  - **Total Process Tree Peak:** **2,235.38 MB** (Combined Python + Java memory).
+  - **Throughput:** **4,055.64 lines/sec** (**737.03 completed transactions/sec**).
+  - **Wall-Clock Runtime:** 24.66 s (9.35 s Spark Catalyst transforms, 10.93 s streaming Parquet write).
+  - **Python Driver Memory:** Start: **49.88 MB** | Spark Write Peak: **101.80 MB** | Overall Peak: **125.64 MB** | End: **125.64 MB** | Driver Peak Growth: **75.76 MB**.
+  - **JVM Child Subprocess Peak:** **2,098.39 MB** (Spark Java executor/driver heap).
+  - **Total Process Tree Peak:** **2,155.93 MB** (Combined Python + Java memory).
   - **Disk Footprint:** 2.20 MB Snappy-compressed Parquet partitioned by `block_chunk=480000-480999`.
-  - **Drive Isolation:** Exactly **0 bytes written to Drive C:** (9.65 GB free before and after).
+  - **Drive Isolation:** Exactly **0 bytes written to Drive C:** (9.66 GB free before and after).
   - **Correctness:** 60/60 representative sample transactions matched 100% against Python ground truth across all 18 feature columns.
 - **50,000 Raw Lines Benchmark (`spark_scale_benchmark_50000_v3.json`):**
-  - **Throughput:** **2,633.47 lines/sec** (**429.20 completed transactions/sec**).
-  - **Wall-Clock Runtime:** 18.99 s (7.15 s transforms, 7.39 s streaming Parquet write).
-  - **Python Driver Memory:** Start: **49.62 MB** | Spark Write Peak: **97.09 MB** | Overall Peak: **171.17 MB** | End: **139.27 MB**.
-  - **JVM Child Subprocess Peak:** **1,933.13 MB**.
-  - **Total Process Tree Peak:** **2,093.67 MB**.
-  - **Drive Isolation:** 0 bytes delta on Drive C: (9.65 GB free before and after).
+  - **Throughput:** **2,525.68 lines/sec** (**411.63 completed transactions/sec**).
+  - **Wall-Clock Runtime:** 19.80 s (8.04 s transforms, 8.44 s streaming Parquet write).
+  - **Python Driver Memory:** Start: **49.34 MB** | Spark Write Peak: **95.08 MB** | Overall Peak: **117.07 MB** | End: **117.07 MB** | Driver Peak Growth: **67.73 MB**.
+  - **JVM Child Subprocess Peak:** **1,946.18 MB**.
+  - **Total Process Tree Peak:** **2,036.46 MB**.
+  - **Drive Isolation:** 0 bytes delta on Drive C: (9.66 GB free).
 
 ---
 
