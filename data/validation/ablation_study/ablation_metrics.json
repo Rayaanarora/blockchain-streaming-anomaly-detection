@@ -1,0 +1,837 @@
+{
+  "experiment_name": "Comprehensive Model Ablation, Temporal Drift & Feature Audit",
+  "timestamp": "2026-10-13T05:32:29Z",
+  "partitions": {
+    "train_steps": "1 to 29",
+    "val_steps": "30 to 34",
+    "test_steps": "35 to 49",
+    "train_samples": 26381,
+    "val_samples": 3513,
+    "test_samples": 16670,
+    "class_weight_ratio": 8.1888
+  },
+  "feature_audit": {
+    "dataset_shape": {
+      "rows": 203769,
+      "features": 165
+    },
+    "missing_values_count": 0,
+    "infinite_values_count": 0,
+    "constant_features_train": [],
+    "outliers": {
+      "train_entries_beyond_5_sigma": 17402,
+      "train_entries_beyond_10_sigma": 2769
+    },
+    "split_distribution_summary": {
+      "train": {
+        "samples": 26381,
+        "global_mean": 0.08942881971597672,
+        "global_std": 1.4824719429016113,
+        "global_min": -13.093358039855957,
+        "global_max": 265.26324462890625,
+        "global_median": -0.09540268778800964
+      },
+      "validation": {
+        "samples": 3513,
+        "global_mean": 0.1102144867181778,
+        "global_std": 1.3165754079818726,
+        "global_min": -13.093358039855957,
+        "global_max": 189.18695068359375,
+        "global_median": -0.08014673739671707
+      },
+      "test": {
+        "samples": 16670,
+        "global_mean": 0.17862041294574738,
+        "global_std": 1.403841257095337,
+        "global_min": -13.093358039855957,
+        "global_max": 287.8915100097656,
+        "global_median": -0.05743638053536415
+      }
+    },
+    "high_correlation_pairs_count_above_0.95": 89,
+    "top_20_correlated_pairs": [
+      {
+        "feature_1": "f5",
+        "feature_2": "f14",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 1.0
+      },
+      {
+        "feature_1": "f22",
+        "feature_2": "f28",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 1.0
+      },
+      {
+        "feature_1": "f23",
+        "feature_2": "f29",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 1.0
+      },
+      {
+        "feature_1": "f24",
+        "feature_2": "f30",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 1.0
+      },
+      {
+        "feature_1": "f25",
+        "feature_2": "f31",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 1.0
+      },
+      {
+        "feature_1": "f58",
+        "feature_2": "f64",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 1.0
+      },
+      {
+        "feature_1": "f59",
+        "feature_2": "f65",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 1.0
+      },
+      {
+        "feature_1": "f60",
+        "feature_2": "f66",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 1.0
+      },
+      {
+        "feature_1": "f61",
+        "feature_2": "f67",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 1.0
+      },
+      {
+        "feature_1": "f26",
+        "feature_2": "f32",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 0.9991
+      },
+      {
+        "feature_1": "f27",
+        "feature_2": "f33",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 0.9991
+      },
+      {
+        "feature_1": "f152",
+        "feature_2": "f153",
+        "feature_1_type": "aggregated",
+        "feature_2_type": "aggregated",
+        "correlation": 0.9989
+      },
+      {
+        "feature_1": "f62",
+        "feature_2": "f68",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 0.9975
+      },
+      {
+        "feature_1": "f63",
+        "feature_2": "f69",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 0.9973
+      },
+      {
+        "feature_1": "f74",
+        "feature_2": "f75",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 0.9972
+      },
+      {
+        "feature_1": "f116",
+        "feature_2": "f117",
+        "feature_1_type": "aggregated",
+        "feature_2_type": "aggregated",
+        "correlation": 0.9959
+      },
+      {
+        "feature_1": "f164",
+        "feature_2": "f165",
+        "feature_1_type": "aggregated",
+        "feature_2_type": "aggregated",
+        "correlation": 0.9956
+      },
+      {
+        "feature_1": "f38",
+        "feature_2": "f39",
+        "feature_1_type": "local",
+        "feature_2_type": "local",
+        "correlation": 0.9949
+      },
+      {
+        "feature_1": "f158",
+        "feature_2": "f159",
+        "feature_1_type": "aggregated",
+        "feature_2_type": "aggregated",
+        "correlation": 0.9949
+      },
+      {
+        "feature_1": "f146",
+        "feature_2": "f147",
+        "feature_1_type": "aggregated",
+        "feature_2_type": "aggregated",
+        "correlation": 0.994
+      }
+    ],
+    "taxonomy_resolution": {
+      "total_feature_count": 165,
+      "local_feature_count": 93,
+      "aggregated_feature_count": 72,
+      "local_feature_range_1_indexed": "f1 to f93",
+      "aggregated_feature_range_1_indexed": "f94 to f165",
+      "csv_raw_column_indices": {
+        "tx_id": 0,
+        "time_step": 1,
+        "local_features_0_indexed": "col 2 to col 94 (93 columns)",
+        "aggregated_features_0_indexed": "col 95 to col 166 (72 columns)"
+      },
+      "resolution_explanation": "The discrepancy between 'f95-f165' and 'f100-f165' is resolved: In raw CSV 0-indexed column ordering, aggregated features start at column index 95. In 1-indexed feature column naming (ignoring txId and time_step), features f1-f93 (93 features) are local, and f94-f165 (72 features) are aggregated (93 + 72 = 165 total). The 'f100-f165' phrase in early course slides was an informal rounded estimate."
+    }
+  },
+  "seed_ablation": {
+    "gbdt": {
+      "seed_runs": [
+        {
+          "model": "gbdt",
+          "seed": 42,
+          "fit_time_sec": 14.026,
+          "inference_time_sec": 0.0181,
+          "val_threshold": 0.57,
+          "test_precision": 0.7167,
+          "test_recall": 0.7193,
+          "test_f1": 0.718,
+          "test_roc_auc": 0.935,
+          "test_average_precision": 0.7875,
+          "test_confusion_matrix": [
+            [
+              15279,
+              308
+            ],
+            [
+              304,
+              779
+            ]
+          ]
+        },
+        {
+          "model": "gbdt",
+          "seed": 123,
+          "fit_time_sec": 13.64,
+          "inference_time_sec": 0.0163,
+          "val_threshold": 0.79,
+          "test_precision": 0.8711,
+          "test_recall": 0.7175,
+          "test_f1": 0.7868,
+          "test_roc_auc": 0.9394,
+          "test_average_precision": 0.7915,
+          "test_confusion_matrix": [
+            [
+              15472,
+              115
+            ],
+            [
+              306,
+              777
+            ]
+          ]
+        },
+        {
+          "model": "gbdt",
+          "seed": 456,
+          "fit_time_sec": 13.6447,
+          "inference_time_sec": 0.0224,
+          "val_threshold": 0.58,
+          "test_precision": 0.7174,
+          "test_recall": 0.7267,
+          "test_f1": 0.722,
+          "test_roc_auc": 0.9391,
+          "test_average_precision": 0.793,
+          "test_confusion_matrix": [
+            [
+              15277,
+              310
+            ],
+            [
+              296,
+              787
+            ]
+          ]
+        },
+        {
+          "model": "gbdt",
+          "seed": 789,
+          "fit_time_sec": 13.6217,
+          "inference_time_sec": 0.0224,
+          "val_threshold": 0.79,
+          "test_precision": 0.8797,
+          "test_recall": 0.7156,
+          "test_f1": 0.7892,
+          "test_roc_auc": 0.9371,
+          "test_average_precision": 0.7938,
+          "test_confusion_matrix": [
+            [
+              15481,
+              106
+            ],
+            [
+              308,
+              775
+            ]
+          ]
+        },
+        {
+          "model": "gbdt",
+          "seed": 2024,
+          "fit_time_sec": 13.7613,
+          "inference_time_sec": 0.0261,
+          "val_threshold": 0.48,
+          "test_precision": 0.7025,
+          "test_recall": 0.7304,
+          "test_f1": 0.7162,
+          "test_roc_auc": 0.9406,
+          "test_average_precision": 0.7943,
+          "test_confusion_matrix": [
+            [
+              15252,
+              335
+            ],
+            [
+              292,
+              791
+            ]
+          ]
+        }
+      ],
+      "summary": {
+        "f1_score_mean": 0.7464,
+        "f1_score_std": 0.034,
+        "precision_mean": 0.7775,
+        "precision_std": 0.0802,
+        "recall_mean": 0.7219,
+        "recall_std": 0.0057,
+        "roc_auc_mean": 0.9382,
+        "roc_auc_std": 0.002,
+        "average_precision_mean": 0.792,
+        "average_precision_std": 0.0025,
+        "fit_time_mean": 13.7387,
+        "fit_time_std": 0.1519,
+        "is_deterministic": false
+      }
+    },
+    "rf": {
+      "seed_runs": [
+        {
+          "model": "rf",
+          "seed": 42,
+          "fit_time_sec": 0.7549,
+          "inference_time_sec": 0.0529,
+          "val_threshold": 0.58,
+          "test_precision": 0.8128,
+          "test_recall": 0.7138,
+          "test_f1": 0.7601,
+          "test_roc_auc": 0.9279,
+          "test_average_precision": 0.7788,
+          "test_confusion_matrix": [
+            [
+              15409,
+              178
+            ],
+            [
+              310,
+              773
+            ]
+          ]
+        },
+        {
+          "model": "rf",
+          "seed": 123,
+          "fit_time_sec": 0.6896,
+          "inference_time_sec": 0.0376,
+          "val_threshold": 0.57,
+          "test_precision": 0.816,
+          "test_recall": 0.7248,
+          "test_f1": 0.7677,
+          "test_roc_auc": 0.93,
+          "test_average_precision": 0.7809,
+          "test_confusion_matrix": [
+            [
+              15410,
+              177
+            ],
+            [
+              298,
+              785
+            ]
+          ]
+        },
+        {
+          "model": "rf",
+          "seed": 456,
+          "fit_time_sec": 0.6668,
+          "inference_time_sec": 0.0392,
+          "val_threshold": 0.53,
+          "test_precision": 0.7512,
+          "test_recall": 0.7221,
+          "test_f1": 0.7363,
+          "test_roc_auc": 0.9243,
+          "test_average_precision": 0.7668,
+          "test_confusion_matrix": [
+            [
+              15328,
+              259
+            ],
+            [
+              301,
+              782
+            ]
+          ]
+        },
+        {
+          "model": "rf",
+          "seed": 789,
+          "fit_time_sec": 0.6809,
+          "inference_time_sec": 0.0392,
+          "val_threshold": 0.56,
+          "test_precision": 0.8271,
+          "test_recall": 0.711,
+          "test_f1": 0.7646,
+          "test_roc_auc": 0.9312,
+          "test_average_precision": 0.7756,
+          "test_confusion_matrix": [
+            [
+              15426,
+              161
+            ],
+            [
+              313,
+              770
+            ]
+          ]
+        },
+        {
+          "model": "rf",
+          "seed": 2024,
+          "fit_time_sec": 0.6909,
+          "inference_time_sec": 0.038,
+          "val_threshold": 0.53,
+          "test_precision": 0.7101,
+          "test_recall": 0.6334,
+          "test_f1": 0.6696,
+          "test_roc_auc": 0.9345,
+          "test_average_precision": 0.7548,
+          "test_confusion_matrix": [
+            [
+              15307,
+              280
+            ],
+            [
+              397,
+              686
+            ]
+          ]
+        }
+      ],
+      "summary": {
+        "f1_score_mean": 0.7397,
+        "f1_score_std": 0.0367,
+        "precision_mean": 0.7834,
+        "precision_std": 0.0453,
+        "recall_mean": 0.701,
+        "recall_std": 0.0342,
+        "roc_auc_mean": 0.9296,
+        "roc_auc_std": 0.0034,
+        "average_precision_mean": 0.7714,
+        "average_precision_std": 0.0096,
+        "fit_time_mean": 0.6966,
+        "fit_time_std": 0.0304,
+        "is_deterministic": false
+      }
+    },
+    "lr": {
+      "seed_runs": [
+        {
+          "model": "lr",
+          "seed": 42,
+          "fit_time_sec": 0.5312,
+          "inference_time_sec": 0.0018,
+          "val_threshold": 0.92,
+          "test_precision": 0.1778,
+          "test_recall": 0.8476,
+          "test_f1": 0.2939,
+          "test_roc_auc": 0.8503,
+          "test_average_precision": 0.2025,
+          "test_confusion_matrix": [
+            [
+              11341,
+              4246
+            ],
+            [
+              165,
+              918
+            ]
+          ]
+        },
+        {
+          "model": "lr",
+          "seed": 123,
+          "fit_time_sec": 0.5492,
+          "inference_time_sec": 0.0017,
+          "val_threshold": 0.92,
+          "test_precision": 0.1778,
+          "test_recall": 0.8476,
+          "test_f1": 0.2939,
+          "test_roc_auc": 0.8503,
+          "test_average_precision": 0.2025,
+          "test_confusion_matrix": [
+            [
+              11341,
+              4246
+            ],
+            [
+              165,
+              918
+            ]
+          ]
+        },
+        {
+          "model": "lr",
+          "seed": 456,
+          "fit_time_sec": 0.5327,
+          "inference_time_sec": 0.0017,
+          "val_threshold": 0.92,
+          "test_precision": 0.1778,
+          "test_recall": 0.8476,
+          "test_f1": 0.2939,
+          "test_roc_auc": 0.8503,
+          "test_average_precision": 0.2025,
+          "test_confusion_matrix": [
+            [
+              11341,
+              4246
+            ],
+            [
+              165,
+              918
+            ]
+          ]
+        },
+        {
+          "model": "lr",
+          "seed": 789,
+          "fit_time_sec": 0.5437,
+          "inference_time_sec": 0.0015,
+          "val_threshold": 0.92,
+          "test_precision": 0.1778,
+          "test_recall": 0.8476,
+          "test_f1": 0.2939,
+          "test_roc_auc": 0.8503,
+          "test_average_precision": 0.2025,
+          "test_confusion_matrix": [
+            [
+              11341,
+              4246
+            ],
+            [
+              165,
+              918
+            ]
+          ]
+        },
+        {
+          "model": "lr",
+          "seed": 2024,
+          "fit_time_sec": 0.5241,
+          "inference_time_sec": 0.0017,
+          "val_threshold": 0.92,
+          "test_precision": 0.1778,
+          "test_recall": 0.8476,
+          "test_f1": 0.2939,
+          "test_roc_auc": 0.8503,
+          "test_average_precision": 0.2025,
+          "test_confusion_matrix": [
+            [
+              11341,
+              4246
+            ],
+            [
+              165,
+              918
+            ]
+          ]
+        }
+      ],
+      "summary": {
+        "f1_score_mean": 0.2939,
+        "f1_score_std": 0.0,
+        "precision_mean": 0.1778,
+        "precision_std": 0.0,
+        "recall_mean": 0.8476,
+        "recall_std": 0.0,
+        "roc_auc_mean": 0.8503,
+        "roc_auc_std": 0.0,
+        "average_precision_mean": 0.2025,
+        "average_precision_std": 0.0,
+        "fit_time_mean": 0.5362,
+        "fit_time_std": 0.0091,
+        "is_deterministic": true
+      }
+    }
+  },
+  "imbalance_ablation": {
+    "Cost-Sensitive Class Weighting (8.19:1)": {
+      "gbdt": {
+        "strategy": "Cost-Sensitive Class Weighting (8.19:1)",
+        "model": "gbdt",
+        "training_samples": 26381,
+        "training_illicit": 2871,
+        "training_licit": 23510,
+        "fit_time_sec": 14.2334,
+        "val_threshold": 0.57,
+        "val_f1": 0.9618,
+        "test_precision": 0.7167,
+        "test_recall": 0.7193,
+        "test_f1": 0.718,
+        "test_roc_auc": 0.935,
+        "test_average_precision": 0.7875
+      },
+      "rf": {
+        "strategy": "Cost-Sensitive Class Weighting (8.19:1)",
+        "model": "rf",
+        "training_samples": 26381,
+        "training_illicit": 2871,
+        "training_licit": 23510,
+        "fit_time_sec": 0.7418,
+        "val_threshold": 0.58,
+        "val_f1": 0.9701,
+        "test_precision": 0.8128,
+        "test_recall": 0.7138,
+        "test_f1": 0.7601,
+        "test_roc_auc": 0.9279,
+        "test_average_precision": 0.7788
+      },
+      "lr": {
+        "strategy": "Cost-Sensitive Class Weighting (8.19:1)",
+        "model": "lr",
+        "training_samples": 26381,
+        "training_illicit": 2871,
+        "training_licit": 23510,
+        "fit_time_sec": 0.5386,
+        "val_threshold": 0.92,
+        "val_f1": 0.6513,
+        "test_precision": 0.1778,
+        "test_recall": 0.8476,
+        "test_f1": 0.2939,
+        "test_roc_auc": 0.8503,
+        "test_average_precision": 0.2025
+      }
+    },
+    "Random Undersampling (1:1 Ratio, 2,871 licit)": {
+      "gbdt": {
+        "strategy": "Random Undersampling (1:1 Ratio, 2,871 licit)",
+        "model": "gbdt",
+        "training_samples": 5742,
+        "training_illicit": 2871,
+        "training_licit": 2871,
+        "fit_time_sec": 0.5585,
+        "val_threshold": 0.94,
+        "val_f1": 0.9608,
+        "test_precision": 0.8279,
+        "test_recall": 0.7018,
+        "test_f1": 0.7596,
+        "test_roc_auc": 0.9408,
+        "test_average_precision": 0.7833
+      },
+      "rf": {
+        "strategy": "Random Undersampling (1:1 Ratio, 2,871 licit)",
+        "model": "rf",
+        "training_samples": 5742,
+        "training_illicit": 2871,
+        "training_licit": 2871,
+        "fit_time_sec": 0.2467,
+        "val_threshold": 0.69,
+        "val_f1": 0.9629,
+        "test_precision": 0.6938,
+        "test_recall": 0.7239,
+        "test_f1": 0.7085,
+        "test_roc_auc": 0.9276,
+        "test_average_precision": 0.774
+      },
+      "lr": {
+        "strategy": "Random Undersampling (1:1 Ratio, 2,871 licit)",
+        "model": "lr",
+        "training_samples": 5742,
+        "training_illicit": 2871,
+        "training_licit": 2871,
+        "fit_time_sec": 0.0838,
+        "val_threshold": 0.95,
+        "val_f1": 0.5902,
+        "test_precision": 0.1694,
+        "test_recall": 0.7692,
+        "test_f1": 0.2776,
+        "test_roc_auc": 0.8321,
+        "test_average_precision": 0.1879
+      }
+    },
+    "Random Undersampling (2:1 Ratio, 5,742 licit)": {
+      "gbdt": {
+        "strategy": "Random Undersampling (2:1 Ratio, 5,742 licit)",
+        "model": "gbdt",
+        "training_samples": 8613,
+        "training_illicit": 2871,
+        "training_licit": 5742,
+        "fit_time_sec": 0.6095,
+        "val_threshold": 0.73,
+        "val_f1": 0.9475,
+        "test_precision": 0.7236,
+        "test_recall": 0.7276,
+        "test_f1": 0.7256,
+        "test_roc_auc": 0.9418,
+        "test_average_precision": 0.7927
+      },
+      "rf": {
+        "strategy": "Random Undersampling (2:1 Ratio, 5,742 licit)",
+        "model": "rf",
+        "training_samples": 8613,
+        "training_illicit": 2871,
+        "training_licit": 5742,
+        "fit_time_sec": 0.3155,
+        "val_threshold": 0.64,
+        "val_f1": 0.9677,
+        "test_precision": 0.8166,
+        "test_recall": 0.7276,
+        "test_f1": 0.7695,
+        "test_roc_auc": 0.9216,
+        "test_average_precision": 0.7863
+      },
+      "lr": {
+        "strategy": "Random Undersampling (2:1 Ratio, 5,742 licit)",
+        "model": "lr",
+        "training_samples": 8613,
+        "training_illicit": 2871,
+        "training_licit": 5742,
+        "fit_time_sec": 0.1077,
+        "val_threshold": 0.93,
+        "val_f1": 0.5973,
+        "test_precision": 0.1981,
+        "test_recall": 0.7636,
+        "test_f1": 0.3146,
+        "test_roc_auc": 0.8513,
+        "test_average_precision": 0.2088
+      }
+    },
+    "Unweighted Baseline (1.0x, Native Imbalance)": {
+      "gbdt": {
+        "strategy": "Unweighted Baseline (1.0x, Native Imbalance)",
+        "model": "gbdt",
+        "training_samples": 26381,
+        "training_illicit": 2871,
+        "training_licit": 23510,
+        "fit_time_sec": 1.1059,
+        "val_threshold": 0.31,
+        "val_f1": 0.9683,
+        "test_precision": 0.75,
+        "test_recall": 0.723,
+        "test_f1": 0.7362,
+        "test_roc_auc": 0.94,
+        "test_average_precision": 0.7939
+      },
+      "rf": {
+        "strategy": "Unweighted Baseline (1.0x, Native Imbalance)",
+        "model": "rf",
+        "training_samples": 26381,
+        "training_illicit": 2871,
+        "training_licit": 23510,
+        "fit_time_sec": 0.9997,
+        "val_threshold": 0.51,
+        "val_f1": 0.9705,
+        "test_precision": 0.9384,
+        "test_recall": 0.7175,
+        "test_f1": 0.8132,
+        "test_roc_auc": 0.9103,
+        "test_average_precision": 0.7821
+      },
+      "lr": {
+        "strategy": "Unweighted Baseline (1.0x, Native Imbalance)",
+        "model": "lr",
+        "training_samples": 26381,
+        "training_illicit": 2871,
+        "training_licit": 23510,
+        "fit_time_sec": 0.3333,
+        "val_threshold": 0.74,
+        "val_f1": 0.6727,
+        "test_precision": 0.2274,
+        "test_recall": 0.7488,
+        "test_f1": 0.3488,
+        "test_roc_auc": 0.8736,
+        "test_average_precision": 0.2617
+      }
+    }
+  },
+  "temporal_drift_summary": {
+    "pre_shutdown_steps_35_to_42": {
+      "total_labeled": 9983,
+      "total_illicit": 914,
+      "mean_illicit_prevalence": 0.0946,
+      "gbdt_f1_mean": 0.8177,
+      "rf_f1_mean": 0.8318,
+      "lr_f1_mean": 0.3982
+    },
+    "post_shutdown_steps_43_to_49": {
+      "total_labeled": 6687,
+      "total_illicit": 169,
+      "mean_illicit_prevalence": 0.0371,
+      "gbdt_f1_mean": 0.0,
+      "rf_f1_mean": 0.0324,
+      "lr_f1_mean": 0.1647
+    },
+    "market_shutdown_discussion": "Hypothesis Supported by Historical Context: In July 2017 (time step 43), law enforcement seized AlphaBay and Hansa Market, the largest darknet marketplaces operating on Bitcoin. While models exhibit near-total performance degradation across steps 43-49, this market shutdown must be interpreted as an explanatory domain-shift hypothesis supported by timeline alignment, rather than mathematically proven causation directly verified by model weights alone."
+  },
+  "gat_and_hybrid_audit": {
+    "model_architecture": "TGAT-BoostNet (Spatio-Temporal Graph Attention Boosting Network)",
+    "gat_module_status": "BLOCKED_DEPENDENCY_MISSING",
+    "missing_dependencies": [
+      "torch",
+      "torch_geometric",
+      "torchvision"
+    ],
+    "hardware_environment_verified": {
+      "os": "Windows 11 (10.0.26200)",
+      "python_version": "3.12.10",
+      "disk_space_free_d_drive": "126.6 GB",
+      "disk_space_free_c_drive": "8.6 GB",
+      "wheel_compatibility_dry_run": "PASS (torch 2.14.1+cpu-cp312-cp312-win_amd64)"
+    },
+    "reproducible_installation_command": ".venv\\Scripts\\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu && .venv\\Scripts\\python.exe -m pip install torch-geometric",
+    "graph_leakage_audit": {
+      "total_graph_nodes": 203769,
+      "total_graph_edges": 234355,
+      "unknown_label_nodes_preserved_count": 157205,
+      "unknown_label_masking": "Label -1 masked out of supervised CrossEntropyLoss; nodes remain in message-passing topology",
+      "cross_timestep_edges_count": 0,
+      "temporal_message_passing_contract": "All 234,355 edges in Elliptic connect nodes strictly within the same time step. Zero cross-timestep edges exist. Inductive test forward-pass must evaluate each test time step subgraph independently to strictly prevent inter-batch information leakage."
+    },
+    "hybrid_model_specification": {
+      "stage_1_gat": "Train SpatioTemporalGAT (4 heads, 32 hidden dims) on train partition steps 1-29",
+      "stage_2_feature_fusion": "Extract 32-dim penultimate GAT embeddings and concatenate with 165 raw/scaled features -> 197-dim manifold",
+      "stage_3_tree_classifier": "Fit HistGradientBoostingClassifier on the 197-dim augmented embeddings strictly during training period. Tune decision threshold on validation embeddings (steps 30-34). Evaluate once on unseen test embeddings (steps 35-49)."
+    }
+  }
+}

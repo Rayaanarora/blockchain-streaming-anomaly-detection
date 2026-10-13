@@ -155,13 +155,17 @@ A bounded sample from `data/parquet/zenodo_features/` was loaded and audited:
 5. **[`train_sota_dl.py`](file:///d:/blockchainbigdata/blockchain-streaming-anomaly-detection/train_sota_dl.py)**:
    - Refactored to eliminate hardcoded paths, enforce train-only scaling, isolate training graph edges, and provide validation checkpointing.
 6. **[`tests/test_model_pipeline.py`](file:///d:/blockchainbigdata/blockchain-streaming-anomaly-detection/tests/test_model_pipeline.py)** *(Added)*:
-   - Added 5 regression tests covering scaler leakage safeguards, unknown label isolation, train-only class weights, validation threshold tuning, and Zenodo feature loading.
-7. **[`data/validation/model_evaluation/metrics.json`](file:///d:/blockchainbigdata/blockchain-streaming-anomaly-detection/data/validation/model_evaluation/metrics.json)** *(Generated)*:
+   - Added 8 regression tests covering scaler leakage safeguards, unknown label isolation, train-only class weights, validation threshold tuning, Zenodo feature loading, saved prediction consistency, temporal drift validation at step 43, and latency benchmark schema contracts.
+7. **[`scripts/benchmark_inference_latency.py`](file:///d:/blockchainbigdata/blockchain-streaming-anomaly-detection/scripts/benchmark_inference_latency.py)** *(Added)*:
+   - Reproducible high-resolution latency distribution benchmark across batch sizes ($B \in \{1, 16, 64, 256, 1000, 16670\}$) with warm-up passes and monotonic timer.
+8. **[`data/validation/model_evaluation/metrics.json`](file:///d:/blockchainbigdata/blockchain-streaming-anomaly-detection/data/validation/model_evaluation/metrics.json)** *(Generated)*:
    - Machine-readable evaluation metrics for all trained models.
-8. **[`data/validation/model_evaluation/MODEL_EVALUATION.md`](file:///d:/blockchainbigdata/blockchain-streaming-anomaly-detection/data/validation/model_evaluation/MODEL_EVALUATION.md)** *(Generated)*:
-   - Human-readable evaluation report with confusion matrices and performance tables.
-9. **[`data/validation/model_evaluation/test_predictions.parquet`](file:///d:/blockchainbigdata/blockchain-streaming-anomaly-detection/data/validation/model_evaluation/test_predictions.parquet)** *(Generated)*:
+9. **[`data/validation/model_evaluation/MODEL_EVALUATION.md`](file:///d:/blockchainbigdata/blockchain-streaming-anomaly-detection/data/validation/model_evaluation/MODEL_EVALUATION.md)** *(Generated & Audited)*:
+   - Human-readable evaluation report with confusion matrices, temporal drift root-cause analysis, GAT status, and multi-batch latency benchmark.
+10. **[`data/validation/model_evaluation/test_predictions.parquet`](file:///d:/blockchainbigdata/blockchain-streaming-anomaly-detection/data/validation/model_evaluation/test_predictions.parquet)** *(Generated)*:
    - Parquet table of test set predictions (16,670 rows) linked to `tx_id` and `time_step`.
+11. **[`data/validation/model_evaluation/latency_benchmark.json`](file:///d:/blockchainbigdata/blockchain-streaming-anomaly-detection/data/validation/model_evaluation/latency_benchmark.json)** *(Generated)*:
+   - High-resolution latency statistics (median, mean, p90, p95, min, max, throughput) across batch scales and hardware profiling.
 
 ---
 
@@ -172,19 +176,19 @@ Test execution was run across all 5 test modules using `.venv\Scripts\python -m 
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.12.10, pytest-8.3.4, pluggy-1.6.0
-collected 48 items
+collected 51 items
 
-tests/test_elliptic_preprocessing.py (11 tests) ...........             [ 22%]
-tests/test_graph_validation.py (8 tests) ........                       [ 39%]
-tests/test_model_pipeline.py (5 tests) .....                            [ 50%]
-tests/test_pipeline.py (11 tests) ...........                           [ 72%]
+tests/test_elliptic_preprocessing.py (11 tests) ...........             [ 21%]
+tests/test_graph_validation.py (8 tests) ........                       [ 37%]
+tests/test_model_pipeline.py (8 tests) ........                         [ 52%]
+tests/test_pipeline.py (11 tests) ...........                           [ 74%]
 tests/test_spark_specs.py (13 tests) .............                      [100%]
 
-============================= 48 passed in 21.17s =============================
+============================= 51 passed in 21.91s =============================
 ```
 
-- **Total Tests:** 48
-- **Passed:** **48 (100%)**
+- **Total Tests:** 51
+- **Passed:** **51 (100%)**
 - **Failed:** 0
 - **Skipped:** 0
 
@@ -195,3 +199,4 @@ tests/test_spark_specs.py (13 tests) .............                      [100%]
 1. **PyTorch Geometric Installation:** To execute the Spatio-Temporal GAT model on GPU/CPU, PyTorch and PyTorch Geometric should be installed in `.venv`. The code is already prepared and verified for execution.
 2. **Distributed Streaming Simulation:** Kafka and Flink streaming infrastructure can now consume the verified Zenodo Parquet stream and evaluate real-time scoring using the trained GBDT / Random Forest models.
 3. **No Uncommitted Automations:** All changes remain in the local working tree and have not been pushed to Git, in accordance with project policy.
+

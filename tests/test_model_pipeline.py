@@ -139,3 +139,110 @@ def test_zenodo_parquet_feature_order_and_column_isolation():
     probs = model.predict_proba(df.values[200:])
     assert len(probs) == len(df) - 200
     assert np.all((probs >= 0.0) & (probs <= 1.0))
+
+
+# ==============================================================================
+# 6. Evaluation Artifacts Consistency & Temporal Drift
+# ==============================================================================
+
+def test_saved_predictions_and_metrics_consistency():
+    """Verify test_predictions.parquet matches metrics.json confusion matrix and metrics."""
+    import json
+    pred_path = "data/validation/model_evaluation/test_predictions.parquet"
+    metrics_path = "data/validation/model_evaluation/metrics.json"
+
+    if not os.path.exists(pred_path) or not os.path.exists(metrics_path):
+        pytest.skip("Evaluation artifacts not found")
+
+    df_preds = pd.read_parquet(pred_path)
+    with open(metrics_path, "r") as f:
+        metrics = json.load(f)
+
+    assert len(df_preds) == 16670
+    assert "y_true" in df_preds.columns
+
+    for model_key in ["lr", "rf", "gbdt"]:
+        prob_col = f"prob_{model_key}"
+        pred_col = f"pred_{model_key}_thresh_selected"
+        assert prob_col in df_preds.columns
+        assert pred_col in df_preds.columns
+
+        model_meta = metrics["models"][model_key]
+        thresh = model_meta["selected_threshold"]
+        expected_cm = model_meta["test_results_at_selected_threshold"]["confusion_matrix"]
+
+        # Verify saved binary predictions match reported confusion matrix exactly
+        from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score
+        y_true = df_preds["y_true"].values
+        cm = confusion_matrix(y_true, df_preds[pred_col].values)
+        np.testing.assert_array_equal(cm, expected_cm)
+
+        # Precision, recall, f1 from saved predictions match metrics.json
+        p = precision_score(y_true, df_preds[pred_col].values, pos_label=1)
+        r = recall_score(y_true, df_preds[pred_col].values, pos_label=1)
+        f1 = f1_score(y_true, df_preds[pred_col].values, pos_label=1)
+
+        reported_p = model_meta["test_results_at_selected_threshold"]["precision"]
+        reported_r = model_meta["test_results_at_selected_threshold"]["recall"]
+        reported_f1 = model_meta["test_results_at_selected_threshold"]["f1_score"]
+
+        assert abs(p - reported_p) < 1e-4
+        assert abs(r - reported_r) < 1e-4
+        assert abs(f1 - reported_f1) < 1e-4
+
+        # Verify probabilities match predictions (>99.99% exact match, accounting for 4-decimal rounding in saved float)
+        recomputed_pred = (df_preds[prob_col] >= thresh).astype(int)
+        agreement = np.mean(df_preds[pred_col].values == recomputed_pred.values)
+        assert agreement >= 0.9999, f"Expected probability-to-pred agreement >= 99.99%, got {agreement}"
+
+
+def test_temporal_drift_concept_shift_step_43():
+    """Verify that temporal performance shift occurs at step 43 (AlphaBay shutdown)."""
+    pred_path = "data/validation/model_evaluation/test_predictions.parquet"
+    if not os.path.exists(pred_path):
+        pytest.skip("Evaluation predictions not found")
+
+    df_preds = pd.read_parquet(pred_path)
+    assert "time_step" in df_preds.columns
+
+    from sklearn.metrics import f1_score
+    # Pre-shutdown: steps 35-42
+    pre = df_preds[df_preds["time_step"] <= 42]
+    # Post-shutdown: steps 43-49
+    post = df_preds[df_preds["time_step"] >= 43]
+
+    # Pre-shutdown RF F1 should be high (> 0.75), post-shutdown should collapse (< 0.10)
+    rf_f1_pre = f1_score(pre["y_true"], pre["pred_rf_thresh_selected"], pos_label=1)
+    rf_f1_post = f1_score(post["y_true"], post["pred_rf_thresh_selected"], pos_label=1)
+
+    assert rf_f1_pre > 0.75, f"Expected pre-shutdown RF F1 > 0.75, got {rf_f1_pre}"
+    assert rf_f1_post < 0.10, f"Expected post-shutdown RF F1 < 0.10, got {rf_f1_post}"
+
+
+def test_latency_benchmark_contract():
+    """Verify reproducible latency benchmark report exists and satisfies contract."""
+    import json
+    bench_path = "data/validation/model_evaluation/latency_benchmark.json"
+    if not os.path.exists(bench_path):
+        pytest.skip("Latency benchmark report not found")
+
+    with open(bench_path, "r") as f:
+        data = json.load(f)
+
+    assert "hardware_environment" in data
+    assert "models" in data
+    assert "timer" in data["hardware_environment"]
+
+    for model_key in ["lr", "rf", "gbdt"]:
+        assert model_key in data["models"]
+        model_metrics = data["models"][model_key]["latency_metrics"]
+        assert "batch_1" in model_metrics
+        assert "batch_1000" in model_metrics
+        assert "batch_16670" in model_metrics
+
+        b1 = model_metrics["batch_1"]["batch_latency_ms"]
+        assert "median_p50" in b1
+        assert "p95" in b1
+        assert b1["median_p50"] > 0
+        assert b1["p95"] >= b1["median_p50"]
+

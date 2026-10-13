@@ -56,7 +56,13 @@ if HAS_TORCH and HAS_PYG:
             self.out = nn.Linear(hidden_channels, out_channels)
             self.dropout = nn.Dropout(dropout)
 
-        def forward(self, x: torch.Tensor, edge_index: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+        def forward(
+            self,
+            x: torch.Tensor,
+            edge_index: torch.Tensor,
+            t: torch.Tensor,
+            return_embedding: bool = False
+        ) -> Any:
             h1 = F.elu(self.gat1(x, edge_index))
             h1 = self.dropout(h1)
             h2 = F.elu(self.gat2(h1, edge_index))
@@ -64,7 +70,26 @@ if HAS_TORCH and HAS_PYG:
             h_fused = torch.cat([h2, t_embed], dim=1)
             h_dense = F.relu(self.fc_dense(h_fused))
             h_dense = self.dropout(h_dense)
-            return self.out(h_dense)
+            logits = self.out(h_dense)
+            if return_embedding:
+                return logits, h_dense
+            return logits
+
+        def extract_embedding(
+            self,
+            x: torch.Tensor,
+            edge_index: torch.Tensor,
+            t: torch.Tensor
+        ) -> torch.Tensor:
+            """Extract 32-dimensional penultimate graph embedding for hybrid fusion."""
+            self.eval()
+            with torch.no_grad():
+                h1 = F.elu(self.gat1(x, edge_index))
+                h2 = F.elu(self.gat2(h1, edge_index))
+                t_embed = F.elu(self.fc_time(t))
+                h_fused = torch.cat([h2, t_embed], dim=1)
+                h_dense = F.relu(self.fc_dense(h_fused))
+                return h_dense
 else:
     class SpatioTemporalGAT:
         """Placeholder class when PyTorch/PyG is not installed."""

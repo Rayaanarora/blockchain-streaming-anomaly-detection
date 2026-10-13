@@ -1,0 +1,130 @@
+{
+  "1": {
+    "HistGBDT": {
+      "median_ms": 2.081,
+      "p95_ms": 4.4428,
+      "per_tx_us": 2081.0
+    },
+    "XGBoost_Alone": {
+      "median_ms": 0.2597,
+      "p95_ms": 0.3871,
+      "per_tx_us": 259.75
+    },
+    "TGAT_Alone": {
+      "median_ms": 1.9657,
+      "p95_ms": 4.4383,
+      "per_tx_us": 1965.7
+    },
+    "TGAT_BoostNet_Fused_Inference": {
+      "median_ms": 0.3128,
+      "p95_ms": 0.6347,
+      "per_tx_us": 312.85
+    },
+    "TGAT_BoostNet_End_to_End": {
+      "median_ms": 2.4963,
+      "p95_ms": 2.8225,
+      "per_tx_us": 2496.3
+    },
+    "Random_Forest": {
+      "median_ms": 16.4059,
+      "p95_ms": 31.2631,
+      "per_tx_us": 16405.85
+    }
+  },
+  "64": {
+    "HistGBDT": {
+      "median_ms": 0.7552,
+      "p95_ms": 0.8224,
+      "per_tx_us": 11.8
+    },
+    "XGBoost_Alone": {
+      "median_ms": 0.7903,
+      "p95_ms": 0.9532,
+      "per_tx_us": 12.35
+    },
+    "TGAT_Alone": {
+      "median_ms": 1.6491,
+      "p95_ms": 2.0164,
+      "per_tx_us": 25.77
+    },
+    "TGAT_BoostNet_Fused_Inference": {
+      "median_ms": 0.5531,
+      "p95_ms": 0.8069,
+      "per_tx_us": 8.64
+    },
+    "TGAT_BoostNet_End_to_End": {
+      "median_ms": 2.3961,
+      "p95_ms": 3.0267,
+      "per_tx_us": 37.44
+    },
+    "Random_Forest": {
+      "median_ms": 15.929,
+      "p95_ms": 23.0987,
+      "per_tx_us": 248.89
+    }
+  },
+  "1000": {
+    "HistGBDT": {
+      "median_ms": 1.8033,
+      "p95_ms": 2.0469,
+      "per_tx_us": 1.8
+    },
+    "XGBoost_Alone": {
+      "median_ms": 0.9863,
+      "p95_ms": 1.4129,
+      "per_tx_us": 0.99
+    },
+    "TGAT_Alone": {
+      "median_ms": 2.9936,
+      "p95_ms": 5.286,
+      "per_tx_us": 2.99
+    },
+    "TGAT_BoostNet_Fused_Inference": {
+      "median_ms": 0.9404,
+      "p95_ms": 1.395,
+      "per_tx_us": 0.94
+    },
+    "TGAT_BoostNet_End_to_End": {
+      "median_ms": 6.3414,
+      "p95_ms": 32.0863,
+      "per_tx_us": 6.34
+    },
+    "Random_Forest": {
+      "median_ms": 26.5135,
+      "p95_ms": 27.5783,
+      "per_tx_us": 26.51
+    }
+  },
+  "16670": {
+    "HistGBDT": {
+      "median_ms": 26.3376,
+      "p95_ms": 28.9359,
+      "per_tx_us": 1.58
+    },
+    "XGBoost_Alone": {
+      "median_ms": 8.3596,
+      "p95_ms": 9.4838,
+      "per_tx_us": 0.5
+    },
+    "TGAT_Alone": {
+      "median_ms": 16.0211,
+      "p95_ms": 17.609,
+      "per_tx_us": 0.96
+    },
+    "TGAT_BoostNet_Fused_Inference": {
+      "median_ms": 12.1035,
+      "p95_ms": 15.4014,
+      "per_tx_us": 0.73
+    },
+    "TGAT_BoostNet_End_to_End": {
+      "median_ms": 36.1334,
+      "p95_ms": 45.8216,
+      "per_tx_us": 2.17
+    },
+    "Random_Forest": {
+      "median_ms": 37.7436,
+      "p95_ms": 39.0699,
+      "per_tx_us": 2.26
+    }
+  }
+}

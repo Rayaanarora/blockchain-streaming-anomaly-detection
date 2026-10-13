@@ -1,0 +1,196 @@
+{
+  "dataset_shape": {
+    "rows": 203769,
+    "features": 165
+  },
+  "missing_values_count": 0,
+  "infinite_values_count": 0,
+  "constant_features_train": [],
+  "outliers": {
+    "train_entries_beyond_5_sigma": 17402,
+    "train_entries_beyond_10_sigma": 2769
+  },
+  "split_distribution_summary": {
+    "train": {
+      "samples": 26381,
+      "global_mean": 0.08942881971597672,
+      "global_std": 1.4824719429016113,
+      "global_min": -13.093358039855957,
+      "global_max": 265.26324462890625,
+      "global_median": -0.09540268778800964
+    },
+    "validation": {
+      "samples": 3513,
+      "global_mean": 0.1102144867181778,
+      "global_std": 1.3165754079818726,
+      "global_min": -13.093358039855957,
+      "global_max": 189.18695068359375,
+      "global_median": -0.08014673739671707
+    },
+    "test": {
+      "samples": 16670,
+      "global_mean": 0.17862041294574738,
+      "global_std": 1.403841257095337,
+      "global_min": -13.093358039855957,
+      "global_max": 287.8915100097656,
+      "global_median": -0.05743638053536415
+    }
+  },
+  "high_correlation_pairs_count_above_0.95": 89,
+  "top_20_correlated_pairs": [
+    {
+      "feature_1": "f5",
+      "feature_2": "f14",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 1.0
+    },
+    {
+      "feature_1": "f22",
+      "feature_2": "f28",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 1.0
+    },
+    {
+      "feature_1": "f23",
+      "feature_2": "f29",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 1.0
+    },
+    {
+      "feature_1": "f24",
+      "feature_2": "f30",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 1.0
+    },
+    {
+      "feature_1": "f25",
+      "feature_2": "f31",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 1.0
+    },
+    {
+      "feature_1": "f58",
+      "feature_2": "f64",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 1.0
+    },
+    {
+      "feature_1": "f59",
+      "feature_2": "f65",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 1.0
+    },
+    {
+      "feature_1": "f60",
+      "feature_2": "f66",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 1.0
+    },
+    {
+      "feature_1": "f61",
+      "feature_2": "f67",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 1.0
+    },
+    {
+      "feature_1": "f26",
+      "feature_2": "f32",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 0.9991
+    },
+    {
+      "feature_1": "f27",
+      "feature_2": "f33",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 0.9991
+    },
+    {
+      "feature_1": "f152",
+      "feature_2": "f153",
+      "feature_1_type": "aggregated",
+      "feature_2_type": "aggregated",
+      "correlation": 0.9989
+    },
+    {
+      "feature_1": "f62",
+      "feature_2": "f68",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 0.9975
+    },
+    {
+      "feature_1": "f63",
+      "feature_2": "f69",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 0.9973
+    },
+    {
+      "feature_1": "f74",
+      "feature_2": "f75",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 0.9972
+    },
+    {
+      "feature_1": "f116",
+      "feature_2": "f117",
+      "feature_1_type": "aggregated",
+      "feature_2_type": "aggregated",
+      "correlation": 0.9959
+    },
+    {
+      "feature_1": "f164",
+      "feature_2": "f165",
+      "feature_1_type": "aggregated",
+      "feature_2_type": "aggregated",
+      "correlation": 0.9956
+    },
+    {
+      "feature_1": "f38",
+      "feature_2": "f39",
+      "feature_1_type": "local",
+      "feature_2_type": "local",
+      "correlation": 0.9949
+    },
+    {
+      "feature_1": "f158",
+      "feature_2": "f159",
+      "feature_1_type": "aggregated",
+      "feature_2_type": "aggregated",
+      "correlation": 0.9949
+    },
+    {
+      "feature_1": "f146",
+      "feature_2": "f147",
+      "feature_1_type": "aggregated",
+      "feature_2_type": "aggregated",
+      "correlation": 0.994
+    }
+  ],
+  "taxonomy_resolution": {
+    "total_feature_count": 165,
+    "local_feature_count": 93,
+    "aggregated_feature_count": 72,
+    "local_feature_range_1_indexed": "f1 to f93",
+    "aggregated_feature_range_1_indexed": "f94 to f165",
+    "csv_raw_column_indices": {
+      "tx_id": 0,
+      "time_step": 1,
+      "local_features_0_indexed": "col 2 to col 94 (93 columns)",
+      "aggregated_features_0_indexed": "col 95 to col 166 (72 columns)"
+    },
+    "resolution_explanation": "The discrepancy between 'f95-f165' and 'f100-f165' is resolved: In raw CSV 0-indexed column ordering, aggregated features start at column index 95. In 1-indexed feature column naming (ignoring txId and time_step), features f1-f93 (93 features) are local, and f94-f165 (72 features) are aggregated (93 + 72 = 165 total). The 'f100-f165' phrase in early course slides was an informal rounded estimate."
+  }
+}

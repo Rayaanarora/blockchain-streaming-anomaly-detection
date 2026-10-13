@@ -1,0 +1,50 @@
+================================================================================
+TGAT-BOOSTNET EXPERIMENT ENVIRONMENT MANIFEST
+================================================================================
+Generated: 2026-10-13T05:44:00Z
+Target Workspace: D:\blockchainbigdata\blockchain-streaming-anomaly-detection
+Target Interpreter: D:\blockchainbigdata\blockchain-streaming-anomaly-detection\.venv\Scripts\python.exe
+
+1. PLATFORM & HARDWARE ENVIRONMENT
+--------------------------------------------------------------------------------
+Operating System: Windows 11 (10.0.26200) AMD64
+Python Version: 3.12.10 (tags/v3.12.10:94e095b, Feb 11 2025, 08:33:04) [MSC v.1942 64 bit (AMD64)]
+CPU Processor: Intel64 Family 6 Model 183 Stepping 1, GenuineIntel
+CPU Cores: 10 Physical Cores / 16 Logical Processors
+Total Physical Memory: 15.69 GB RAM
+Available Disk Space (D: Drive): 126.6 GB Free
+Available Disk Space (C: Drive): 8.6 GB Free
+
+2. VERIFIED PACKAGE VERSIONS
+--------------------------------------------------------------------------------
+torch:                2.14.1+cpu (PyTorch Official CPU Wheel for Python 3.12)
+torchvision:          0.29.1+cpu
+torch_geometric:      2.8.1 (PyG Graph Neural Network Library)
+xgboost:              3.4.1 (Extreme Gradient Boosting Library)
+scikit-learn:         1.9.1
+scipy:                1.18.1
+numpy:                2.5.4
+pandas:               3.0.6
+pyarrow:              26.0.0
+pytest:               8.3.4
+networkx:             3.6.1
+
+3. DEPENDENCY INSTALLATION COMMANDS USED
+--------------------------------------------------------------------------------
+# Step 1: Install official PyTorch CPU wheel
+.venv\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# Step 2: Install PyTorch Geometric core & XGBoost
+.venv\Scripts\python.exe -m pip install torch-geometric xgboost
+
+4. SMOKE TEST VALIDATION STATUS
+--------------------------------------------------------------------------------
+Smoke Test Script: Dummy GATConv forward pass (10 nodes, 165 channels, 4 edges, 1 time feature)
+Execution Output:
+  Torch version: 2.14.1+cpu
+  PyG version: 2.8.1
+  XGBoost version: 3.4.1
+  is_gat_available(): True PyTorch and PyTorch Geometric are available.
+  Smoke test forward pass shape: torch.Size([10, 2])
+  SMOKE TEST PASSED!
+Status: CERTIFIED & READY FOR TRAINING
