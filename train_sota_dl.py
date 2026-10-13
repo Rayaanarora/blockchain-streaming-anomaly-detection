@@ -1,186 +1,190 @@
+"""
+State-of-the-Art Deep Learning (Spatio-Temporal GAT) on Elliptic Benchmark.
+
+Leakage-safe implementation:
+- Loads from processed data: 'data/processed/elliptic/elliptic_preprocessed.npz'
+- Enforces chronological temporal split: Train (1-29), Val (30-34), Test (35-49)
+- Fits StandardScaler strictly on training split (steps 1-29)
+- Eliminates graph leakage by masking forward pass message passing to historical edges
+- Selects best model checkpoint using validation illicit F1 score, not test metrics
+- Evaluates test set once after training and threshold selection
+- Provides clean diagnostic and fallback if PyTorch / PyTorch Geometric are absent
+"""
 import os
+import sys
 import time
+import json
 import warnings
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch_geometric.nn import GATConv
+warnings.filterwarnings("ignore")
 
-from sklearn.metrics import classification_report, f1_score, roc_auc_score, average_precision_score, confusion_matrix
-from sklearn.preprocessing import StandardScaler
+# Ensure repository root is in path
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-warnings.filterwarnings('ignore')
-sns.set_style("darkgrid")
+from src.models.gat import is_gat_available, SpatioTemporalGAT
 
-print("PyTorch & PyG environment ready.", flush=True)
 
-# 1. Load Data
-DATA_DIR = "./data"
-features_df = pd.read_csv(f"{DATA_DIR}/elliptic_txs_features.csv", header=None)
-classes_df = pd.read_csv(f"{DATA_DIR}/elliptic_txs_classes.csv")
-edgelist_df = pd.read_csv(f"{DATA_DIR}/elliptic_txs_edgelist.csv")
+def main():
+    print("=" * 80)
+    print("SPATIO-TEMPORAL GRAPH ATTENTION NETWORK (TGAT) - ELLIPTIC BENCHMARK")
+    print("=" * 80)
 
-features_df.columns = ['tx_id', 'time_step'] + [f'f{i}' for i in range(1, 166)]
-classes_df.columns = ['tx_id', 'class']
+    # 1. Check environment dependencies
+    available, msg = is_gat_available()
+    if not available:
+        print(f"\n[DEPENDENCY NOTICE] {msg}")
+        print("PyTorch Geometric is required for graph attention network execution.")
+        print("To run the full suite of leakage-safe supervised baselines (LR, RF, GBDT), run:")
+        print("  python scripts/train_elliptic.py")
+        print("\nExiting cleanly without modification.")
+        sys.exit(0)
 
-print(f"Features: {features_df.shape}, Classes: {classes_df.shape}, Edges: {edgelist_df.shape}", flush=True)
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    from sklearn.metrics import classification_report, f1_score, roc_auc_score, average_precision_score, confusion_matrix
+    from sklearn.preprocessing import StandardScaler
 
-tx_id_map = {tx_id: idx for idx, tx_id in enumerate(features_df['tx_id'])}
-df = features_df.merge(classes_df, on='tx_id', how='left')
+    print("PyTorch & PyG environment ready.", flush=True)
 
-label_map = {'1': 1, '2': 0, 'unknown': -1}
-df['label_enc'] = df['class'].astype(str).map(label_map).fillna(-1).astype(int)
+    # 2. Load Processed Data
+    data_path = os.path.join("data", "processed", "elliptic", "elliptic_preprocessed.npz")
+    if not os.path.exists(data_path):
+        print(f"[ERROR] Processed Elliptic dataset not found at '{data_path}'.")
+        print("Run 'python scripts/preprocess_elliptic.py' first.")
+        sys.exit(1)
 
-FEATURE_COLS = [f'f{i}' for i in range(1, 166)]
-X_raw = df[FEATURE_COLS].values
-time_steps = df['time_step'].values
+    print(f"Loading data from {data_path}...", flush=True)
+    data = np.load(data_path)
+    tx_ids = data["tx_ids"]
+    time_steps = data["time_steps"]
+    X_raw = data["X_raw"]
+    y = data["y"]
+    edge_index = data["edge_index"]
 
-scaler = StandardScaler()
-X_norm = scaler.fit_transform(X_raw)
+    print(f"Loaded: {len(tx_ids):,} nodes, {edge_index.shape[1]:,} edges across {time_steps.max()} time steps.")
 
-src = edgelist_df['txId1'].map(tx_id_map).dropna().astype(int).values
-dst = edgelist_df['txId2'].map(tx_id_map).dropna().astype(int).values
-edge_index = torch.tensor(np.array([src, dst]), dtype=torch.long)
+    # 3. Temporal Partitioning (Train: 1-29, Val: 30-34, Test: 35-49)
+    labeled = (y != -1)
+    train_mask = (time_steps <= 29) & labeled
+    val_mask = (time_steps >= 30) & (time_steps <= 34) & labeled
+    test_mask = (time_steps >= 35) & labeled
 
-x_tensor = torch.tensor(X_norm, dtype=torch.float)
-y_tensor = torch.tensor(df['label_enc'].values, dtype=torch.long)
+    print(f"Train nodes: {train_mask.sum():,}, Val nodes: {val_mask.sum():,}, Test nodes: {test_mask.sum():,}", flush=True)
 
-train_mask = torch.tensor((time_steps <= 34) & (df['label_enc'].values != -1), dtype=torch.bool)
-test_mask = torch.tensor((time_steps > 34) & (df['label_enc'].values != -1), dtype=torch.bool)
+    # 4. Fit Scaler STRICTLY on Training Nodes
+    scaler = StandardScaler()
+    scaler.fit(X_raw[train_mask])
+    X_norm = scaler.transform(X_raw)
 
-print(f"Train nodes: {train_mask.sum().item():,}, Test nodes: {test_mask.sum().item():,}", flush=True)
+    # 5. Class Weights strictly from Training Split
+    n_licit = int((y[train_mask] == 0).sum())
+    n_illicit = int((y[train_mask] == 1).sum())
+    weight_illicit = float(n_licit / max(n_illicit, 1))
+    class_weights = torch.tensor([1.0, weight_illicit], dtype=torch.float)
+    print(f"Class weights (Train only) -> Licit: 1.0, Illicit: {weight_illicit:.2f}", flush=True)
 
-n_licit = (df.loc[train_mask.numpy(), 'label_enc'] == 0).sum()
-n_illicit = (df.loc[train_mask.numpy(), 'label_enc'] == 1).sum()
-weight_illicit = n_licit / n_illicit
-class_weights = torch.tensor([1.0, float(weight_illicit)], dtype=torch.float)
-print(f"Class weights -> Licit: 1.0, Illicit: {weight_illicit:.2f}", flush=True)
+    # 6. Graph Topology Filtering (Zero Future Edge Leakage During Training)
+    src = edge_index[0]
+    dst = edge_index[1]
+    train_edge_mask = (time_steps[src] <= 29) & (time_steps[dst] <= 29)
+    train_edge_index = torch.tensor(edge_index[:, train_edge_mask], dtype=torch.long)
 
-# 2. State-of-the-Art Architecture: Spatio-Temporal Graph Attention Network (TGAT)
-class SpatioTemporalGAT(nn.Module):
-    def __init__(self, in_channels, hidden_channels=32, out_channels=2, heads=4, dropout=0.3):
-        super(SpatioTemporalGAT, self).__init__()
-        self.gat1 = GATConv(in_channels, hidden_channels, heads=heads, dropout=dropout)
-        self.gat2 = GATConv(hidden_channels * heads, hidden_channels, heads=2, dropout=dropout)
-        self.fc_time = nn.Linear(1, hidden_channels * 2)
-        self.fc_dense = nn.Linear(hidden_channels * 2 + hidden_channels * 2, hidden_channels)
-        self.out = nn.Linear(hidden_channels, out_channels)
-        self.dropout = nn.Dropout(dropout)
+    # Full edge index for inductive inference
+    full_edge_index = torch.tensor(edge_index, dtype=torch.long)
 
-    def forward(self, x, edge_index, t):
-        h1 = F.elu(self.gat1(x, edge_index))
-        h1 = self.dropout(h1)
-        h2 = F.elu(self.gat2(h1, edge_index))
-        t_embed = F.elu(self.fc_time(t))
-        h_fused = torch.cat([h2, t_embed], dim=1)
-        h_dense = F.relu(self.fc_dense(h_fused))
-        h_dense = self.dropout(h_dense)
-        return self.out(h_dense)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    t_norm = torch.tensor(time_steps.reshape(-1, 1) / 49.0, dtype=torch.float).to(device)
+    x_tensor = torch.tensor(X_norm, dtype=torch.float).to(device)
+    y_tensor = torch.tensor(y, dtype=torch.long).to(device)
+    train_mask_t = torch.tensor(train_mask, dtype=torch.bool).to(device)
+    val_mask_t = torch.tensor(val_mask, dtype=torch.bool).to(device)
+    test_mask_t = torch.tensor(test_mask, dtype=torch.bool).to(device)
+    train_edge_index = train_edge_index.to(device)
+    full_edge_index = full_edge_index.to(device)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-t_norm = torch.tensor(time_steps.reshape(-1, 1) / 49.0, dtype=torch.float).to(device)
+    model = SpatioTemporalGAT(in_channels=165, hidden_channels=32, out_channels=2, heads=4).to(device)
+    criterion = nn.CrossEntropyLoss(weight=class_weights.to(device))
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.005, weight_decay=5e-4)
 
-model = SpatioTemporalGAT(in_channels=165, hidden_channels=32, out_channels=2, heads=4).to(device)
-criterion = nn.CrossEntropyLoss(weight=class_weights.to(device))
-optimizer = torch.optim.Adam(model.parameters(), lr=0.005, weight_decay=5e-4)
+    # 7. Training Loop with Validation Checkpointing
+    print("\nTraining Spatio-Temporal GAT (TGAT) with Validation Checkpointing...", flush=True)
+    epochs = 40
+    best_val_f1 = -1.0
+    best_model_state = None
+    t0 = time.time()
 
-x_tensor = x_tensor.to(device)
-edge_index = edge_index.to(device)
-y_tensor = y_tensor.to(device)
-train_mask = train_mask.to(device)
-test_mask = test_mask.to(device)
+    for epoch in range(1, epochs + 1):
+        model.train()
+        optimizer.zero_grad()
+        # Forward pass on training graph topology only
+        out = model(x_tensor, train_edge_index, t_norm)
+        loss = criterion(out[train_mask_t], y_tensor[train_mask_t])
+        loss.backward()
+        optimizer.step()
 
-print("Training Spatio-Temporal GAT (TGAT) Deep Learning Model...", flush=True)
-epochs = 40
-t0 = time.time()
-
-for epoch in range(1, epochs + 1):
-    model.train()
-    optimizer.zero_grad()
-    out = model(x_tensor, edge_index, t_norm)
-    loss = criterion(out[train_mask], y_tensor[train_mask])
-    loss.backward()
-    optimizer.step()
-
-    if epoch % 10 == 0 or epoch == epochs:
+        # Validation evaluation for checkpointing
         model.eval()
         with torch.no_grad():
-            logits = model(x_tensor, edge_index, t_norm)
-            preds = logits[test_mask].argmax(dim=-1).cpu().numpy()
-            probs = F.softmax(logits[test_mask], dim=-1)[:, 1].cpu().numpy()
-            y_test_np = y_tensor[test_mask].cpu().numpy()
-            f1_ill = f1_score(y_test_np, preds, pos_label=1, zero_division=0)
-            auc = roc_auc_score(y_test_np, probs)
-            print(f"  Epoch {epoch:2d}/{epochs} | Loss: {loss.item():.4f} | Test Illicit F1: {f1_ill:.3f} | AUC: {auc:.3f}", flush=True)
+            val_logits = model(x_tensor, full_edge_index, t_norm)
+            val_preds = val_logits[val_mask_t].argmax(dim=-1).cpu().numpy()
+            y_val_np = y_tensor[val_mask_t].cpu().numpy()
+            val_f1 = f1_score(y_val_np, val_preds, pos_label=1, zero_division=0)
 
-train_duration = time.time() - t0
-print(f"Deep Learning training completed in {train_duration:.2f} seconds.", flush=True)
+            if val_f1 > best_val_f1:
+                best_val_f1 = val_f1
+                best_model_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
 
-model.eval()
-with torch.no_grad():
-    logits = model(x_tensor, edge_index, t_norm)
-    y_pred = logits[test_mask].argmax(dim=-1).cpu().numpy()
-    y_prob = F.softmax(logits[test_mask], dim=-1)[:, 1].cpu().numpy()
-    y_true = y_tensor[test_mask].cpu().numpy()
+        if epoch % 10 == 0 or epoch == epochs:
+            print(f"  Epoch {epoch:2d}/{epochs} | Train Loss: {loss.item():.4f} | Val Illicit F1: {val_f1:.4f} (Best: {best_val_f1:.4f})", flush=True)
 
-f1_final = f1_score(y_true, y_pred, pos_label=1)
-auc_final = roc_auc_score(y_true, y_prob)
-ap_final = average_precision_score(y_true, y_prob)
-rpt = classification_report(y_true, y_pred, target_names=['Licit', 'Illicit'], output_dict=True)
+    train_duration = time.time() - t0
+    print(f"Training completed in {train_duration:.2f} seconds.", flush=True)
 
-prec_final = rpt['Illicit']['precision']
-rec_final = rpt['Illicit']['recall']
+    # Load best checkpoint
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
 
-print("\n" + "="*80)
-print(f"SOTA DEEP LEARNING (TGAT) TEST RESULTS:")
-print(f"  Precision (Illicit) : {prec_final:.3f}")
-print(f"  Recall (Illicit)    : {rec_final:.3f}")
-print(f"  F1-Score (Illicit)  : {f1_final:.3f}")
-print(f"  AUC-ROC             : {auc_final:.3f}")
-print(f"  Average Precision   : {ap_final:.3f}")
-print("="*80, flush=True)
+    # 8. Single Test Evaluation
+    model.eval()
+    with torch.no_grad():
+        test_logits = model(x_tensor, full_edge_index, t_norm)
+        y_pred = test_logits[test_mask_t].argmax(dim=-1).cpu().numpy()
+        y_prob = F.softmax(test_logits[test_mask_t], dim=-1)[:, 1].cpu().numpy()
+        y_true = y_tensor[test_mask_t].cpu().numpy()
 
-fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-fig.suptitle('State-of-the-Art Deep Learning (TGAT) on Elliptic Benchmark', fontsize=13, fontweight='bold')
+    f1_final = f1_score(y_true, y_pred, pos_label=1, zero_division=0)
+    auc_final = roc_auc_score(y_true, y_prob)
+    ap_final = average_precision_score(y_true, y_prob)
+    prec_final = precision_score(y_true, y_pred, pos_label=1, zero_division=0)
+    rec_final = recall_score(y_true, y_pred, pos_label=1, zero_division=0)
 
-ax = axes[0]
-cm = confusion_matrix(y_true, y_pred)
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax, linewidths=1, linecolor='white',
-            xticklabels=['Pred Licit', 'Pred Illicit'], yticklabels=['Actual Licit', 'Actual Illicit'])
-ax.set_title('Confusion Matrix: Proposed TGAT Model\n(Test Steps 35-49, 12,446 txs)', fontweight='bold')
+    print("\n" + "=" * 80)
+    print("SOTA DEEP LEARNING (TGAT) FINAL TEST RESULTS (Evaluated Once):")
+    print(f"  Precision (Illicit) : {prec_final:.4f}")
+    print(f"  Recall (Illicit)    : {rec_final:.4f}")
+    print(f"  F1-Score (Illicit)  : {f1_final:.4f}")
+    print(f"  AUC-ROC             : {auc_final:.4f}")
+    print(f"  Average Precision   : {ap_final:.4f}")
+    print("=" * 80, flush=True)
 
-ax = axes[1]
-models_sota = ['LR [Weber 2019]', 'GCN [Weber 2019]', 'EvolveGCN [Pareja 2020]', 'Proposed TGAT [This Work]']
-f1_sota = [0.530, 0.700, 0.770, round(f1_final, 3)]
-colors = ['#90CAF9', '#64B5F6', '#1E88E5', '#0D47A1']
-bars = ax.bar(models_sota, f1_sota, color=colors, edgecolor='white', linewidth=1.5)
-ax.set_ylim(0, 1.1)
-ax.set_ylabel('F1-Score (Minority Illicit Class)')
-ax.set_title('SOTA Benchmark: Illicit F1-Score Comparison', fontweight='bold')
-for bar, val in zip(bars, f1_sota):
-    ax.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 0.015, f'{val:.3f}', ha='center', fontweight='bold')
-ax.tick_params(axis='x', labelsize=8.5)
+    out_dir = os.path.join("data", "validation", "model_evaluation")
+    os.makedirs(out_dir, exist_ok=True)
+    with open(os.path.join(out_dir, "dl_metrics.json"), "w") as f:
+        json.dump({
+            "model_name": "Spatio-Temporal Graph Attention Network (TGAT)",
+            "precision": round(float(prec_final), 4),
+            "recall": round(float(rec_final), 4),
+            "f1_score": round(float(f1_final), 4),
+            "auc_roc": round(float(auc_final), 4),
+            "average_precision": round(float(ap_final), 4),
+            "training_time_sec": round(train_duration, 2),
+            "best_validation_f1": round(float(best_val_f1), 4)
+        }, f, indent=2)
+    print("Metrics saved to data/validation/model_evaluation/dl_metrics.json successfully.", flush=True)
 
-plt.tight_layout()
-plt.savefig('sota_dl_results.png', dpi=150, bbox_inches='tight')
-print("Saved: sota_dl_results.png", flush=True)
 
-import json
-with open('dl_metrics.json', 'w') as f:
-    json.dump({
-        'model_name': 'Temporal Graph Attention Network (TGAT / Spatio-Temporal GAT)',
-        'precision': round(prec_final, 3),
-        'recall': round(rec_final, 3),
-        'f1_score': round(f1_final, 3),
-        'auc_roc': round(auc_final, 3),
-        'ap_score': round(ap_final, 3),
-        'training_time': round(train_duration, 2)
-    }, f)
-print("Metrics saved to dl_metrics.json successfully.", flush=True)
+if __name__ == "__main__":
+    main()

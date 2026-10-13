@@ -1,0 +1,394 @@
+{
+  "experiment_name": "Elliptic Leakage-Safe Temporal Benchmark",
+  "timestamp": "2026-10-13T05:10:33Z",
+  "protocol": {
+    "train_steps": "1 to 29",
+    "val_steps": "30 to 34",
+    "test_steps": "35 to 49",
+    "unknown_label_handling": "Preserved with label -1, strictly isolated from loss and evaluation",
+    "scaler_fitting_population": "Train nodes only (steps 1-29, labeled == True)",
+    "threshold_selection_protocol": "Validation partition only, maximizing illicit F1",
+    "test_evaluation_protocol": "Evaluated once after threshold selection finalized"
+  },
+  "sample_counts": {
+    "train_nodes": 26381,
+    "train_licit": 23510,
+    "train_illicit": 2871,
+    "train_imbalance_ratio": 8.1888,
+    "val_nodes": 3513,
+    "val_licit": 2922,
+    "val_illicit": 591,
+    "test_nodes": 16670,
+    "test_licit": 15587,
+    "test_illicit": 1083,
+    "test_illicit_prevalence": 0.065,
+    "unknown_nodes": 157205
+  },
+  "models": {
+    "lr": {
+      "model_name": "Cost-Sensitive Logistic Regression",
+      "model_family": "lr",
+      "random_seed": 42,
+      "class_weight_ratio": 8.1888,
+      "fit_time_sec": 0.5622,
+      "selected_threshold": 0.92,
+      "validation_results_at_selected_threshold": {
+        "model_family": "lr",
+        "threshold": 0.92,
+        "precision": 0.5443,
+        "recall": 0.8105,
+        "f1_score": 0.6513,
+        "macro_f1": 0.7795,
+        "weighted_f1": 0.8645,
+        "roc_auc": 0.922,
+        "average_precision": 0.6103,
+        "confusion_matrix": [
+          [
+            2521,
+            401
+          ],
+          [
+            112,
+            479
+          ]
+        ],
+        "test_samples": 3513,
+        "illicit_count": 591,
+        "licit_count": 2922,
+        "illicit_prevalence": 0.1682,
+        "fit_time_sec": 0.5622,
+        "inference_time_sec": 0.0,
+        "latency_ms_per_tx": 0.0
+      },
+      "validation_results_at_default_0.5": {
+        "model_family": "lr",
+        "threshold": 0.5,
+        "precision": 0.3686,
+        "recall": 0.9848,
+        "f1_score": 0.5364,
+        "macro_f1": 0.6646,
+        "weighted_f1": 0.7497,
+        "roc_auc": 0.922,
+        "average_precision": 0.6103,
+        "confusion_matrix": [
+          [
+            1925,
+            997
+          ],
+          [
+            9,
+            582
+          ]
+        ],
+        "test_samples": 3513,
+        "illicit_count": 591,
+        "licit_count": 2922,
+        "illicit_prevalence": 0.1682,
+        "fit_time_sec": 0.5622,
+        "inference_time_sec": 0.001,
+        "latency_ms_per_tx": 0.000282
+      },
+      "test_results_at_selected_threshold": {
+        "model_family": "lr",
+        "threshold": 0.92,
+        "precision": 0.1778,
+        "recall": 0.8476,
+        "f1_score": 0.2939,
+        "macro_f1": 0.5655,
+        "weighted_f1": 0.8019,
+        "roc_auc": 0.8503,
+        "average_precision": 0.2025,
+        "confusion_matrix": [
+          [
+            11341,
+            4246
+          ],
+          [
+            165,
+            918
+          ]
+        ],
+        "test_samples": 16670,
+        "illicit_count": 1083,
+        "licit_count": 15587,
+        "illicit_prevalence": 0.065,
+        "fit_time_sec": 0.5622,
+        "inference_time_sec": 0.002,
+        "latency_ms_per_tx": 0.00012
+      },
+      "test_results_at_default_0.5": {
+        "model_family": "lr",
+        "threshold": 0.5,
+        "precision": 0.1413,
+        "recall": 0.9464,
+        "f1_score": 0.2459,
+        "macro_f1": 0.4973,
+        "weighted_f1": 0.7159,
+        "roc_auc": 0.8503,
+        "average_precision": 0.2025,
+        "confusion_matrix": [
+          [
+            9359,
+            6228
+          ],
+          [
+            58,
+            1025
+          ]
+        ],
+        "test_samples": 16670,
+        "illicit_count": 1083,
+        "licit_count": 15587,
+        "illicit_prevalence": 0.065,
+        "fit_time_sec": 0.5622,
+        "inference_time_sec": 0.002,
+        "latency_ms_per_tx": 0.00012
+      }
+    },
+    "rf": {
+      "model_name": "Cost-Sensitive Random Forest",
+      "model_family": "rf",
+      "random_seed": 42,
+      "class_weight_ratio": 8.1888,
+      "fit_time_sec": 0.6193,
+      "selected_threshold": 0.67,
+      "validation_results_at_selected_threshold": {
+        "model_family": "rf",
+        "threshold": 0.67,
+        "precision": 0.9825,
+        "recall": 0.9509,
+        "f1_score": 0.9665,
+        "macro_f1": 0.9799,
+        "weighted_f1": 0.9888,
+        "roc_auc": 0.9964,
+        "average_precision": 0.9871,
+        "confusion_matrix": [
+          [
+            2912,
+            10
+          ],
+          [
+            29,
+            562
+          ]
+        ],
+        "test_samples": 3513,
+        "illicit_count": 591,
+        "licit_count": 2922,
+        "illicit_prevalence": 0.1682,
+        "fit_time_sec": 0.6193,
+        "inference_time_sec": 0.0263,
+        "latency_ms_per_tx": 0.007488
+      },
+      "validation_results_at_default_0.5": {
+        "model_family": "rf",
+        "threshold": 0.5,
+        "precision": 0.9304,
+        "recall": 0.9729,
+        "f1_score": 0.9512,
+        "macro_f1": 0.9705,
+        "weighted_f1": 0.9834,
+        "roc_auc": 0.9964,
+        "average_precision": 0.9871,
+        "confusion_matrix": [
+          [
+            2879,
+            43
+          ],
+          [
+            16,
+            575
+          ]
+        ],
+        "test_samples": 3513,
+        "illicit_count": 591,
+        "licit_count": 2922,
+        "illicit_prevalence": 0.1682,
+        "fit_time_sec": 0.6193,
+        "inference_time_sec": 0.026,
+        "latency_ms_per_tx": 0.007409
+      },
+      "test_results_at_selected_threshold": {
+        "model_family": "rf",
+        "threshold": 0.67,
+        "precision": 0.8266,
+        "recall": 0.6251,
+        "f1_score": 0.7119,
+        "macro_f1": 0.8472,
+        "weighted_f1": 0.965,
+        "roc_auc": 0.9269,
+        "average_precision": 0.7618,
+        "confusion_matrix": [
+          [
+            15445,
+            142
+          ],
+          [
+            406,
+            677
+          ]
+        ],
+        "test_samples": 16670,
+        "illicit_count": 1083,
+        "licit_count": 15587,
+        "illicit_prevalence": 0.065,
+        "fit_time_sec": 0.6193,
+        "inference_time_sec": 0.0395,
+        "latency_ms_per_tx": 0.002372
+      },
+      "test_results_at_default_0.5": {
+        "model_family": "rf",
+        "threshold": 0.5,
+        "precision": 0.5651,
+        "recall": 0.7331,
+        "f1_score": 0.6383,
+        "macro_f1": 0.8045,
+        "weighted_f1": 0.9492,
+        "roc_auc": 0.9269,
+        "average_precision": 0.7618,
+        "confusion_matrix": [
+          [
+            14976,
+            611
+          ],
+          [
+            289,
+            794
+          ]
+        ],
+        "test_samples": 16670,
+        "illicit_count": 1083,
+        "licit_count": 15587,
+        "illicit_prevalence": 0.065,
+        "fit_time_sec": 0.6193,
+        "inference_time_sec": 0.0435,
+        "latency_ms_per_tx": 0.002607
+      }
+    },
+    "gbdt": {
+      "model_name": "Cost-Sensitive Gradient Boosted Trees (HistGBDT)",
+      "model_family": "hgbdt",
+      "random_seed": 42,
+      "class_weight_ratio": 8.1888,
+      "fit_time_sec": 13.7521,
+      "selected_threshold": 0.56,
+      "validation_results_at_selected_threshold": {
+        "model_family": "hgbdt",
+        "threshold": 0.56,
+        "precision": 0.9679,
+        "recall": 0.9679,
+        "f1_score": 0.9679,
+        "macro_f1": 0.9807,
+        "weighted_f1": 0.9892,
+        "roc_auc": 0.9978,
+        "average_precision": 0.9908,
+        "confusion_matrix": [
+          [
+            2903,
+            19
+          ],
+          [
+            19,
+            572
+          ]
+        ],
+        "test_samples": 3513,
+        "illicit_count": 591,
+        "licit_count": 2922,
+        "illicit_prevalence": 0.1682,
+        "fit_time_sec": 13.7521,
+        "inference_time_sec": 0.0078,
+        "latency_ms_per_tx": 0.002223
+      },
+      "validation_results_at_default_0.5": {
+        "model_family": "hgbdt",
+        "threshold": 0.5,
+        "precision": 0.9565,
+        "recall": 0.9679,
+        "f1_score": 0.9622,
+        "macro_f1": 0.9772,
+        "weighted_f1": 0.9872,
+        "roc_auc": 0.9978,
+        "average_precision": 0.9908,
+        "confusion_matrix": [
+          [
+            2896,
+            26
+          ],
+          [
+            19,
+            572
+          ]
+        ],
+        "test_samples": 3513,
+        "illicit_count": 591,
+        "licit_count": 2922,
+        "illicit_prevalence": 0.1682,
+        "fit_time_sec": 13.7521,
+        "inference_time_sec": 0.004,
+        "latency_ms_per_tx": 0.001142
+      },
+      "test_results_at_selected_threshold": {
+        "model_family": "hgbdt",
+        "threshold": 0.56,
+        "precision": 0.7238,
+        "recall": 0.7258,
+        "f1_score": 0.7248,
+        "macro_f1": 0.8528,
+        "weighted_f1": 0.9642,
+        "roc_auc": 0.9376,
+        "average_precision": 0.7916,
+        "confusion_matrix": [
+          [
+            15287,
+            300
+          ],
+          [
+            297,
+            786
+          ]
+        ],
+        "test_samples": 16670,
+        "illicit_count": 1083,
+        "licit_count": 15587,
+        "illicit_prevalence": 0.065,
+        "fit_time_sec": 13.7521,
+        "inference_time_sec": 0.0247,
+        "latency_ms_per_tx": 0.00148
+      },
+      "test_results_at_default_0.5": {
+        "model_family": "hgbdt",
+        "threshold": 0.5,
+        "precision": 0.6843,
+        "recall": 0.7304,
+        "f1_score": 0.7066,
+        "macro_f1": 0.8427,
+        "weighted_f1": 0.9612,
+        "roc_auc": 0.9376,
+        "average_precision": 0.7916,
+        "confusion_matrix": [
+          [
+            15222,
+            365
+          ],
+          [
+            292,
+            791
+          ]
+        ],
+        "test_samples": 16670,
+        "illicit_count": 1083,
+        "licit_count": 15587,
+        "illicit_prevalence": 0.065,
+        "fit_time_sec": 13.7521,
+        "inference_time_sec": 0.0248,
+        "latency_ms_per_tx": 0.001487
+      }
+    },
+    "gat": {
+      "model_name": "Spatio-Temporal Graph Attention Network (TGAT)",
+      "status": "NOT_REQUESTED_OR_ENV_UNAVAILABLE",
+      "environment_check": "PyTorch ('torch') is not installed in the active environment."
+    }
+  }
+}
