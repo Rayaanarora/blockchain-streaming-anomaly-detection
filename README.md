@@ -62,6 +62,16 @@ To maintain scientific integrity, experimental results in this repository are di
   - **JVM Child Subprocess Peak:** **1,946.18 MB**.
   - **Total Process Tree Peak:** **2,036.46 MB**.
   - **Drive Isolation:** 0 bytes delta on Drive C: (9.66 GB free).
+- **Full ~10.86 GB Zenodo Dataset Preprocessing Run (`zenodo_preprocessing_report.json`):**
+  - **Dataset Scope:** Full Zenodo Record 7157854 (Part 2 of 4), Block Range 480000–489999 (all 18 archives `aa` through `ar`).
+  - **Raw Input:** **10,860,618,992 bytes** (~10.115 GiB uncompressed text, 85,721,542 records).
+  - **Completed Transactions Assembled:** **16,889,271** (0 dropped boundary transactions).
+  - **Throughput:** **6,132.89 raw lines/sec** across 86 distributed Spark splits.
+  - **Wall-Clock Runtime:** 13,977.35 s (~3.88 hours).
+  - **Output Parquet:** **2,132.83 MB** (~2.13 GB Snappy Parquet, 10 Hive partitions `block_chunk=480000-480999` through `489000-489999`).
+  - **Python Driver Memory:** Start: **90.37 MB** | Spark Write Peak: **90.23 MB** | Overall Peak: **940.46 MB** (bounded streaming via 1,000-row microbatches).
+  - **JVM Child Peak:** **4,645.73 MB** (~4.65 GB) | **Total Process Tree Peak:** **5,277.75 MB** (~5.28 GB).
+  - **Validation:** 100% row match (16,889,271 rows), 0 null primary keys, 0 negative fees, verified with `status: PASS`.
 
 ---
 
