@@ -1,0 +1,50 @@
+{
+  "1_HistGBDT_165": {
+    "tn": 15287,
+    "fp": 300,
+    "fn": 297,
+    "tp": 786
+  },
+  "2_XGBoost_Baseline_165": {
+    "tn": 15115,
+    "fp": 472,
+    "fn": 278,
+    "tp": 805
+  },
+  "3_TGAT_Alone_32": {
+    "tn": 14184,
+    "fp": 1403,
+    "fn": 536,
+    "tp": 547
+  },
+  "4_TGAT_BoostNet_Baseline_197": {
+    "tn": 15480,
+    "fp": 107,
+    "fn": 366,
+    "tp": 717
+  },
+  "5_TGAT_HistGBDT_197": {
+    "tn": 15488,
+    "fp": 99,
+    "fn": 351,
+    "tp": 732
+  },
+  "6_Tuned_XGBoost_165": {
+    "tn": 15008,
+    "fp": 579,
+    "fn": 281,
+    "tp": 802
+  },
+  "7_TGAT_BoostNet_Optimized_197": {
+    "tn": 15440,
+    "fp": 147,
+    "fn": 341,
+    "tp": 742
+  },
+  "8_TGAT_Hybrid_Ensemble": {
+    "tn": 15392,
+    "fp": 195,
+    "fn": 330,
+    "tp": 753
+  }
+}

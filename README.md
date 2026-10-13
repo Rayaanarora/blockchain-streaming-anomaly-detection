@@ -92,16 +92,20 @@ To maintain scientific integrity, experimental results in this repository are di
 ### Tier 3: Verified Empirical Evaluation of `TGAT-BoostNet` (Elliptic Benchmark on Windows)
 *Evidence Status:* **Empirically Evaluated & Reproducible.** Trained and evaluated locally on the 203,769-node Elliptic Bitcoin transaction graph under a strict chronological protocol (Train: Steps 1–29, Val: Steps 30–34, Test: Steps 35–49).
 
-- **Full Report**: [`data/validation/tgat_boostnet_experiment/TGAT_BOOSTNET_REPORT.md`](data/validation/tgat_boostnet_experiment/TGAT_BOOSTNET_REPORT.md)
-- **Model Checkpoints**: [`tgat_checkpoint.pt`](data/validation/tgat_boostnet_experiment/tgat_checkpoint.pt), [`tgat_boostnet_xgb.json`](data/validation/tgat_boostnet_experiment/tgat_boostnet_xgb.json)
+- **Full Reports**:
+  - Baseline Research Report: [`data/validation/tgat_boostnet_experiment/TGAT_BOOSTNET_REPORT.md`](data/validation/tgat_boostnet_experiment/TGAT_BOOSTNET_REPORT.md)
+  - Controlled 7-Configuration Ablation Report: [`data/validation/tgat_boostnet_improved/IMPROVED_TGAT_BOOSTNET_REPORT.md`](data/validation/tgat_boostnet_improved/IMPROVED_TGAT_BOOSTNET_REPORT.md)
+  - Audit & Baseline Reproducibility: [`data/validation/tgat_boostnet_improved/AUDIT_AND_BASELINE_REPRODUCIBILITY.md`](data/validation/tgat_boostnet_improved/AUDIT_AND_BASELINE_REPRODUCIBILITY.md)
+- **Model Checkpoints**: [`tgat_checkpoint.pt`](data/validation/tgat_boostnet_improved/tgat_checkpoint.pt), [`tgat_boostnet_xgb.json`](data/validation/tgat_boostnet_improved/tgat_boostnet_xgb.json), [`tgat_boostnet_opt_xgb.json`](data/validation/tgat_boostnet_improved/tgat_boostnet_opt_xgb.json)
 - **Authoritative Split Counts**: Train = 26,381 nodes (imbalance 8.19:1); Val = 3,513 nodes; Test = 16,670 nodes; Unlabelled = 157,205 nodes (100% masked from loss/eval). Step 35 authoritative count: 1,341 labelled (182 illicit, 1,159 licit).
-- **Ablation Results Across 5 Random Seeds (Mean ± Std)**:
-  - **TGAT-BoostNet (197 Fused Features)**: Precision: **$0.8718 \pm 0.0467$** | Recall: **$0.6643 \pm 0.0132$** | Illicit F1: **$0.7534 \pm 0.0149$** | ROC-AUC: **$0.9307 \pm 0.0011$**
+- **Ablation Comparison Across 5 Random Seeds (Mean ± Std)**:
+  - **TGAT Hybrid Ensemble (Configuration 8)**: Precision: **$0.8418 \pm 0.0751$** | Recall: **$0.6949 \pm 0.0116$** | Illicit F1: **$0.7598 \pm 0.0283$** | ROC-AUC: **$0.9365 \pm 0.0016$** (Top Overall F1)
+  - **TGAT-BoostNet Baseline (197 Fused Features)**: Precision: **$0.8718 \pm 0.0467$** | Recall: $0.6643 \pm 0.0132$ | Illicit F1: $0.7534 \pm 0.0149$ | ROC-AUC: $0.9307 \pm 0.0011$ (Highest Precision, Prunes 77.3% False Alarms)
+  - **TGAT-BoostNet Optimized (197 Fused Features)**: Precision: $0.8347 \pm 0.0522$ | Recall: $0.6754 \pm 0.0093$ | Illicit F1: $0.7458 \pm 0.0165$ | ROC-AUC: $0.9323 \pm 0.0017$
+  - **HistGBDT Baseline (165 Features)**: Precision: $0.8017 \pm 0.0817$ | Recall: $0.7221 \pm 0.0105$ | Illicit F1: $0.7579 \pm 0.0291$ | ROC-AUC: $0.9404 \pm 0.0017$
   - **XGBoost Alone (165 Features)**: Precision: $0.6304 \pm 0.0000$ | Recall: $0.7433 \pm 0.0000$ | Illicit F1: $0.6822 \pm 0.0000$ | ROC-AUC: $0.9276 \pm 0.0000$
   - **TGAT Alone (32-dim Graph Embedding)**: Precision: $0.2857 \pm 0.0166$ | Recall: $0.4925 \pm 0.0408$ | Illicit F1: $0.3606 \pm 0.0138$ | ROC-AUC: $0.8386 \pm 0.0057$
-  - **HistGBDT Baseline (165 Features)**: Precision: $0.8017 \pm 0.0817$ | Recall: $0.7221 \pm 0.0105$ | Illicit F1: $0.7579 \pm 0.0291$ | ROC-AUC: $0.9404 \pm 0.0017$
-  - **Random Forest Baseline (165 Features)**: Precision: $0.8046 \pm 0.0298$ | Recall: $0.6338 \pm 0.0087$ | Illicit F1: $0.7089 \pm 0.0125$ | ROC-AUC: $0.9328 \pm 0.0040$
-- **Operational Advantage**: Topological embeddings reduced false positive compliance alarms by **77.3%** compared to XGBoost Alone (from 472 false alarms down to 107 on Seed 42), elevating precision from 63.04% to 87.18%.
+- **Operational Advantage**: Adding 32-dim topological embeddings to XGBoost increased illicit F1 from 0.6822 to 0.7534 (+10.4% relative gain) and slashed false positive compliance alerts by **77.3%** (from 472 false alarms down to 107 on Seed 42).
 - **In-Memory Inference Latency**: TGAT-BoostNet achieves **0.31 ms / tx** for fused boosting inference and **2.50 ms / tx** for full end-to-end inference (amortizing to **6.34 $\mu$s / tx** at batch size 1,000).
 
 ---
