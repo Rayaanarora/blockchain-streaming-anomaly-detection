@@ -35,3 +35,41 @@
 - **Total Uncompressed Size:** 10,864,619,032 bytes (10.865 GB).
 - **Verification Status:** 18 of 18 archives present and verified with 100% MD5 hash match against Zenodo authoritative metadata.
 - **Processing Status:** Full 18-part distributed batch preprocessing completed successfully. All 10 partitions validated and promoted to `data/parquet/zenodo_features/` (16,889,271 rows, 2,132.83 MB).
+
+---
+
+## Elliptic Bitcoin Transaction Graph Dataset (Supervised Anomaly Detection)
+
+**Source:** [Weber et al., 2019 / Hugging Face authentic Kaggle replica](https://huggingface.co/datasets/yhoma/elliptic-bitcoin-dataset)  
+**Acquisition Date:** 2026-10-13  
+**Integrity Status:** **VERIFIED_PASS**
+
+### Raw Input Inventory
+| Filename | Local File Path | Records | File Size | Status |
+|---|---|---|---|---|
+| `elliptic_txs_features.csv` | `data/raw/elliptic/elliptic_txs_features.csv` | 203,769 | 689,683,771 B (657.73 MB) | **VERIFIED_PASS** |
+| `elliptic_txs_classes.csv` | `data/raw/elliptic/elliptic_txs_classes.csv` | 203,770 (incl. header) | 3,305,144 B (3.15 MB) | **VERIFIED_PASS** |
+| `elliptic_txs_edgelist.csv` | `data/raw/elliptic/elliptic_txs_edgelist.csv` | 234,356 (incl. header) | 4,470,584 B (4.26 MB) | **VERIFIED_PASS** |
+
+### Preprocessed Outputs
+Output Directory: `data/processed/elliptic/`
+- `elliptic_preprocessed.npz` (77,925,422 B / 74.32 MB): Compressed aligned tensors (`X_raw`, `X_scaled`, `y`, `tx_ids`, `time_steps`, `train_mask`, `test_mask`, `edge_index`, `edge_time_steps`).
+- `elliptic_features.parquet` (54,807,040 B / 52.27 MB): Node features (203,769 rows × 170 columns).
+- `elliptic_edgelist.parquet` (4,582,152 B / 4.37 MB): Directed graph edges (234,355 rows × 5 columns).
+- `elliptic_summary.json` (818 B): Metadata summary.
+- Audit Reports: `data/validation/elliptic_audit_report.json`, `data/validation/ELLIPTIC_AUDIT_REPORT.md`.
+
+### Feature Taxonomy & Partitioning
+- **Total Numerical Features:** 165 features (`f1` through `f165`)
+  - **Local Features:** 93 features (`f1` through `f93`: transaction in/out degrees, fee, volume, local input/output statistics)
+  - **Aggregated Features:** 72 features (`f94` through `f165`: 1-hop and 2-hop neighborhood min, max, std, correlation metrics)
+  - **Metadata / Masks / Labels:** 5 columns (`tx_id`, `time_step`, `label`, `train_mask`, `test_mask`) -> 170 columns total in `elliptic_features.parquet`
+- **Aligned Nodes:** 203,769
+- **Directed Edges:** 234,355
+- **Time Steps:** 1 through 49 (~2-week snapshots)
+- **Labels:** 42,019 licit (0), 4,545 illicit (1), 157,205 unknown (-1, strictly isolated from loss)
+- **Training Set (Steps 1–34):** 29,894 labeled transactions (26,432 licit, 3,462 illicit)
+- **Testing Set (Steps 35–49):** 16,670 labeled transactions (15,587 licit, 1,083 illicit)
+- **Leakage Prevention:** `StandardScaler` fitted strictly on training partition (`time_step <= 34` and labeled), preventing future-to-past test data leakage.
+
+

@@ -223,5 +223,57 @@
       "verification_status": "VERIFIED_PASS",
       "source": "Zenodo Record 7157854"
     }
-  ]
+  ],
+  "elliptic": {
+    "dataset_name": "Elliptic Bitcoin Dataset",
+    "source": "Weber et al., 2019 / Hugging Face authentic mirror (yhoma/elliptic-bitcoin-dataset)",
+    "verification_status": "VERIFIED_PASS",
+    "raw_files": [
+      {
+        "filename": "elliptic_txs_features.csv",
+        "local_path": "data/raw/elliptic/elliptic_txs_features.csv",
+        "size_bytes": 689683771,
+        "rows": 203769,
+        "columns": 167
+      },
+      {
+        "filename": "elliptic_txs_classes.csv",
+        "local_path": "data/raw/elliptic/elliptic_txs_classes.csv",
+        "size_bytes": 3305144,
+        "rows": 203769,
+        "columns": 2
+      },
+      {
+        "filename": "elliptic_txs_edgelist.csv",
+        "local_path": "data/raw/elliptic/elliptic_txs_edgelist.csv",
+        "size_bytes": 4470584,
+        "rows": 234355,
+        "columns": 2
+      }
+    ],
+    "processed_artifacts": [
+      {
+        "filename": "elliptic_preprocessed.npz",
+        "local_path": "data/processed/elliptic/elliptic_preprocessed.npz",
+        "size_bytes": 77925422
+      },
+      {
+        "filename": "elliptic_features.parquet",
+        "local_path": "data/processed/elliptic/elliptic_features.parquet",
+        "size_bytes": 54807040
+      },
+      {
+        "filename": "elliptic_edgelist.parquet",
+        "local_path": "data/processed/elliptic/elliptic_edgelist.parquet",
+        "size_bytes": 4582152
+      }
+    ],
+    "feature_taxonomy": {
+      "total_features": 165,
+      "local_features": 93,
+      "aggregated_features": 72,
+      "metadata_columns": 5,
+      "total_parquet_columns": 170
+    }
+  }
 }

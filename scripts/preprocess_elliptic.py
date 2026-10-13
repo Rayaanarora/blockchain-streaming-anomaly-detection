@@ -25,6 +25,12 @@ def parse_args():
         help="Directory containing elliptic_txs_features.csv, elliptic_txs_classes.csv, elliptic_txs_edgelist.csv"
     )
     parser.add_argument(
+        "--processed-dir",
+        type=str,
+        default="data/processed/elliptic",
+        help="Directory to save preprocessed artifacts (npz, parquet)"
+    )
+    parser.add_argument(
         "--output-dir",
         type=str,
         default="data/validation",
@@ -42,6 +48,7 @@ def parse_args():
 def main():
     args = parse_args()
     data_dir = args.data_dir
+    processed_dir = args.processed_dir
     output_dir = args.output_dir
 
     features_path = os.path.join(data_dir, "elliptic_txs_features.csv")
@@ -57,8 +64,9 @@ def main():
 
     print("=" * 80)
     print("ELLIPTIC BENCHMARK PREPROCESSING & AUDIT RUNNER")
-    print(f"Data directory: {data_dir}")
-    print(f"Output directory: {output_dir}")
+    print(f"Data directory:       {data_dir}")
+    print(f"Processed directory:  {processed_dir}")
+    print(f"Validation directory: {output_dir}")
     print("=" * 80)
 
     # Check file availability
@@ -91,23 +99,37 @@ def main():
     print("\nRunning audit and preprocessing pipeline...")
     dataset, report = preprocessor.audit_and_preprocess(features_df, classes_df, edgelist_df)
 
+    # 1. Save preprocessed dataset artifacts
+    print(f"\nPersisting preprocessed dataset to {processed_dir}...")
+    saved_paths = dataset.save(processed_dir)
+    for k, p in saved_paths.items():
+        sz_mb = os.path.getsize(p) / (1024 * 1024)
+        print(f"  [SAVED] {k}: {p} ({sz_mb:.2f} MB)")
+
+    # 2. Save validation reports
     os.makedirs(output_dir, exist_ok=True)
     json_path = os.path.join(output_dir, "elliptic_audit_report.json")
     md_path = os.path.join(output_dir, "ELLIPTIC_AUDIT_REPORT.md")
 
+    report_dict = report.to_dict()
     with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(report.to_dict(), f, indent=2)
+        json.dump(report_dict, f, indent=2)
 
     md_content = preprocessor.generate_markdown_audit_report(report)
     with open(md_path, "w", encoding="utf-8") as f:
         f.write(md_content)
 
+    # Also save a copy of report summary in processed_dir
+    with open(os.path.join(processed_dir, "elliptic_summary.json"), "w", encoding="utf-8") as f:
+        json.dump(report_dict, f, indent=2)
+
     print(f"\nAudit complete! Reports saved:")
     print(f"  JSON: {json_path}")
     print(f"  Markdown: {md_path}")
     print(f"\nAligned Nodes: {len(dataset.tx_ids):,}")
-    print(f"Train nodes:   {dataset.train_mask.sum():,} (Licit: {report.train_licit_count}, Illicit: {report.train_illicit_count})")
-    print(f"Test nodes:    {dataset.test_mask.sum():,} (Licit: {report.test_licit_count}, Illicit: {report.test_illicit_count})")
+    print(f"Train nodes:   {dataset.train_mask.sum():,} (Licit: {report.train_licit_count:,}, Illicit: {report.train_illicit_count:,})")
+    print(f"Test nodes:    {dataset.test_mask.sum():,} (Licit: {report.test_licit_count:,}, Illicit: {report.test_illicit_count:,})")
+
 
 
 if __name__ == "__main__":

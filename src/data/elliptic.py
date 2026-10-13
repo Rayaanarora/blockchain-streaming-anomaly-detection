@@ -14,7 +14,11 @@ from sklearn.preprocessing import StandardScaler
 
 
 ELLIPTIC_NUM_FEATURES = 165
+ELLIPTIC_NUM_LOCAL_FEATURES = 93       # f1..f93: Transaction-level local metrics (degrees, fee, volume, local input/output statistics)
+ELLIPTIC_NUM_AGG_FEATURES = 72         # f94..f165: 1-hop & 2-hop neighborhood aggregated metrics (min, max, std, correlation of neighbors)
 FEATURE_COL_NAMES = [f"f{i}" for i in range(1, ELLIPTIC_NUM_FEATURES + 1)]
+LOCAL_FEATURE_COL_NAMES = [f"f{i}" for i in range(1, ELLIPTIC_NUM_LOCAL_FEATURES + 1)]
+AGG_FEATURE_COL_NAMES = [f"f{i}" for i in range(ELLIPTIC_NUM_LOCAL_FEATURES + 1, ELLIPTIC_NUM_FEATURES + 1)]
 
 
 @dataclass
@@ -39,6 +43,98 @@ class PreprocessedDataset:
     edge_index: np.ndarray             # Directed edges (2, E) aligned to node indices
     edge_time_steps: np.ndarray        # Edge time steps (edges within or across steps)
     node_to_idx: Dict[int, int]        # Map from tx_id to array index
+
+    def save(self, output_dir: str) -> Dict[str, str]:
+        """
+        Persist preprocessed dataset to disk.
+        Produces:
+          - elliptic_preprocessed.npz: Compressed NumPy archive of all aligned tensors
+          - elliptic_features.parquet: Tabular Parquet of scaled features, masks, and labels
+          - elliptic_edgelist.parquet: Directed edge list Parquet with mapped indices
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        paths = {}
+
+        # 1. NumPy Compressed Archive
+        npz_path = os.path.join(output_dir, "elliptic_preprocessed.npz")
+        save_dict = {
+            "tx_ids": self.tx_ids,
+            "time_steps": self.time_steps,
+            "X_raw": self.X_raw,
+            "X_scaled": self.X_scaled,
+            "y": self.y,
+            "train_mask": self.train_mask,
+            "test_mask": self.test_mask,
+            "edge_index": self.edge_index,
+            "edge_time_steps": self.edge_time_steps,
+        }
+        if self.val_mask is not None:
+            save_dict["val_mask"] = self.val_mask
+        np.savez_compressed(npz_path, **save_dict)
+        paths["npz"] = npz_path
+
+        # 2. Node Features Parquet
+        feat_cols = [f"f{i}" for i in range(1, self.X_scaled.shape[1] + 1)]
+        df_nodes = pd.DataFrame(self.X_scaled, columns=feat_cols)
+        df_nodes.insert(0, "test_mask", self.test_mask.astype(bool))
+        if self.val_mask is not None:
+            df_nodes.insert(0, "val_mask", self.val_mask.astype(bool))
+        df_nodes.insert(0, "train_mask", self.train_mask.astype(bool))
+        df_nodes.insert(0, "label", self.y.astype(int))
+        df_nodes.insert(0, "time_step", self.time_steps.astype(int))
+        df_nodes.insert(0, "tx_id", self.tx_ids)
+
+        parquet_features_path = os.path.join(output_dir, "elliptic_features.parquet")
+        df_nodes.to_parquet(parquet_features_path, index=False, engine="pyarrow")
+        paths["features_parquet"] = parquet_features_path
+
+        # 3. Directed Edge List Parquet
+        src_indices = self.edge_index[0].astype(int)
+        dst_indices = self.edge_index[1].astype(int)
+        src_tx_ids = self.tx_ids[src_indices]
+        dst_tx_ids = self.tx_ids[dst_indices]
+
+        df_edges = pd.DataFrame({
+            "source_tx_id": src_tx_ids,
+            "target_tx_id": dst_tx_ids,
+            "source_idx": src_indices,
+            "target_idx": dst_indices,
+            "time_step": self.edge_time_steps.astype(int)
+        })
+        parquet_edges_path = os.path.join(output_dir, "elliptic_edgelist.parquet")
+        df_edges.to_parquet(parquet_edges_path, index=False, engine="pyarrow")
+        paths["edgelist_parquet"] = parquet_edges_path
+
+        return paths
+
+    @classmethod
+    def load(cls, output_dir: str) -> "PreprocessedDataset":
+        """
+        Load preprocessed dataset from saved directory.
+        """
+        npz_path = os.path.join(output_dir, "elliptic_preprocessed.npz")
+        if not os.path.exists(npz_path):
+            raise FileNotFoundError(f"Cannot load preprocessed dataset: {npz_path} does not exist.")
+
+        data = np.load(npz_path)
+        tx_ids = data["tx_ids"]
+        node_to_idx = {tx_id: idx for idx, tx_id in enumerate(tx_ids)}
+        val_mask = data["val_mask"] if "val_mask" in data.files else None
+
+        return cls(
+            tx_ids=tx_ids,
+            time_steps=data["time_steps"],
+            X_raw=data["X_raw"],
+            X_scaled=data["X_scaled"],
+            y=data["y"],
+            train_mask=data["train_mask"],
+            val_mask=val_mask,
+            test_mask=data["test_mask"],
+            edge_index=data["edge_index"],
+            edge_time_steps=data["edge_time_steps"],
+            node_to_idx=node_to_idx
+        )
+
 
 
 @dataclass

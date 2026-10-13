@@ -12,6 +12,7 @@ Verifies:
 - Cross-timestep edge detection
 - Deterministic preprocessing outputs
 """
+import os
 import pytest
 import numpy as np
 import pandas as pd
@@ -21,6 +22,8 @@ from src.data.elliptic import (
     PreprocessedDataset,
     PreprocessingAuditReport,
     ELLIPTIC_NUM_FEATURES,
+    ELLIPTIC_NUM_LOCAL_FEATURES,
+    ELLIPTIC_NUM_AGG_FEATURES,
 )
 
 
@@ -270,3 +273,58 @@ def test_deterministic_preprocessing():
     np.testing.assert_allclose(d1.X_scaled, d2.X_scaled)
     np.testing.assert_array_equal(d1.y, d2.y)
     np.testing.assert_array_equal(d1.edge_index, d2.edge_index)
+
+
+# ==============================================================================
+# 10. Persistence & Round-Trip Loading
+# ==============================================================================
+
+def test_save_and_load_preprocessed_dataset(tmp_path):
+    """Verify preprocessed dataset serialization and deserialization roundtrip."""
+    features_df, classes_df, edgelist_df = create_synthetic_elliptic_data(15)
+    preprocessor = EllipticPreprocessor()
+    dataset, _ = preprocessor.audit_and_preprocess(features_df, classes_df, edgelist_df)
+
+    save_dir = str(tmp_path / "elliptic_processed")
+    saved_paths = dataset.save(save_dir)
+
+    assert os.path.exists(saved_paths["npz"])
+    assert os.path.exists(saved_paths["features_parquet"])
+    assert os.path.exists(saved_paths["edgelist_parquet"])
+
+    # Verify Parquet tables can be read
+    df_feat = pd.read_parquet(saved_paths["features_parquet"])
+    assert len(df_feat) == len(dataset.tx_ids)
+    assert "tx_id" in df_feat.columns
+    assert "label" in df_feat.columns
+    assert "f1" in df_feat.columns
+
+    df_edges = pd.read_parquet(saved_paths["edgelist_parquet"])
+    assert len(df_edges) == dataset.edge_index.shape[1]
+    assert "source_tx_id" in df_edges.columns
+    assert "target_tx_id" in df_edges.columns
+
+    # Verify round-trip load
+    loaded = PreprocessedDataset.load(save_dir)
+    np.testing.assert_array_equal(loaded.tx_ids, dataset.tx_ids)
+    np.testing.assert_array_equal(loaded.time_steps, dataset.time_steps)
+    np.testing.assert_allclose(loaded.X_scaled, dataset.X_scaled)
+    np.testing.assert_array_equal(loaded.y, dataset.y)
+    np.testing.assert_array_equal(loaded.train_mask, dataset.train_mask)
+    np.testing.assert_array_equal(loaded.test_mask, dataset.test_mask)
+    np.testing.assert_array_equal(loaded.edge_index, dataset.edge_index)
+    np.testing.assert_array_equal(loaded.edge_time_steps, dataset.edge_time_steps)
+
+
+# ==============================================================================
+# 11. Feature Taxonomy & Dimensionality Invariance
+# ==============================================================================
+
+def test_elliptic_feature_taxonomy():
+    """Verify exact count and partitioning of local vs aggregated features."""
+    assert ELLIPTIC_NUM_LOCAL_FEATURES == 93
+    assert ELLIPTIC_NUM_AGG_FEATURES == 72
+    assert ELLIPTIC_NUM_LOCAL_FEATURES + ELLIPTIC_NUM_AGG_FEATURES == ELLIPTIC_NUM_FEATURES
+    assert ELLIPTIC_NUM_FEATURES == 165
+
+

@@ -1,0 +1,31 @@
+{
+  "total_raw_feature_rows": 203769,
+  "total_raw_class_rows": 203769,
+  "total_raw_edge_rows": 234355,
+  "feature_cols_detected": 167,
+  "duplicate_tx_ids_features": 0,
+  "duplicate_tx_ids_classes": 0,
+  "duplicate_edges": 0,
+  "missing_values_features": 0,
+  "non_finite_values_features": 0,
+  "unmatched_feature_ids": 0,
+  "unmatched_class_ids": 0,
+  "unmatched_edge_endpoints": 0,
+  "cross_timestep_edges": 0,
+  "licit_count": 42019,
+  "illicit_count": 4545,
+  "unknown_count": 157205,
+  "invalid_label_count": 0,
+  "time_step_range": [
+    1,
+    49
+  ],
+  "train_nodes_count": 29894,
+  "val_nodes_count": 0,
+  "test_nodes_count": 16670,
+  "train_licit_count": 26432,
+  "train_illicit_count": 3462,
+  "test_licit_count": 15587,
+  "test_illicit_count": 1083,
+  "exclusions_log": []
+}

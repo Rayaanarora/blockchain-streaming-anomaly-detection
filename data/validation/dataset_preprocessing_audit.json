@@ -1,0 +1,295 @@
+{
+  "audit_version": "1.1.0",
+  "audit_timestamp": "2026-10-13T04:55:00Z",
+  "project": "Distributed Streaming Anomaly Detection on Blockchain Transaction Graphs",
+  "repository_path": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection",
+  "overall_status": "PASS",
+  "summary": {
+    "zenodo_status": "PASS",
+    "elliptic_status": "PASS",
+    "both_ready_for_downstream": true
+  },
+  "datasets": {
+    "zenodo": {
+      "dataset_name": "Zenodo Bitcoin Transaction Dataset (Part 2, blocks 480000-489999)",
+      "source": "Zenodo Record 7157854",
+      "status": "PASS",
+      "preprocessed_at_beginning": true,
+      "work_performed": "Audit and integrity verification without reprocessing: verified all 18 raw archive parts against Zenodo API MD5 checksums (18 verified, 0 corrupted, 0 missing), directly inspected Parquet metadata across all 10 block-range partitions in data/parquet/zenodo_features/, recalculated exact per-partition row counts and file sizes directly from Parquet metadata, reconciled row count against raw records, confirmed 0 null primary keys and 0 negative non-coinbase fees.",
+      "inputs": {
+        "directory": "data/raw",
+        "archive_count": 18,
+        "parts_range": "aa through ar",
+        "total_compressed_bytes": 3615895097,
+        "total_uncompressed_bytes": 10860618992,
+        "checksum_verification": "VERIFIED_ALL_18_MATCH",
+        "verification_tool_output": "Summary: 18 verified, 0 corrupted, 0 not downloaded"
+      },
+      "outputs": {
+        "directory": "data/parquet/zenodo_features",
+        "format": "Parquet (snappy compression)",
+        "success_marker": true,
+        "total_rows": 16889271,
+        "total_bytes": 2236432286,
+        "total_mb": 2132.83,
+        "partitions_count": 10,
+        "partition_details": [
+          {
+            "partition": "block_chunk=480000-480999",
+            "rows": 1953743,
+            "bytes": 256819331,
+            "mb": 244.92,
+            "files": ["part-00000.c000.snappy.parquet"]
+          },
+          {
+            "partition": "block_chunk=481000-481999",
+            "rows": 1961416,
+            "bytes": 258319678,
+            "mb": 246.35,
+            "files": ["part-00000.c000.snappy.parquet"]
+          },
+          {
+            "partition": "block_chunk=482000-482999",
+            "rows": 1770937,
+            "bytes": 234485355,
+            "mb": 223.62,
+            "files": ["part-00000.c000.snappy.parquet"]
+          },
+          {
+            "partition": "block_chunk=483000-483999",
+            "rows": 1462493,
+            "bytes": 194343257,
+            "mb": 185.34,
+            "files": ["part-00000.c000.snappy.parquet"]
+          },
+          {
+            "partition": "block_chunk=484000-484999",
+            "rows": 1435850,
+            "bytes": 190507773,
+            "mb": 181.68,
+            "files": ["part-00000.c000.snappy.parquet"]
+          },
+          {
+            "partition": "block_chunk=485000-485999",
+            "rows": 1475753,
+            "bytes": 196376120,
+            "mb": 187.28,
+            "files": ["part-00000.c000.snappy.parquet"]
+          },
+          {
+            "partition": "block_chunk=486000-486999",
+            "rows": 1568757,
+            "bytes": 208189270,
+            "mb": 198.54,
+            "files": ["part-00000.c000.snappy.parquet"]
+          },
+          {
+            "partition": "block_chunk=487000-487999",
+            "rows": 1682130,
+            "bytes": 223433361,
+            "mb": 213.08,
+            "files": ["part-00000.c000.snappy.parquet"]
+          },
+          {
+            "partition": "block_chunk=488000-488999",
+            "rows": 1634832,
+            "bytes": 216522691,
+            "mb": 206.49,
+            "files": ["part-00000.c000.snappy.parquet"]
+          },
+          {
+            "partition": "block_chunk=489000-489999",
+            "rows": 1943360,
+            "bytes": 257435450,
+            "mb": 245.51,
+            "files": ["part-00000.c000.snappy.parquet"]
+          }
+        ]
+      },
+      "schema": {
+        "physical_columns_count": 18,
+        "virtual_partition_column": "block_chunk",
+        "dataset_columns_count": 19,
+        "model_features_count": 15,
+        "identifiers": [
+          {"name": "tx_hash", "type": "string"},
+          {"name": "block_id", "type": "int64"},
+          {"name": "timestamp", "type": "int64"}
+        ],
+        "features": [
+          {"name": "num_inputs", "type": "int64"},
+          {"name": "num_outputs", "type": "int64"},
+          {"name": "total_input_satoshi", "type": "int64"},
+          {"name": "total_output_satoshi", "type": "int64"},
+          {"name": "fee_satoshi", "type": "int64"},
+          {"name": "fee_rate", "type": "float64"},
+          {"name": "is_coinbase", "type": "float64"},
+          {"name": "avg_input_val", "type": "float64"},
+          {"name": "avg_output_val", "type": "float64"},
+          {"name": "input_output_count_ratio", "type": "float64"},
+          {"name": "input_output_val_ratio", "type": "float64"},
+          {"name": "max_input_prior_tx_count", "type": "float64"},
+          {"name": "avg_input_prior_tx_count", "type": "float64"},
+          {"name": "max_input_prior_volume_satoshi", "type": "float64"},
+          {"name": "new_address_fraction", "type": "float64"}
+        ]
+      },
+      "data_hygiene_and_integrity": {
+        "raw_record_count": 85721542,
+        "malformed_rows": 0,
+        "incomplete_boundary_transactions_retained": 111,
+        "null_primary_keys": 0,
+        "negative_fee_violations": 0,
+        "verification_method": "direct_parquet_file_scan_and_report_reconciliation"
+      },
+      "checks_verification_basis": {
+        "archive_presence_and_checksums": "verified_directly_by_reading_actual_files_and_zenodo_api_md5",
+        "parquet_directory_and_success_marker": "verified_directly_by_reading_actual_files",
+        "parquet_row_counts_and_schema": "verified_directly_by_reading_actual_parquet_metadata",
+        "null_keys_and_negative_fees": "verified_directly_by_scanning_all_16889271_records",
+        "raw_lines_and_malformed_counts": "supported_by_existing_spark_execution_report",
+        "streaming_window_causality": "inferred_from_source_code_and_unit_tests"
+      }
+    },
+    "elliptic": {
+      "dataset_name": "Elliptic Bitcoin Transaction Graph Dataset",
+      "source": "Weber et al., 2019 / Hugging Face authentic Kaggle mirror (yhoma/elliptic-bitcoin-dataset)",
+      "status": "PASS",
+      "preprocessed_at_beginning": false,
+      "work_performed": "Acquired authentic raw CSVs. Implemented save() and load() methods in PreprocessedDataset in src/data/elliptic.py supporting NumPy compressed arrays and Parquet tables. Established exact feature taxonomy (93 local + 72 aggregated = 165 total features). Enhanced scripts/preprocess_elliptic.py CLI runner to persist artifacts. Executed full preprocessing on real data: normalized headers, verified zero duplicate IDs, verified label encoding with unknown isolation (-1), strictly aligned features, labels, and edges on tx_id, fitted StandardScaler strictly on training nodes (time_step <= 34 and labeled), and wrote persisted artifacts to data/processed/elliptic/ and reports to data/validation/.",
+      "inputs": {
+        "directory": "data/raw/elliptic",
+        "files": [
+          {
+            "name": "elliptic_txs_features.csv",
+            "bytes": 689683771,
+            "rows": 203769,
+            "columns": 167
+          },
+          {
+            "name": "elliptic_txs_classes.csv",
+            "bytes": 3305144,
+            "rows": 203769,
+            "columns": 2
+          },
+          {
+            "name": "elliptic_txs_edgelist.csv",
+            "bytes": 4470584,
+            "rows": 234355,
+            "columns": 2
+          }
+        ]
+      },
+      "outputs": {
+        "directory": "data/processed/elliptic",
+        "files": [
+          {
+            "name": "elliptic_preprocessed.npz",
+            "bytes": 77925422,
+            "format": "NumPy Compressed Archive",
+            "contents": "tx_ids, time_steps, X_raw, X_scaled, y, train_mask, test_mask, edge_index, edge_time_steps"
+          },
+          {
+            "name": "elliptic_features.parquet",
+            "bytes": 54807040,
+            "format": "Parquet (pyarrow)",
+            "rows": 203769,
+            "columns": 170,
+            "contents": "tx_id, time_step, label, train_mask, test_mask, f1..f165"
+          },
+          {
+            "name": "elliptic_edgelist.parquet",
+            "bytes": 4582152,
+            "format": "Parquet (pyarrow)",
+            "rows": 234355,
+            "columns": 5,
+            "contents": "source_tx_id, target_tx_id, source_idx, target_idx, time_step"
+          },
+          {
+            "name": "elliptic_summary.json",
+            "bytes": 818,
+            "format": "JSON Metadata"
+          }
+        ],
+        "validation_reports": [
+          "data/validation/elliptic_audit_report.json",
+          "data/validation/ELLIPTIC_AUDIT_REPORT.md"
+        ]
+      },
+      "feature_taxonomy": {
+        "total_numerical_features": 165,
+        "local_features_count": 93,
+        "local_features_range": "f1 through f93",
+        "local_features_description": "Transaction-level metrics including degrees, fees, financial volume, and local input/output statistics",
+        "aggregated_features_count": 72,
+        "aggregated_features_range": "f94 through f165",
+        "aggregated_features_description": "1-hop and 2-hop neighborhood aggregated metrics (min, max, std, correlation of neighbor transactions)",
+        "sum_check": "93 + 72 = 165",
+        "metadata_columns_count": 5,
+        "metadata_columns": ["tx_id", "time_step", "label", "train_mask", "test_mask"],
+        "total_columns_features_parquet": 170
+      },
+      "counts_and_distributions": {
+        "total_nodes": 203769,
+        "total_edges": 234355,
+        "time_step_range": [1, 49],
+        "labels": {
+          "licit_count": 42019,
+          "illicit_count": 4545,
+          "unknown_count": 157205,
+          "invalid_label_count": 0,
+          "unknown_handling": "Preserved with label -1; strictly isolated from supervised training loss"
+        },
+        "inductive_split": {
+          "train_cutoff_step": 34,
+          "train_nodes_count": 29894,
+          "train_licit_count": 26432,
+          "train_illicit_count": 3462,
+          "train_imbalance_ratio": 7.63,
+          "test_nodes_count": 16670,
+          "test_licit_count": 15587,
+          "test_illicit_count": 1083,
+          "test_imbalance_ratio": 14.39
+        }
+      },
+      "data_hygiene_and_integrity": {
+        "duplicate_tx_ids_features": 0,
+        "duplicate_tx_ids_classes": 0,
+        "duplicate_edges": 0,
+        "missing_values_features": 0,
+        "non_finite_values_features": 0,
+        "unmatched_feature_ids": 0,
+        "unmatched_class_ids": 0,
+        "unmatched_edge_endpoints": 0,
+        "cross_timestep_edges": 0,
+        "leakage_safeguard": "StandardScaler fitted strictly on training partition (time_step <= 34 and labeled == True), then inductively transformed on test partition."
+      },
+      "checks_verification_basis": {
+        "raw_csv_ingestion": "verified_directly_by_reading_actual_files",
+        "id_alignment_and_duplicates": "verified_directly_by_reading_actual_files",
+        "feature_taxonomy_and_dimensions": "verified_directly_by_reading_actual_parquet_and_code",
+        "missing_and_infinite_values": "verified_directly_by_reading_actual_files",
+        "label_mapping_and_unknown_isolation": "verified_directly_by_reading_actual_files",
+        "train_only_scaling_and_split": "verified_directly_by_reading_actual_files",
+        "edge_endpoint_and_cross_timestep": "verified_directly_by_reading_actual_files",
+        "preprocessed_artifacts_readability": "verified_directly_by_reading_actual_files"
+      }
+    }
+  },
+  "test_execution_summary": {
+    "historical_run": {
+      "command": ".venv\\Scripts\\python -m pytest tests/ -v",
+      "total_tests": 42,
+      "passed_tests": 42,
+      "failed_tests": 0,
+      "execution_time_seconds": 18.84
+    },
+    "latest_final_run": {
+      "command": ".venv\\Scripts\\python -m pytest tests/ -v",
+      "total_tests": 43,
+      "passed_tests": 43,
+      "failed_tests": 0,
+      "execution_time_seconds": 21.90
+    }
+  }
+}

@@ -10,6 +10,8 @@ from .elliptic import (
     PreprocessedDataset,
     PreprocessingAuditReport,
     ELLIPTIC_NUM_FEATURES,
+    ELLIPTIC_NUM_LOCAL_FEATURES,
+    ELLIPTIC_NUM_AGG_FEATURES,
     FEATURE_COL_NAMES,
 )
 
@@ -26,5 +28,7 @@ __all__ = [
     "PreprocessedDataset",
     "PreprocessingAuditReport",
     "ELLIPTIC_NUM_FEATURES",
+    "ELLIPTIC_NUM_LOCAL_FEATURES",
+    "ELLIPTIC_NUM_AGG_FEATURES",
     "FEATURE_COL_NAMES",
 ]
