@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BSAD Pipeline Monitor</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface-1: #fcfcfb; --surface-2: #f3f2ef;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --series-1: #2a78d6; --series-2: #eb6834;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --good-text: #006300; --critical-text: #b42f2f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #1a1a19; --surface-2: #232321;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-2: #d95926; --good-text: #0ca30c; --critical-text: #e66767;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface-1: #1a1a19; --surface-2: #232321;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --series-1: #3987e5; --series-2: #d95926; --good-text: #0ca30c; --critical-text: #e66767;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 20px 16px 48px; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-bottom: 18px; }
+h1 { font-size: 20px; margin: 0; font-weight: 650; }
+h2 { font-size: 14px; margin: 0 0 4px; font-weight: 600; }
+.sub { color: var(--text-secondary); font-size: 13px; }
+.muted { color: var(--text-muted); font-size: 12px; }
+.spacer { flex: 1; }
+select, button { font: inherit; color: var(--text-primary); background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+button { cursor: pointer; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
+.grid { display: grid; gap: 12px; }
+.tiles { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 12px; }
+.two { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); margin-bottom: 12px; }
+.tile .label { color: var(--text-secondary); font-size: 12px; }
+.tile .value { font-size: 26px; font-weight: 650; margin-top: 2px; }
+.tile .note { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--border); font-size: 12px; font-weight: 600; background: var(--surface-2); }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+.chip i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.semantic { font-size: 12px; color: var(--text-secondary); background: var(--surface-2); border-radius: 8px;
+  padding: 8px 10px; margin: 8px 0 0; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--text-secondary); font-weight: 600; position: sticky; top: 0; background: var(--surface-1); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12px; }
+.flag { color: var(--critical-text); font-weight: 600; }
+.state { padding: 28px 8px; text-align: center; color: var(--text-secondary); }
+.state.error { color: var(--critical-text); }
+svg text { fill: var(--text-muted); font-size: 11px; }
+.tip { position: fixed; pointer-events: none; background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12); z-index: 10; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+details summary { cursor: pointer; color: var(--text-secondary); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Blockchain anomaly pipeline monitor</h1>
+      <div class="sub">Kafka replay → Spark Structured Streaming → scoring. Every number on this page is read from persisted pipeline output.</div>
+    </div>
+    <div class="spacer"></div>
+    <span id="health" class="badge"><span class="dot" style="background:var(--text-muted)"></span>loading</span>
+    <label class="muted">Run <select id="run"></select></label>
+    <label class="muted"><input type="checkbox" id="auto" checked> auto-refresh 5s</label>
+    <button id="refresh">Refresh</button>
+  </header>
+
+  <div id="tiles" class="grid tiles"><div class="card state">Loading summary…</div></div>
+
+  <div class="grid two">
+    <div class="card"><h2>Score distribution — Elliptic</h2>
+      <div class="sub">Supervised model · <b>illicit_probability</b></div>
+      <div id="hist-elliptic"></div>
+      <p class="semantic">Probability-like score of the Elliptic "illicit" class from a model trained on labelled steps 1–29. The dashed line is the decision threshold chosen on validation steps 30–34.</p>
+    </div>
+    <div class="card"><h2>Score distribution — Zenodo</h2>
+      <div class="sub">Unsupervised detector · <b>isolation_forest_anomaly_score</b></div>
+      <div id="hist-zenodo"></div>
+      <p class="semantic">Higher = more unusual than the fit window. <b>Not</b> a probability and <b>not</b> evidence of illicit activity: there are no labels for this data. The dashed line flags ≈0.1% of the fit window by construction.</p>
+    </div>
+  </div>
+
+  <div class="grid two">
+    <div class="card"><h2>End-to-end latency per micro-batch</h2>
+      <div class="sub">p50 of (prediction written − producer send), ms</div>
+      <div id="latency"></div>
+    </div>
+    <div class="card"><h2>Rows per micro-batch</h2>
+      <div class="sub">Rows read from Kafka by Spark per batch</div>
+      <div id="rows"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <h2>Recent predictions</h2>
+    <div class="filters">
+      <select id="f-dataset"><option value="">All datasets</option><option value="zenodo">Zenodo</option><option value="elliptic">Elliptic</option></select>
+      <select id="f-status"><option value="">All statuses</option><option>scored</option><option>skipped_coinbase</option><option>skipped_invalid_input</option><option>rejected_incomplete_graph_context</option><option>error</option></select>
+      <label class="muted"><input type="checkbox" id="f-flagged"> flagged only</label>
+      <span class="spacer"></span>
+      <span class="chip"><i style="background:var(--series-1)"></i>Elliptic</span>
+      <span class="chip"><i style="background:var(--series-2)"></i>Zenodo</span>
+    </div>
+    <div id="preds" class="tablewrap"></div>
+  </div>
+
+  <div class="grid two">
+    <div class="card"><h2>Dead-letter output</h2><div class="sub">Malformed or schema-invalid messages</div><div id="dlq" class="tablewrap"></div></div>
+    <div class="card"><h2>Models</h2><div id="models"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>Offline batch results</h2>
+    <div class="sub">Full-dataset batch jobs (not streaming).</div>
+    <div id="batch"></div>
+  </div>
+</div>
+<div id="tip" class="tip" hidden></div>
+<script>
+const $ = s => document.querySelector(s);
+const fmt = (v, d = 0) => v == null ? "—" : Number(v).toLocaleString(undefined, {maximumFractionDigits: d, minimumFractionDigits: d});
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const color = ds => ds === "elliptic" ? "var(--series-1)" : "var(--series-2)";
+const tip = $("#tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false;
+  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function hideTip() { tip.hidden = true; }
+
+let RUN = null;
+async function api(path) {
+  const sep = path.includes("?") ? "&" : "?";
+  const r = await fetch(path + (RUN ? `${sep}run=${encodeURIComponent(RUN)}` : ""));
+  if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
+  return r.json();
+}
+const empty = (msg) => `<div class="state">${esc(msg)}</div>`;
+const fail = (e) => `<div class="state error">Could not load: ${esc(e.message)}</div>`;
+
+function statusBadge(h) {
+  const map = { ok: ["var(--good)", "✓ Pipeline healthy"], error: ["var(--critical)", "✕ Query failed"],
+                no_data: ["var(--warning)", "! No batches yet"] };
+  const [c, t] = map[h.status] || ["var(--text-muted)", h.status];
+  const k = h.kafka === "reachable" ? "Kafka reachable" : "Kafka unreachable";
+  $("#health").innerHTML = `<span class="dot" style="background:${c}"></span>${t} · ${k}`;
+  $("#health").title = h.last_query_exception || `last batch: ${h.last_batch_processing_time || "—"}`;
+}
+
+function tiles(s) {
+  if (!s.predictions_total && !s.dead_letter_total) { $("#tiles").innerHTML = `<div class="card">${empty("No predictions in this run yet. Start the producer and consumer (see README).")}</div>`; return; }
+  const by = s.by_dataset || {};
+  const flagged = Object.values(by).reduce((a, d) => a + d.flagged, 0);
+  const t = [
+    ["Predictions written", fmt(s.predictions_total), `${s.batches} micro-batches`],
+    ["Flagged", fmt(flagged), Object.entries(by).map(([k, d]) => `${k}: ${fmt(d.flagged)}`).join(" · ")],
+    ["E2E latency p50", s.e2e_latency_ms ? fmt(s.e2e_latency_ms.p50) + " ms" : "—", s.e2e_latency_ms ? `p95 ${fmt(s.e2e_latency_ms.p95)} ms` : ""],
+    ["Throughput", s.throughput && s.throughput.rows_per_second_over_run ? fmt(s.throughput.rows_per_second_over_run, 1) + " /s" : "—", "rows scored ÷ wall time of run"],
+    ["Errors", fmt(s.errors_total || 0), "status = error"],
+    ["Duplicates dropped", fmt(s.duplicates_dropped_streaming + s.duplicates_dropped_at_sink), `stream ${fmt(s.duplicates_dropped_streaming)} · sink ${fmt(s.duplicates_dropped_at_sink)}`],
+    ["Malformed (dead-letter)", fmt(s.dead_letter_total), "not scored"],
+  ];
+  $("#tiles").innerHTML = t.map(([l, v, n]) => `<div class="card tile"><div class="label">${l}</div><div class="value">${v}</div><div class="note">${esc(n)}</div></div>`).join("");
+}
+
+function histogram(el, d, ds) {
+  if (!d) { el.innerHTML = empty(`No scored ${ds} transactions in this run.`); return; }
+  const W = 520, H = 190, m = {l: 40, r: 10, t: 10, b: 28};
+  const max = Math.max(...d.counts, 1), n = d.counts.length;
+  const x = v => m.l + (v - d.edges[0]) / (d.edges[n] - d.edges[0]) * (W - m.l - m.r);
+  const y = v => H - m.b - v / max * (H - m.t - m.b);
+  const bw = (W - m.l - m.r) / n;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${ds} score histogram">`;
+  for (const f of [0.5, 1]) s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="var(--grid)"/><text x="${m.l - 6}" y="${y(max * f) + 4}" text-anchor="end">${fmt(max * f)}</text>`;
+  d.counts.forEach((c, i) => {
+    const h = H - m.b - y(c);
+    if (c > 0) s += `<rect x="${x(d.edges[i]) + 1}" y="${y(c)}" width="${Math.max(bw - 2, 1)}" height="${h}" rx="${Math.min(3, h / 2)}" fill="${color(ds)}"/>`;
+    s += `<rect class="hit" data-i="${i}" x="${x(d.edges[i])}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent"/>`;
+  });
+  s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)"/>`;
+  const tx = x(d.threshold);
+  s += `<line x1="${tx}" x2="${tx}" y1="${m.t}" y2="${H - m.b}" stroke="var(--text-secondary)" stroke-dasharray="4 3" stroke-width="1.5"/>`;
+  const right = tx > W - 110;
+  s += `<text x="${right ? tx - 4 : tx + 4}" y="${m.t + 10}" text-anchor="${right ? "end" : "start"}" style="fill:var(--text-secondary)">threshold ${fmt(d.threshold, 3)}</text>`;
+  for (const v of [d.edges[0], (d.edges[0] + d.edges[n]) / 2, d.edges[n]]) s += `<text x="${x(v)}" y="${H - 8}" text-anchor="middle">${fmt(v, 2)}</text>`;
+  s += `</svg><div class="muted">${fmt(d.n)} scored transactions</div>`;
+  el.innerHTML = s;
+  el.querySelectorAll(".hit").forEach(r => {
+    r.addEventListener("mousemove", e => { const i = +r.dataset.i; showTip(e, `<b>${fmt(d.edges[i], 3)} – ${fmt(d.edges[i + 1], 3)}</b><br>${fmt(d.counts[i])} transactions`); });
+    r.addEventListener("mouseleave", hideTip);
+  });
+}
+
+function lineChart(el, pts, unit, label) {
+  if (!pts.length) { el.innerHTML = empty("No batches recorded yet."); return; }
+  const W = 520, H = 170, m = {l: 48, r: 12, t: 10, b: 26};
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs, x0 + 1), ymax = Math.max(...ys, 1) * 1.1;
+  const x = v => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r), y = v => H - m.b - v / ymax * (H - m.t - m.b);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${label}">`;
+  for (const f of [0.5, 1]) s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(ymax * f / 1.1)}" y2="${y(ymax * f / 1.1)}" stroke="var(--grid)"/><text x="${m.l - 6}" y="${y(ymax * f / 1.1) + 4}" text-anchor="end">${fmt(ymax * f / 1.1)}</text>`;
+  s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)"/>`;
+  s += `<polyline fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" points="${pts.map(p => `${x(p.x)},${y(p.y)}`).join(" ")}"/>`;
+  if (pts.length <= 60) pts.forEach(p => s += `<circle cx="${x(p.x)}" cy="${y(p.y)}" r="4" fill="var(--series-1)" stroke="var(--surface-1)" stroke-width="2"/>`);
+  s += `<text x="${m.l}" y="${H - 8}">batch ${x0}</text><text x="${W - m.r}" y="${H - 8}" text-anchor="end">batch ${x1}</text>`;
+  s += `<line id="xh" y1="${m.t}" y2="${H - m.b}" stroke="var(--axis)" visibility="hidden"/><rect class="ov" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/></svg>`;
+  el.innerHTML = s;
+  const svg = el.querySelector("svg"), ov = el.querySelector(".ov"), xh = el.querySelector("#xh");
+  ov.addEventListener("mousemove", e => {
+    const r = svg.getBoundingClientRect(), vx = (e.clientX - r.left) / r.width * W;
+    const p = pts.reduce((a, b) => Math.abs(x(b.x) - vx) < Math.abs(x(a.x) - vx) ? b : a);
+    xh.setAttribute("x1", x(p.x)); xh.setAttribute("x2", x(p.x)); xh.setAttribute("visibility", "visible");
+    showTip(e, `<b>batch ${p.x}</b><br>${fmt(p.y, unit === "ms" ? 0 : 0)} ${unit}`);
+  });
+  ov.addEventListener("mouseleave", () => { hideTip(); xh.setAttribute("visibility", "hidden"); });
+}
+
+function predsTable(r) {
+  if (!r.items.length) { $("#preds").innerHTML = empty("No predictions match the filters."); return; }
+  const rows = r.items.map(p => `<tr>
+    <td><span class="chip"><i style="background:${color(p.source_dataset)}"></i>${esc(p.source_dataset)}</span></td>
+    <td class="mono" title="${esc(p.transaction_id)}">${esc((p.transaction_id || "").slice(0, 16))}${(p.transaction_id || "").length > 16 ? "…" : ""}</td>
+    <td class="num">${esc(p.event_time_kind === "block_height" ? "block " : "step ")}${p.event_time_value ?? "—"}</td>
+    <td class="num">${p.score == null ? "—" : fmt(p.score, 4)}</td>
+    <td class="muted">${esc(p.score_type || "")}</td>
+    <td>${p.flagged ? '<span class="flag">⚑ flagged</span>' : ""}</td>
+    <td>${esc(p.status)}</td>
+    <td class="muted" title="${esc(p.reason_codes)}">${esc((p.reason_codes || "").split(";")[0] || "")}</td>
+    <td class="muted">${esc(p.model_id)} ${esc(p.model_version || "")}</td>
+    <td class="num">${fmt(p.e2e_latency_ms)} ms</td>
+    <td class="muted">${esc((p.scored_at || "").replace("T", " ").slice(0, 19))}</td></tr>`).join("");
+  $("#preds").innerHTML = `<table><thead><tr><th>Dataset</th><th>Transaction</th><th>Event time</th><th>Score</th><th>Score type</th><th></th><th>Status</th><th>Top reason</th><th>Model</th><th>E2E latency</th><th>Scored at (UTC)</th></tr></thead><tbody>${rows}</tbody></table><div class="muted" style="margin-top:6px">Showing ${r.items.length} of ${fmt(r.total)} · event time is an ordinal (block height / Elliptic time step), not a wall-clock timestamp.</div>`;
+}
+
+function dlqTable(r) {
+  if (!r.items.length) { $("#dlq").innerHTML = empty("No malformed messages."); return; }
+  $("#dlq").innerHTML = `<table><thead><tr><th>Partition/offset</th><th>Reason</th><th>Payload (truncated)</th></tr></thead><tbody>${r.items.map(d =>
+    `<tr><td class="mono">${d.kafka_partition ?? "—"}/${d.kafka_offset ?? "—"}</td><td title="${esc(d.reason)}">${esc((d.reason || "").slice(0, 60))}</td><td class="mono">${esc((d.value || "").slice(0, 50))}</td></tr>`).join("")}</tbody></table>`;
+}
+
+function modelsBox(m) {
+  const k = Object.entries(m);
+  if (!k.length) { $("#models").innerHTML = empty("No exported models found."); return; }
+  $("#models").innerHTML = k.map(([ds, v]) => `<div style="margin-bottom:10px"><span class="chip"><i style="background:${color(ds)}"></i><b>${esc(v.model_id)}</b> v${esc(v.model_version)}</span>
+     <div class="muted">${esc(v.score_type)}${v.config ? " · config " + esc(v.config) : ""}${v.requires_graph != null ? " · needs graph context: " + (v.requires_graph ? "yes" : "no") : ""} · threshold ${fmt(v.decision_threshold ?? v.threshold, 3)}</div>
+     <div class="sub">${esc(v.score_semantics)}</div></div>`).join("");
+}
+
+function batchBox(b) {
+  let h = "";
+  const sel = b.elliptic_model_selection || [];
+  if (sel.length) {
+    const chosen = b.elliptic_selection && b.elliptic_selection.selected_config;
+    h += `<details open><summary>Elliptic supervised model selection (5 seeds, mean ± std on test steps 35–49; selected by validation only)</summary><div class="tablewrap"><table><thead><tr><th>Config</th><th>Val F1</th><th>Test illicit F1</th><th>Precision</th><th>Recall</th><th>ROC-AUC</th><th>AP</th></tr></thead><tbody>${
+      sel.map(r => `<tr${r.config === chosen ? ' style="font-weight:650"' : ""}><td>${esc(r.config)}${r.config === chosen ? " ✓ selected" : ""}</td><td class="num">${fmt(r.val_f1_mean, 4)}</td><td class="num">${fmt(r.f1_illicit_mean, 4)} ± ${fmt(r.f1_illicit_std, 4)}</td><td class="num">${fmt(r.precision_mean, 4)}</td><td class="num">${fmt(r.recall_mean, 4)}</td><td class="num">${fmt(r.roc_auc_mean, 4)}</td><td class="num">${fmt(r.average_precision_mean, 4)}</td></tr>`).join("")}</tbody></table></div></details>`;
+  }
+  const z = b.zenodo_score_summary;
+  if (z) {
+    h += `<details><summary>Zenodo full-dataset scoring: ${fmt(z.total_rows)} transactions, model ${esc(z.model_id)} v${esc(z.model_version)}</summary><div class="tablewrap"><table><thead><tr><th>Block chunk</th><th>Rows</th><th>Flagged</th><th>Flag rate</th><th>Median score</th><th>p99</th></tr></thead><tbody>${
+      Object.entries(z.chunks).map(([c, v]) => `<tr><td>${c}</td><td class="num">${fmt(v.rows)}</td><td class="num">${fmt(v.flagged)}</td><td class="num">${fmt(v.flag_rate * 1000, 2)}‰</td><td class="num">${fmt(v.score_quantiles.p50, 4)}</td><td class="num">${fmt(v.score_quantiles.p99, 4)}</td></tr>`).join("")}</tbody></table></div>
+      <h2 style="margin-top:12px">Top-ranked (unusual, not "illicit")</h2><div class="tablewrap"><table><thead><tr><th>Block</th><th>tx_index</th><th>tx_hash</th><th>Score</th><th>Reasons</th></tr></thead><tbody>${
+      (b.zenodo_top_ranked || []).slice(0, 15).map(t => `<tr><td>${t.block_number}</td><td class="num">${t.tx_index}</td><td class="mono">${esc(t.tx_hash.slice(0, 16))}…</td><td class="num">${fmt(t.score, 4)}</td><td class="muted">${esc(t.reason_codes)}</td></tr>`).join("")}</tbody></table></div></details>`;
+  }
+  $("#batch").innerHTML = h || empty("No batch results found.");
+}
+
+async function loadRuns() {
+  try {
+    const r = await (await fetch("/api/runs")).json();
+    const sel = $("#run");
+    sel.innerHTML = r.runs.map(x => `<option ${x.name === r.default ? "selected" : ""}>${esc(x.name)}</option>`).join("") || `<option>${esc(r.default)}</option>`;
+    RUN = sel.value;
+  } catch (e) { /* keep default run */ }
+}
+
+async function refresh() {
+  const jobs = [
+    api("/api/health").then(statusBadge).catch(e => { $("#health").innerHTML = `<span class="dot" style="background:var(--critical)"></span>✕ API error`; $("#health").title = e.message; }),
+    api("/api/summary").then(tiles).catch(e => $("#tiles").innerHTML = `<div class="card">${fail(e)}</div>`),
+    api("/api/distribution").then(d => { histogram($("#hist-elliptic"), d.elliptic, "elliptic"); histogram($("#hist-zenodo"), d.zenodo, "zenodo"); })
+      .catch(e => { $("#hist-elliptic").innerHTML = fail(e); $("#hist-zenodo").innerHTML = fail(e); }),
+    api("/api/batches").then(b => {
+      lineChart($("#latency"), b.batches.filter(x => x.e2e_latency_ms_p50 != null).map(x => ({x: x.batch_id, y: x.e2e_latency_ms_p50})), "ms", "latency per batch");
+      lineChart($("#rows"), b.progress.map(x => ({x: x.batch_id, y: x.num_input_rows})), "rows", "rows per batch");
+    }).catch(e => { $("#latency").innerHTML = fail(e); $("#rows").innerHTML = fail(e); }),
+    api(`/api/predictions?limit=100&dataset=${$("#f-dataset").value}&status=${$("#f-status").value}&flagged_only=${$("#f-flagged").checked}`).then(predsTable).catch(e => $("#preds").innerHTML = fail(e)),
+    api("/api/dead-letter").then(dlqTable).catch(e => $("#dlq").innerHTML = fail(e)),
+  ];
+  await Promise.all(jobs);
+}
+async function staticParts() {
+  fetch("/api/models").then(r => r.json()).then(modelsBox).catch(e => $("#models").innerHTML = fail(e));
+  fetch("/api/batch-results").then(r => r.json()).then(batchBox).catch(e => $("#batch").innerHTML = fail(e));
+}
+$("#refresh").onclick = refresh;
+$("#run").onchange = e => { RUN = e.target.value; refresh(); };
+for (const id of ["#f-dataset", "#f-status", "#f-flagged"]) $(id).onchange = refresh;
+let timer = setInterval(() => $("#auto").checked && refresh(), 5000);
+loadRuns().then(() => { refresh(); staticParts(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+{
+  "$defs": {
+    "DataQuality": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "default": "ok",
+          "enum": [
+            "ok",
+            "invalid"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "issues": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Issues",
+          "type": "array"
+        }
+      },
+      "title": "DataQuality",
+      "type": "object"
+    },
+    "EllipticAttributes": {
+      "additionalProperties": false,
+      "properties": {
+        "features": {
+          "description": "raw (unscaled) Elliptic features f1..f165, anonymised by Elliptic",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 165,
+          "minItems": 165,
+          "title": "Features",
+          "type": "array"
+        }
+      },
+      "required": [
+        "features"
+      ],
+      "title": "EllipticAttributes",
+      "type": "object"
+    },
+    "EllipticEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "description": "stable id: '<source_dataset>:<transaction_id>'",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "transaction_id": {
+          "title": "Transaction Id",
+          "type": "string"
+        },
+        "event_time": {
+          "$ref": "#/$defs/EventTime"
+        },
+        "produced_at": {
+          "description": "producer wall-clock time (UTC ISO-8601)",
+          "title": "Produced At",
+          "type": "string"
+        },
+        "replay_sequence": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "deterministic replay order",
+          "title": "Replay Sequence"
+        },
+        "data_quality": {
+          "$ref": "#/$defs/DataQuality"
+        },
+        "source_dataset": {
+          "const": "elliptic",
+          "title": "Source Dataset",
+          "type": "string"
+        },
+        "attributes": {
+          "$ref": "#/$defs/EllipticAttributes"
+        },
+        "graph": {
+          "$ref": "#/$defs/EllipticGraphRef"
+        }
+      },
+      "required": [
+        "event_id",
+        "transaction_id",
+        "event_time",
+        "produced_at",
+        "source_dataset",
+        "attributes",
+        "graph"
+      ],
+      "title": "EllipticEvent",
+      "type": "object"
+    },
+    "EllipticGraphRef": {
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_id": {
+          "description": "elliptic:step:<t>",
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "snapshot_size": {
+          "description": "number of transactions in this time-step snapshot",
+          "exclusiveMinimum": 0,
+          "title": "Snapshot Size",
+          "type": "integer"
+        },
+        "out_neighbors": {
+          "description": "tx ids this transaction pays to",
+          "items": {
+            "type": "string"
+          },
+          "title": "Out Neighbors",
+          "type": "array"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "snapshot_size"
+      ],
+      "title": "EllipticGraphRef",
+      "type": "object"
+    },
+    "EventTime": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "elliptic_time_step",
+            "block_height"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ],
+      "title": "EventTime",
+      "type": "object"
+    },
+    "ZenodoAttributes": {
+      "additionalProperties": false,
+      "properties": {
+        "block_number": {
+          "minimum": 0,
+          "title": "Block Number",
+          "type": "integer"
+        },
+        "tx_index": {
+          "minimum": 0,
+          "title": "Tx Index",
+          "type": "integer"
+        },
+        "num_inputs": {
+          "minimum": 0,
+          "title": "Num Inputs",
+          "type": "integer"
+        },
+        "num_outputs": {
+          "minimum": 0,
+          "title": "Num Outputs",
+          "type": "integer"
+        },
+        "total_input_satoshi": {
+          "title": "Total Input Satoshi",
+          "type": "integer"
+        },
+        "total_output_satoshi": {
+          "title": "Total Output Satoshi",
+          "type": "integer"
+        },
+        "fee_satoshi": {
+          "title": "Fee Satoshi",
+          "type": "integer"
+        },
+        "fee_rate": {
+          "description": "fee / (num_inputs + num_outputs); NOT satoshi per byte",
+          "title": "Fee Rate",
+          "type": "number"
+        },
+        "is_coinbase": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Is Coinbase",
+          "type": "integer"
+        },
+        "avg_input_val": {
+          "title": "Avg Input Val",
+          "type": "number"
+        },
+        "avg_output_val": {
+          "title": "Avg Output Val",
+          "type": "number"
+        },
+        "input_output_count_ratio": {
+          "title": "Input Output Count Ratio",
+          "type": "number"
+        },
+        "input_output_val_ratio": {
+          "title": "Input Output Val Ratio",
+          "type": "number"
+        },
+        "max_input_prior_tx_count": {
+          "title": "Max Input Prior Tx Count",
+          "type": "integer"
+        },
+        "avg_input_prior_tx_count": {
+          "title": "Avg Input Prior Tx Count",
+          "type": "number"
+        },
+        "max_input_prior_volume_satoshi": {
+          "title": "Max Input Prior Volume Satoshi",
+          "type": "integer"
+        },
+        "new_address_fraction": {
+          "title": "New Address Fraction",
+          "type": "number"
+        }
+      },
+      "required": [
+        "block_number",
+        "tx_index",
+        "num_inputs",
+        "num_outputs",
+        "total_input_satoshi",
+        "total_output_satoshi",
+        "fee_satoshi",
+        "fee_rate",
+        "is_coinbase",
+        "avg_input_val",
+        "avg_output_val",
+        "input_output_count_ratio",
+        "input_output_val_ratio",
+        "max_input_prior_tx_count",
+        "avg_input_prior_tx_count",
+        "max_input_prior_volume_satoshi",
+        "new_address_fraction"
+      ],
+      "title": "ZenodoAttributes",
+      "type": "object"
+    },
+    "ZenodoEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "description": "stable id: '<source_dataset>:<transaction_id>'",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "transaction_id": {
+          "title": "Transaction Id",
+          "type": "string"
+        },
+        "event_time": {
+          "$ref": "#/$defs/EventTime"
+        },
+        "produced_at": {
+          "description": "producer wall-clock time (UTC ISO-8601)",
+          "title": "Produced At",
+          "type": "string"
+        },
+        "replay_sequence": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "deterministic replay order",
+          "title": "Replay Sequence"
+        },
+        "data_quality": {
+          "$ref": "#/$defs/DataQuality"
+        },
+        "source_dataset": {
+          "const": "zenodo",
+          "title": "Source Dataset",
+          "type": "string"
+        },
+        "tx_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Tx Hash",
+          "type": "string"
+        },
+        "attributes": {
+          "$ref": "#/$defs/ZenodoAttributes"
+        },
+        "graph": {
+          "default": null,
+          "title": "Graph",
+          "type": "null"
+        }
+      },
+      "required": [
+        "event_id",
+        "transaction_id",
+        "event_time",
+        "produced_at",
+        "source_dataset",
+        "tx_hash",
+        "attributes"
+      ],
+      "title": "ZenodoEvent",
+      "type": "object"
+    }
+  },
+  "description": "Wrapper used to parse any event with discriminated routing on source_dataset.",
+  "properties": {
+    "event": {
+      "discriminator": {
+        "mapping": {
+          "elliptic": "#/$defs/EllipticEvent",
+          "zenodo": "#/$defs/ZenodoEvent"
+        },
+        "propertyName": "source_dataset"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/EllipticEvent"
+        },
+        {
+          "$ref": "#/$defs/ZenodoEvent"
+        }
+      ],
+      "title": "Event"
+    }
+  },
+  "required": [
+    "event"
+  ],
+  "title": "EventEnvelope",
+  "type": "object"
+}

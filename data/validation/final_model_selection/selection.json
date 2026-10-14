@@ -1,0 +1,47 @@
+{
+  "timestamp_utc": "2026-10-14T15:02:28Z",
+  "source": "spark",
+  "seeds": [
+    42,
+    123,
+    456,
+    789,
+    2024
+  ],
+  "quick": false,
+  "splits": {
+    "train": 26381,
+    "val": 3513,
+    "test": 16670,
+    "unknown": 157205,
+    "train_illicit": 2871,
+    "val_illicit": 591,
+    "test_illicit": 1083
+  },
+  "class_weight_ratio": 8.188784395680948,
+  "selected_hyperparameters": {
+    "hgb": {
+      "learning_rate": 0.1,
+      "max_leaf_nodes": 31,
+      "l2_regularization": 1.0,
+      "max_iter": 200,
+      "early_stopping": false
+    },
+    "xgb": {
+      "n_estimators": 300,
+      "max_depth": 8,
+      "learning_rate": 0.1,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8
+    },
+    "gat": {
+      "hidden": 32,
+      "heads": 8,
+      "dropout": 0.3,
+      "lr": 0.005,
+      "direction": "bidirectional"
+    }
+  },
+  "selection_rule": "max mean validation F1 over seeds; within 0.005 -> max mean validation AP, then fewer components",
+  "selected_config": "hgb_165_nbr"
+}

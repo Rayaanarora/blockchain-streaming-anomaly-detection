@@ -15,3 +15,18 @@ __pycache__/
 .pytest_cache/
 data/parquet/
 data/processed/
+
+# --- end-to-end pipeline outputs (regenerable; keep out of Git) ---
+artifacts/
+data/streaming/
+data/kafka_data/
+data/kafka_run/
+data/kafka_quarantine/
+data/jars/
+data/ivy2/
+data/validation/final_model_selection/predictions_all_seeds.parquet
+.env
+data/validation/final_model_selection/seed_*_probs.parquet
+data/validation/final_model_selection/fitted_seed42/
+data/validation/final_model_selection/backup_before_refit_*/
+*.log

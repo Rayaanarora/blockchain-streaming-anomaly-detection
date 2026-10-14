@@ -1,0 +1,26 @@
+# Exact versions of the verified development environment (Windows 11, Python 3.12.10, .venv).
+# torch is the CPU build: install with
+#   pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+numpy==2.5.4
+pandas==3.0.6
+pyarrow==26.0.0
+scipy==1.18.1
+scikit-learn==1.9.1
+xgboost==3.4.1
+joblib==1.6.0
+torch==2.14.1
+torch-geometric==2.8.1
+pyspark==3.5.0
+py4j==0.10.9.7
+psutil==7.2.2
+confluent-kafka==2.16.0
+pydantic==2.14.1
+fastapi==0.143.0
+uvicorn==0.54.0
+httpx==0.28.1
+pytest==8.3.4
+
+# Non-Python runtime dependencies (see docs/TROUBLESHOOTING.md):
+#   Java 8 JRE (Spark 3.5.0 driver, Kafka broker)
+#   Apache Kafka 3.7.2 binary distribution (scripts/local_kafka.py)
+#   Spark extra jars: scripts/fetch_spark_jars.py (Kafka connector + pure-Java local filesystem)

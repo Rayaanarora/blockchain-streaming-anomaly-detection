@@ -1,0 +1,261 @@
+{
+  "labels_available": false,
+  "note": "No reliable transaction-level illicit labels exist for this data. Nothing below is a detection-accuracy claim; section 'synthetic_fault_injection' uses artificial anomalies.",
+  "chunk_stability": {
+    "480000-480999": {
+      "psi_vs_fit_window": 0.05507,
+      "flag_rate": 0.000753,
+      "median_score": 0.3956,
+      "p99_score": 0.6209,
+      "role": "cold_start_excluded"
+    },
+    "481000-481999": {
+      "psi_vs_fit_window": 0.01761,
+      "flag_rate": 0.000814,
+      "median_score": 0.3948,
+      "p99_score": 0.6141,
+      "role": "fit"
+    },
+    "482000-482999": {
+      "psi_vs_fit_window": 0.00955,
+      "flag_rate": 0.000784,
+      "median_score": 0.3992,
+      "p99_score": 0.6268,
+      "role": "fit"
+    },
+    "483000-483999": {
+      "psi_vs_fit_window": 0.00718,
+      "flag_rate": 0.001101,
+      "median_score": 0.4078,
+      "p99_score": 0.6311,
+      "role": "fit"
+    },
+    "484000-484999": {
+      "psi_vs_fit_window": 0.03297,
+      "flag_rate": 0.000974,
+      "median_score": 0.4158,
+      "p99_score": 0.6323,
+      "role": "fit"
+    },
+    "485000-485999": {
+      "psi_vs_fit_window": 0.07488,
+      "flag_rate": 0.000961,
+      "median_score": 0.4114,
+      "p99_score": 0.6295,
+      "role": "out_of_time"
+    },
+    "486000-486999": {
+      "psi_vs_fit_window": 0.05599,
+      "flag_rate": 0.000609,
+      "median_score": 0.4105,
+      "p99_score": 0.6276,
+      "role": "out_of_time"
+    },
+    "487000-487999": {
+      "psi_vs_fit_window": 0.08365,
+      "flag_rate": 0.00067,
+      "median_score": 0.4142,
+      "p99_score": 0.6297,
+      "role": "out_of_time"
+    },
+    "488000-488999": {
+      "psi_vs_fit_window": 0.0714,
+      "flag_rate": 0.000977,
+      "median_score": 0.4133,
+      "p99_score": 0.6217,
+      "role": "out_of_time"
+    },
+    "489000-489999": {
+      "psi_vs_fit_window": 0.02333,
+      "flag_rate": 0.000614,
+      "median_score": 0.4074,
+      "p99_score": 0.6206,
+      "role": "out_of_time"
+    }
+  },
+  "design_flag_rate": 0.0010000000000000009,
+  "evaluation_sample": {
+    "chunk": "489000-489999",
+    "buckets": [
+      9000,
+      9200
+    ],
+    "rows": 38921
+  },
+  "seed_stability": {
+    "1": {
+      "spearman": 0.9931,
+      "top_0.1pct_jaccard": 0.625
+    },
+    "2": {
+      "spearman": 0.99,
+      "top_0.1pct_jaccard": 0.339
+    },
+    "3": {
+      "spearman": 0.9911,
+      "top_0.1pct_jaccard": 0.3684
+    },
+    "4": {
+      "spearman": 0.9931,
+      "top_0.1pct_jaccard": 0.4182
+    }
+  },
+  "sampling_impact": {
+    "0.5%": {
+      "fit_rows": 32994,
+      "fit_seconds": 2.44,
+      "spearman": 0.9936,
+      "top_0.1pct_jaccard": 0.4182,
+      "flag_rate_on_eval": 0.000694
+    },
+    "5.0%": {
+      "fit_rows": 330898,
+      "fit_seconds": 14.31,
+      "spearman": 0.9914,
+      "top_0.1pct_jaccard": 0.2188,
+      "flag_rate_on_eval": 0.000591
+    },
+    "2.0% (production)": {
+      "fit_rows": 132402,
+      "flag_rate_on_eval": 0.000514
+    }
+  },
+  "feature_sensitivity": {
+    "without_address_history": {
+      "spearman": 0.7662,
+      "top_0.1pct_jaccard": 0.1818
+    },
+    "without_fee": {
+      "spearman": 0.8954,
+      "top_0.1pct_jaccard": 0.3684
+    },
+    "without_shape": {
+      "spearman": 0.9212,
+      "top_0.1pct_jaccard": 0.0306
+    },
+    "without_value": {
+      "spearman": 0.9652,
+      "top_0.1pct_jaccard": 0.3
+    }
+  },
+  "synthetic_fault_injection": {
+    "clean_rows": 5000,
+    "clean_flag_rate": 0.0006,
+    "fee_spike_30pct": {
+      "flag_rate_at_threshold": 0.0026,
+      "auroc_injected_vs_clean": 0.783,
+      "median_score": 0.4727
+    },
+    "fan_in_150_400_fresh_inputs": {
+      "flag_rate_at_threshold": 0.9978,
+      "auroc_injected_vs_clean": 1.0,
+      "median_score": 0.6874
+    },
+    "fan_out_200_1000_outputs": {
+      "flag_rate_at_threshold": 0.079,
+      "auroc_injected_vs_clean": 0.9864,
+      "median_score": 0.6103
+    },
+    "value_x10000": {
+      "flag_rate_at_threshold": 0.0044,
+      "auroc_injected_vs_clean": 0.8334,
+      "median_score": 0.4981
+    },
+    "fee_x2_subtle": {
+      "flag_rate_at_threshold": 0.001,
+      "auroc_injected_vs_clean": 0.4851,
+      "median_score": 0.4063
+    }
+  },
+  "top_ranked_inspection": {
+    "n_inspected": 200,
+    "block_range": [
+      480067,
+      489744
+    ],
+    "share_in_blocks_488000_488099": 0.955,
+    "num_inputs_median": 150.0,
+    "num_outputs_median": 1.0,
+    "new_address_fraction_median": 0.32333333333333336,
+    "fee_satoshi_median": 4169897.5,
+    "top1000_primary_reason_counts": {
+      "log_num_inputs": 617,
+      "log_fee_per_io": 116,
+      "new_addr_fraction": 92,
+      "log_num_outputs": 64,
+      "log_fee": 61,
+      "log_io_count_ratio": 49,
+      "log_total_output": 1
+    },
+    "top1000_by_chunk": {
+      "480000-480999": 109,
+      "481000-481999": 126,
+      "482000-482999": 102,
+      "483000-483999": 93,
+      "484000-484999": 89,
+      "485000-485999": 73,
+      "486000-486999": 62,
+      "487000-487999": 53,
+      "488000-488999": 249,
+      "489000-489999": 44
+    },
+    "examples": [
+      {
+        "block_number": 481660,
+        "tx_index": 2,
+        "tx_hash": "612b18eacf9937e0c63554b01d4bedb9a4905ce15501811bb486b5444d31b155",
+        "num_inputs": 403,
+        "num_outputs": 1,
+        "total_input_satoshi": 75647407715,
+        "fee_satoshi": 3500000,
+        "new_address_fraction": 1.0
+      },
+      {
+        "block_number": 480067,
+        "tx_index": 1,
+        "tx_hash": "85782d730c1c49d16caca061faa942eeb61b2a49a76918be8c0774058b832ed2",
+        "num_inputs": 385,
+        "num_outputs": 1,
+        "total_input_satoshi": 49995615004,
+        "fee_satoshi": 9354944,
+        "new_address_fraction": 1.0
+      },
+      {
+        "block_number": 482695,
+        "tx_index": 3,
+        "tx_hash": "d3d35abec3f7556a23b013c2f1c572b589453cab2fba38fcb983aa417fb9efdd",
+        "num_inputs": 153,
+        "num_outputs": 1,
+        "total_input_satoshi": 22038604838,
+        "fee_satoshi": 27392,
+        "new_address_fraction": 1.0
+      },
+      {
+        "block_number": 488003,
+        "tx_index": 2065,
+        "tx_hash": "47fdea1b73db508375d940b3b482bd54f9f98a70a678a2b92e9f8e781a468dbf",
+        "num_inputs": 150,
+        "num_outputs": 1,
+        "total_input_satoshi": 5241629,
+        "fee_satoshi": 5238899,
+        "new_address_fraction": 0.62
+      },
+      {
+        "block_number": 488003,
+        "tx_index": 1925,
+        "tx_hash": "561c5a6fb33b1e92e4436e3737c9b05434b2fa5040ecfd2e5edf6fc8fbc25ccd",
+        "num_inputs": 150,
+        "num_outputs": 1,
+        "total_input_satoshi": 5367616,
+        "fee_satoshi": 5364886,
+        "new_address_fraction": 0.5
+      }
+    ]
+  },
+  "throughput": {
+    "in_memory_rows_per_second": 19063.1,
+    "rows": 38921,
+    "batch_pipeline_rows_per_second_incl_io": 7283.9,
+    "batch_pipeline_total_seconds": 2318.7
+  }
+}

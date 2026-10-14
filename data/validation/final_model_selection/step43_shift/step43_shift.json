@@ -1,0 +1,64 @@
+{
+  "periods": {
+    "pre_35_42": {
+      "labelled": 9983,
+      "illicit": 914,
+      "prevalence": 0.09155564459581288
+    },
+    "post_43_49": {
+      "labelled": 6687,
+      "illicit": 169,
+      "prevalence": 0.025272917601315985
+    }
+  },
+  "class_similarity_shift": [
+    {
+      "class": "illicit",
+      "window": "35-42",
+      "n": 914,
+      "knn10_illicit_fraction_mean": 0.8238512035010941,
+      "share_with_majority_illicit_neighbours": 0.8336980306345733,
+      "median_abs_smd_vs_train_class": 0.017570361495018005,
+      "features_abs_smd_gt_0.5": 2
+    },
+    {
+      "class": "illicit",
+      "window": "43-49",
+      "n": 169,
+      "knn10_illicit_fraction_mean": 0.06094674556213018,
+      "share_with_majority_illicit_neighbours": 0.005917159763313609,
+      "median_abs_smd_vs_train_class": 0.037382274866104126,
+      "features_abs_smd_gt_0.5": 2
+    },
+    {
+      "class": "licit",
+      "window": "35-42",
+      "n": 9069,
+      "knn10_illicit_fraction_mean": 0.054537435218877495,
+      "share_with_majority_illicit_neighbours": 0.02183261660602051,
+      "median_abs_smd_vs_train_class": 0.18897917866706848,
+      "features_abs_smd_gt_0.5": 5
+    },
+    {
+      "class": "licit",
+      "window": "43-49",
+      "n": 6518,
+      "knn10_illicit_fraction_mean": 0.05811598649892604,
+      "share_with_majority_illicit_neighbours": 0.016876342436330162,
+      "median_abs_smd_vs_train_class": 0.16261520981788635,
+      "features_abs_smd_gt_0.5": 5
+    }
+  ],
+  "selected_config": "hgb_165_nbr",
+  "selected_model_recall_by_period": {
+    "recall_35_42": {
+      "mean": 0.8544857768052516,
+      "std": 0.0
+    },
+    "recall_43_49": {
+      "mean": 0.029585798816568042,
+      "std": 3.878959614448864e-18
+    }
+  },
+  "note": "Post-hoc diagnostic; test labels describe the population only and are not used for any model decision. No timestamps exist in Elliptic, so no real-world cause can be established from the data."
+}

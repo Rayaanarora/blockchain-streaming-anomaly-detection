@@ -1,0 +1,131 @@
+{
+  "spark_dir": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\data/processed/elliptic_spark",
+  "legacy_npz": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\data/processed/elliptic/elliptic_preprocessed.npz",
+  "n_checks": 33,
+  "n_failed": 0,
+  "failed": [],
+  "status": "PASS",
+  "checks": {
+    "node_count": {
+      "pass": true,
+      "detail": {
+        "spark": 203769,
+        "legacy": 203769
+      }
+    },
+    "node_idx_contiguous": {
+      "pass": true
+    },
+    "tx_id_order_identical": {
+      "pass": true
+    },
+    "time_steps_identical": {
+      "pass": true
+    },
+    "nodes_sorted_by_step_then_id": {
+      "pass": true
+    },
+    "feature_columns": {
+      "pass": true
+    },
+    "feature_dtype_float32": {
+      "pass": true
+    },
+    "raw_features_bit_identical": {
+      "pass": true,
+      "detail": {
+        "max_abs_diff": 0.0
+      }
+    },
+    "no_nan_inf_raw": {
+      "pass": true
+    },
+    "labels_identical": {
+      "pass": true
+    },
+    "label_values": {
+      "pass": true
+    },
+    "unknown_count": {
+      "pass": true,
+      "detail": 157205
+    },
+    "unknown_split_is_unlabelled": {
+      "pass": true
+    },
+    "label_status_consistent": {
+      "pass": true
+    },
+    "chronological_split_correct": {
+      "pass": true
+    },
+    "split_counts": {
+      "pass": true,
+      "detail": {
+        "unlabelled": 157205,
+        "train": 26381,
+        "test": 16670,
+        "val": 3513
+      }
+    },
+    "legacy_train_mask_equals_train_plus_val": {
+      "pass": true
+    },
+    "legacy_test_mask_equals_test": {
+      "pass": true
+    },
+    "max_train_step_lt_min_val_step": {
+      "pass": true
+    },
+    "alignment_time_step_vs_raw": {
+      "pass": true
+    },
+    "alignment_features_vs_raw_sample": {
+      "pass": true
+    },
+    "alignment_labels_vs_raw_all": {
+      "pass": true
+    },
+    "scaled_rows_aligned": {
+      "pass": true
+    },
+    "scaled_features_match_train_only_scaler_within_1ulp": {
+      "pass": true,
+      "detail": {
+        "max_ulps_vs_float64_reference": 1.0,
+        "info_max_abs_diff_vs_sklearn_float32_path": 0.0009765625
+      }
+    },
+    "scaler_mean_matches": {
+      "pass": true
+    },
+    "scaler_fitted_on_train_only": {
+      "pass": true
+    },
+    "edge_count": {
+      "pass": true,
+      "detail": {
+        "spark": 234355,
+        "legacy": 234355
+      }
+    },
+    "edge_index_identical": {
+      "pass": true
+    },
+    "edge_order_matches_csv": {
+      "pass": true
+    },
+    "edge_endpoints_valid": {
+      "pass": true
+    },
+    "edges_intra_time_step": {
+      "pass": true
+    },
+    "edge_time_steps_match_legacy": {
+      "pass": true
+    },
+    "no_null_in_any_column": {
+      "pass": true
+    }
+  }
+}

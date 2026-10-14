@@ -1,203 +1,196 @@
 # Distributed Streaming Anomaly Detection on Blockchain Transaction Graphs
 
-**Course:** 21CSC314P – Big Data Essentials  
-**Institution:** SRM Institute of Science and Technology (SRMIST)  
-**Faculty Guide:** Dr. Banu Priya Prathaban  
+**Course:** 21CSC314P – Big Data Essentials · **Institution:** SRM Institute of Science and Technology (SRMIST) · **Faculty Guide:** Dr. Banu Priya Prathaban
 
-### 👥 Team Members
-- **Rayaan Arora** (`RA2411031010073`)
-- **Faheem Mushtaq** (`RA2411031010079`)
-- **Lakshita Kumarkar** (`RA2411031010091`)
-- **Aarushi Sarkar** (`RA2411031010099`)
+**Team:** Rayaan Arora (`RA2411031010073`) · Faheem Mushtaq (`RA2411031010079`) · Lakshita Kumarkar (`RA2411031010091`) · Aarushi Sarkar (`RA2411031010099`)
 
----
+An end-to-end pipeline that prepares Bitcoin transaction data with Apache Spark, trains and serves two anomaly models, replays transactions through Kafka into Spark Structured Streaming, scores them, persists the results and shows them on a dashboard. Everything below runs on one Windows workstation; every reported number links to the file that contains it ([`docs/VERIFIED_RESULTS.md`](docs/VERIFIED_RESULTS.md)).
 
-## 🌟 Overview & Novel Hybrid Architecture: `TGAT-BoostNet`
-This repository contains the end-to-end distributed Big Data pipeline for detecting illicit cryptocurrency transactions (anti-money laundering / AML) across continuous blockchain streams.
+## What it does, and what it does not
 
-Instead of relying solely on static graph convolutions or tabular classifiers, we propose **TGAT-BoostNet (Spatio-Temporal Graph Attention Boosting Network)**:
-1. **Stage 1 (Deep Graph Attention)**: 4-Head Graph Attention Network (`GATConv`) in PyTorch Geometric dynamically computing edge weights over peel-chains and continuous temporal embeddings.
-2. **Stage 2 (Manifold Fusion)**: Concatenating 32-dimensional deep graph attention representations with the 165 raw transaction features into a 197-dimensional augmented manifold.
-3. **Stage 3 (Cost-Weighted Boosting)**: Distributed Gradient Boosted Decision Forests operating on the augmented manifold with cost-sensitive class rebalancing ($w_{\text{illicit}} = 4.32\times$).
+| | Status |
+|---|---|
+| Spark batch preprocessing of Elliptic (203,769 tx) and Zenodo (16.9 M tx) | ✅ implemented, run on the full data |
+| Supervised illicit-transaction model on Elliptic (12 configs × 5 seeds, validation-only selection) | ✅ test illicit F1 **0.797** |
+| Unsupervised anomaly scoring of all 16.9 M Zenodo transactions | ✅ no labels exist, so no accuracy claim |
+| Kafka → Spark Structured Streaming → scoring → Parquet, with checkpoints, de-duplication, dead letters, crash recovery | ✅ replay of stored data, integration-tested |
+| Dashboard over the persisted outputs | ✅ |
+| Live blockchain ingestion | ⛔ not implemented (replay only) |
+| Temporal graph model | ⛔ the graph models see one time-step snapshot; nothing models temporal evolution |
+| Distributed training / multi-node cluster | ⛔ single workstation; Spark is used for data preparation and streaming |
+| Exactly-once end-to-end | ⛔ not claimed: at-least-once with idempotent sinks |
 
----
+Full matrix: [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
 
-## 📊 Experimental Evaluation & Evidence Status
+## Architecture
 
-To maintain scientific integrity, experimental results in this repository are divided into two distinct tiers:
+```mermaid
+flowchart LR
+  EC[Elliptic CSVs] -->|Spark: process_elliptic_spark.py| ES[(elliptic_spark<br/>nodes / edges / splits)]
+  ZP[(Zenodo Parquet store<br/>16.9 M tx, reused)] -->|Spark: zenodo_anomaly_pipeline.py| ZF[(features)]
+  ES -->|run_final_model_selection.py| EM[[elliptic-supervised 1.0.1]]
+  ZF -->|fit 2 % sample| ZM[[zenodo-isolation-forest 1.0.0]]
+  ZF -->|batch score| ZS[(16.9 M scores)]
+  ES -->|replay_producer.py| K[(Kafka)]
+  ZP -->|replay_producer.py| K
+  K -->|Spark Structured Streaming| SC{{ScoringService<br/>explicit routing}}
+  EM --> SC
+  ZM --> SC
+  SC --> P[(predictions / dead_letter / monitoring)]
+  P --> D[FastAPI + dashboard]
+  ZS --> D
+```
 
-### Tier 1: Reproducible Local Engine Benchmarks (Zenodo Dataset on Windows)
-*Evidence Status:* **Directly Reproducible.** Verified locally using Apache Spark 3.5.0 + PyArrow on Drive `D:`, validated with 100% concordance against an independent pure-Python causal reference implementation:
+Details, components and graph-context handling: [`docs/END_TO_END_ARCHITECTURE.md`](docs/END_TO_END_ARCHITECTURE.md). Design decisions: [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
-> [!WARNING]
-> **Scope & Caveat:** These benchmarks evaluate bounded local batch preprocessing of static Zenodo text slices on Windows using a local SparkSession. They **do NOT** represent live streaming ingestion, production distributed cluster throughput, or real-time Kafka streaming latency.
+### Batch vs replay vs live
 
-#### Benchmark Versions & Evolution:
-1. **Initial Baseline (`spark_scale_benchmark_*.json`):**
-   - Evaluated initial Spark implementation with full Parquet read-back validation.
-   - Point-in-time discrete RSS sampling at transformation and writer boundaries.
-2. **Streaming Validation Revision (`*_v2.json`):**
-   - Corrected address-history volume methodology ($\max(\text{in}, \text{out})$ per transaction event).
-   - Replaced full Parquet table loads with bounded `pyarrow.dataset` micro-batched validation.
-   - Identified measurement artifact: Python driver ending RSS (170.56 MB) exceeded discrete peak sample (100.22 MB) due to post-write verification allocations.
-3. **Continuous High-Frequency Monitoring Revision (`*_v3.json`):**
-   - Integrated continuous 50ms background daemon polling tracker capturing true peak memory across all execution phases.
-   - Separated Python Driver Spark-phase peak from overall peak, JVM child process RSS, and total process tree RSS.
-   - Replaced full-dataset key aggregation and full-dataset ground truth parsing with genuinely bounded $O(\text{sample\_size})$ streaming key selection and two-pass address history extraction.
+* **Batch:** Spark jobs over files (Elliptic preprocessing, Zenodo features, full Zenodo scoring).
+* **Replay streaming:** stored transactions are published to Kafka at a chosen rate and consumed by Spark Structured Streaming exactly as live events would be. This is what "streaming" means in this repository.
+* **Live:** reading new blocks from a Bitcoin node or API. Not implemented.
 
-#### Measured Results (Latest `_v3` Reports with Bounded Validation & Continuous Polling):
-- **100,000 Raw Lines Benchmark (`spark_scale_benchmark_100000_v3.json`):**
-  - **Throughput:** **4,055.64 lines/sec** (**737.03 completed transactions/sec**).
-  - **Wall-Clock Runtime:** 24.66 s (9.35 s Spark Catalyst transforms, 10.93 s streaming Parquet write).
-  - **Python Driver Memory:** Start: **49.88 MB** | Spark Write Peak: **101.80 MB** | Overall Peak: **125.64 MB** | End: **125.64 MB** | Driver Peak Growth: **75.76 MB**.
-  - **JVM Child Subprocess Peak:** **2,098.39 MB** (Spark Java executor/driver heap).
-  - **Total Process Tree Peak:** **2,155.93 MB** (Combined Python + Java memory).
-  - **Disk Footprint:** 2.20 MB Snappy-compressed Parquet partitioned by `block_chunk=480000-480999`.
-  - **Drive Isolation:** Exactly **0 bytes written to Drive C:** (9.66 GB free before and after).
-  - **Correctness:** 60/60 representative sample transactions matched 100% against Python ground truth across all 18 feature columns.
-- **50,000 Raw Lines Benchmark (`spark_scale_benchmark_50000_v3.json`):**
-  - **Throughput:** **2,525.68 lines/sec** (**411.63 completed transactions/sec**).
-  - **Wall-Clock Runtime:** 19.80 s (8.04 s transforms, 8.44 s streaming Parquet write).
-  - **Python Driver Memory:** Start: **49.34 MB** | Spark Write Peak: **95.08 MB** | Overall Peak: **117.07 MB** | End: **117.07 MB** | Driver Peak Growth: **67.73 MB**.
-  - **JVM Child Subprocess Peak:** **1,946.18 MB**.
-  - **Total Process Tree Peak:** **2,036.46 MB**.
-  - **Drive Isolation:** 0 bytes delta on Drive C: (9.66 GB free).
-- **Full ~10.86 GB Zenodo Dataset Preprocessing Run (`zenodo_preprocessing_report.json`):**
-  - **Dataset Scope:** Full Zenodo Record 7157854 (Part 2 of 4), Block Range 480000–489999 (all 18 archives `aa` through `ar`).
-  - **Raw Input:** **10,860,618,992 bytes** (~10.115 GiB uncompressed text, 85,721,542 records).
-  - **Completed Transactions Assembled:** **16,889,271** (0 dropped boundary transactions).
-  - **Throughput:** **6,132.89 raw lines/sec** across 86 distributed Spark splits.
-  - **Wall-Clock Runtime:** 13,977.35 s (~3.88 hours).
-  - **Output Parquet:** **2,132.83 MB** (~2.13 GB Snappy Parquet, 10 Hive partitions `block_chunk=480000-480999` through `489000-489999`).
-  - **Python Driver Memory:** Start: **90.37 MB** | Spark Write Peak: **90.23 MB** | Overall Peak: **940.46 MB** (bounded streaming via 1,000-row microbatches).
-  - **JVM Child Peak:** **4,645.73 MB** (~4.65 GB) | **Total Process Tree Peak:** **5,277.75 MB** (~5.28 GB).
-  - **Validation:** 100% row match (16,889,271 rows), 0 null primary keys, 0 negative fees, verified with `status: PASS`.
+## Datasets and their roles
 
----
-
-### Tier 2: Academic Course Simulation Baseline (Elliptic Dataset, Review 2 Submission)
-*Evidence Status:* **Academic Milestone Presentation / In-Memory Prototype.** These metrics reflect the Review 2 academic submission for 21CSC314P Big Data Essentials evaluated on the 49-timestep Kaggle Elliptic transaction graph dataset in Google Colab (`Review2_Blockchain_AML_Colab_Notebook.ipynb`, `Report_Review2_Blockchain_21CSC314P.md`):
-
-- **Model Detection Metrics (Holdout Timesteps 35–49):**
-  - **Illicit Class Recall:** **0.739** (vs. baseline GCN 0.600, EvolveGCN 0.710)
-  - **AUC-ROC:** **0.919** | **Average Precision (AP):** **0.770**
-  - *Note:* Evaluated on pre-extracted 165-dimensional Elliptic node features with GATConv + GBDT. Retraining on the Zenodo feature store is a downstream integration task.
-- **Synthetic Streaming & Scaling Simulation:**
-  - **Synthetic Streaming Latency:** **1.69 ms** per micro-batch (measured as in-memory inference latency on pre-vectorized feature batches; does not include raw socket ingestion or Kafka network overhead).
-  - **Theoretical Throughput:** **399,525 tx/sec** (in-memory batch inference rate without graph rebuild).
-  - **Simulated Speedup (Amdahl's Law):** $S_P = 3.12\times$ on 4 workers ($f = 0.92$, $78.1\%$ efficiency).
-
----
-
-### Tier 3: Verified Empirical Evaluation of `TGAT-BoostNet` (Elliptic Benchmark on Windows)
-*Evidence Status:* **Empirically Evaluated & Reproducible.** Trained and evaluated locally on the 203,769-node Elliptic Bitcoin transaction graph under a strict chronological protocol (Train: Steps 1–29, Val: Steps 30–34, Test: Steps 35–49).
-
-- **Full Reports**:
-  - Baseline Research Report: [`data/validation/tgat_boostnet_experiment/TGAT_BOOSTNET_REPORT.md`](data/validation/tgat_boostnet_experiment/TGAT_BOOSTNET_REPORT.md)
-  - Controlled 7-Configuration Ablation Report: [`data/validation/tgat_boostnet_improved/IMPROVED_TGAT_BOOSTNET_REPORT.md`](data/validation/tgat_boostnet_improved/IMPROVED_TGAT_BOOSTNET_REPORT.md)
-  - Audit & Baseline Reproducibility: [`data/validation/tgat_boostnet_improved/AUDIT_AND_BASELINE_REPRODUCIBILITY.md`](data/validation/tgat_boostnet_improved/AUDIT_AND_BASELINE_REPRODUCIBILITY.md)
-- **Model Checkpoints**: [`tgat_checkpoint.pt`](data/validation/tgat_boostnet_improved/tgat_checkpoint.pt), [`tgat_boostnet_xgb.json`](data/validation/tgat_boostnet_improved/tgat_boostnet_xgb.json), [`tgat_boostnet_opt_xgb.json`](data/validation/tgat_boostnet_improved/tgat_boostnet_opt_xgb.json)
-- **Authoritative Split Counts**: Train = 26,381 nodes (imbalance 8.19:1); Val = 3,513 nodes; Test = 16,670 nodes; Unlabelled = 157,205 nodes (100% masked from loss/eval). Step 35 authoritative count: 1,341 labelled (182 illicit, 1,159 licit).
-- **Ablation Comparison Across 5 Random Seeds (Mean ± Std)**:
-  - **TGAT Hybrid Ensemble (Configuration 8)**: Precision: **$0.8418 \pm 0.0751$** | Recall: **$0.6949 \pm 0.0116$** | Illicit F1: **$0.7598 \pm 0.0283$** | ROC-AUC: **$0.9365 \pm 0.0016$** (Top Overall F1)
-  - **TGAT-BoostNet Baseline (197 Fused Features)**: Precision: **$0.8718 \pm 0.0467$** | Recall: $0.6643 \pm 0.0132$ | Illicit F1: $0.7534 \pm 0.0149$ | ROC-AUC: $0.9307 \pm 0.0011$ (Highest Precision, Prunes 77.3% False Alarms)
-  - **TGAT-BoostNet Optimized (197 Fused Features)**: Precision: $0.8347 \pm 0.0522$ | Recall: $0.6754 \pm 0.0093$ | Illicit F1: $0.7458 \pm 0.0165$ | ROC-AUC: $0.9323 \pm 0.0017$
-  - **HistGBDT Baseline (165 Features)**: Precision: $0.8017 \pm 0.0817$ | Recall: $0.7221 \pm 0.0105$ | Illicit F1: $0.7579 \pm 0.0291$ | ROC-AUC: $0.9404 \pm 0.0017$
-  - **XGBoost Alone (165 Features)**: Precision: $0.6304 \pm 0.0000$ | Recall: $0.7433 \pm 0.0000$ | Illicit F1: $0.6822 \pm 0.0000$ | ROC-AUC: $0.9276 \pm 0.0000$
-  - **TGAT Alone (32-dim Graph Embedding)**: Precision: $0.2857 \pm 0.0166$ | Recall: $0.4925 \pm 0.0408$ | Illicit F1: $0.3606 \pm 0.0138$ | ROC-AUC: $0.8386 \pm 0.0057$
-- **Operational Advantage**: Adding 32-dim topological embeddings to XGBoost increased illicit F1 from 0.6822 to 0.7534 (+10.4% relative gain) and slashed false positive compliance alerts by **77.3%** (from 472 false alarms down to 107 on Seed 42).
-- **In-Memory Inference Latency**: TGAT-BoostNet achieves **0.31 ms / tx** for fused boosting inference and **2.50 ms / tx** for full end-to-end inference (amortizing to **6.34 $\mu$s / tx** at batch size 1,000).
-
----
-
-## 📐 Data Contracts & Schema Specification
-
-The pipeline enforces a strict four-layer column taxonomy across preprocessing, storage, and modeling:
-
-| Schema Layer | Column Count | Description & Columns Included |
-| :--- | :---: | :--- |
-| **Physical Parquet Columns** | **18** | Columns physically encoded in `part-0.parquet` files: 3 identifiers (`block_number`, `tx_index`, `tx_hash`) + 15 numerical features. |
-| **Hive Partition Directory Key** | **1** | Directory hierarchy path (`block_chunk={start}-{end}`). Enables filesystem pruning without bloating individual Parquet files. |
-| **Partitioned Dataset Columns** | **19** | Total columns exposed when reading via `pyarrow.dataset.dataset(..., partitioning="hive")` or `spark.read.parquet()` (18 physical + 1 virtual `block_chunk`). |
-| **Downstream Model Features** | **15** | Feature vector consumed by anomaly detection algorithms: `num_inputs`, `num_outputs`, `total_input_satoshi`, `total_output_satoshi`, `fee_satoshi`, `fee_rate`, `is_coinbase`, `avg_input_val`, `avg_output_val`, `input_output_count_ratio`, `input_output_val_ratio`, `max_input_prior_tx_count`, `avg_input_prior_tx_count`, `max_input_prior_volume_satoshi`, `new_address_fraction`. |
-
----
-
-## 📁 Repository Structure
-- `src/spark/` - Apache Spark distributed batch preprocessing pipeline and data contracts:
-  - `schemas.py`: Formal schemas for raw records, assembled transactions, and 18-column feature tables.
-  - `zenodo_batch.py`: Distributed batch transformer with strict causal windows and bounded PyArrow Parquet writer.
-- `src/data/` - Dataset boundary handling, Elliptic audit, preprocessing, and validation.
-- `src/graph/` - Directed bipartite address-transaction graph builders (Cartesian-free).
-- `src/features/` - Chronological transaction and graph feature extractors (deduplicated participation, no change double-counting).
-- `scripts/smoke_test_spark.py` - Reproducible Spark batch smoke test validating causality and PyArrow output.
-- `scripts/run_spark_scale_benchmark.py` - Automated bounded scale benchmark with continuous memory tracking and dataset validation.
-- `scripts/run_zenodo_preprocessing.py` - Dedicated multi-chunk batch preprocessor with cross-boundary reconstruction, preflight test, and bounded validation.
-- `tests/` - Comprehensive unit and integration test suite (41 tests).
-- `Review2_Blockchain_AML_Colab_Notebook.ipynb` - Full interactive Jupyter/Colab notebook with all 14 executable sections
-- `Distributed_Blockchain_Anomaly_Review2.pptx` - Official 15-slide presentation for Review 2
-- `Report_Review2_Blockchain_21CSC314P.docx` - Complete academic report in Times New Roman 12pt format
-- `Report_Review2_Blockchain_21CSC314P.md` - Complete markdown report
-- `train_sota_dl.py` - PyTorch Geometric implementation script
-- `*.png` - All 7 high-resolution diagnostic figure panels
-
----
-
-## 🚀 Zenodo Batch Preprocessing Results (Multi-Chunk Real Dataset)
-
-The dedicated batch preprocessor (`scripts/run_zenodo_preprocessing.py`) executed across all 4 contiguous real Zenodo chunks on Drive `D:`, verifying boundary continuity and generating the partitioned feature store:
-
-| Metric | Measured Value | Methodology & Caveats |
+| Dataset | Content | Role |
 |---|---|---|
-| **Deposit Context** | Zenodo Record 7157854 (Block 480000–489999) | Full deposit range comprises 18 chunk parts (`aa`–`ar`, ~10.6 GB uncompressed). |
-| **Chunks Processed** | 4 contiguous chunks (`aa`, `ab`, `ac`, `ad`) | Processed parts present on disk; parts `ae`–`ar` (2.58 GB compressed) remain on Zenodo. |
-| **Raw Input Data** | **2,535,662,744 bytes (2.536 GB)** | 4 uncompressed text slices in chronological block order (blocks 480000 to ~482080). |
-| **Raw Lines Ingested** | **20,000,000 lines** | Exactly 20M lines parsed; 0 malformed lines. |
-| **Completed Transactions** | **4,045,123 transactions** | Grouped by `(block_number, tx_index, tx_hash)` across chunks; 1 incomplete end-boundary transaction dropped. |
-| **Output Parquet Size** | **507.69 MB** (532,347,696 bytes) | Snappy-compressed, written via bounded PyArrow streaming writer. |
-| **Hive Partitions** | **3 partitions** | `block_chunk=480000-480999`, `481000-481999`, `482000-482999`. |
-| **Preflight Boundary Check** | **PASSED** | Verified cross-chunk transaction `(480521, 839)` assembled with 2 inputs from `aa` and 2 outputs from `ab`. |
-| **Bounded PyArrow Validation** | **PASSED** | Verified all 4,045,123 rows, 18 physical columns, zero null primary keys, zero negative fee violations. |
-| **Spark Processing Time** | **1,384.58 s (~23.08 min)** | Measured via `ZenodoSparkBatchPipeline` end-to-end execution. |
-| **Peak Process Tree Memory** | **4,630.75 MB (~4.63 GB)** | Combined footprint of Python driver (324.68 MB peak) and JVM Catalyst worker (4,554.38 MB peak). |
-| **Drive C: Containment** | **0.23 GB delta (9.42 GB free)** | Driver and JVM temp directories strictly pinned to Drive `D:` scratch space. |
-| **Drive D: Free Space** | **130.64 GB free** | All output Parquet, unpacked inputs, and Spark scratch directories reside on Drive `D:`. |
-| **Reproducible Report** | `data/validation/zenodo_preprocessing_report.json` | Fully verifiable JSON report generated at run completion. |
+| **Elliptic** (`data/raw/elliptic`) | 203,769 transactions, 165 anonymised features, 234,355 edges, 49 time steps; 4,545 illicit, 42,019 licit, 157,205 unknown | Supervised benchmark. Train steps 1–29, validation 30–34, test 35–49. Unknown labels stay in the graph and never enter a loss or metric |
+| **Zenodo record 7157854, part 2** (`data/parquet/zenodo_features`) | 16,889,271 reconstructed Bitcoin transactions, blocks 480000–489999 (built once in ~3.9 h; reused, never rebuilt) | Unsupervised anomaly scoring. No reliable illicit labels (an address-overlap study found too little overlap) |
 
----
+The two models produce **different kinds of scores** and are never mixed: `illicit_probability` (Elliptic) vs `isolation_forest_anomaly_score` (Zenodo, "unusual", not "illicit"). Model cards: [`docs/MODEL_CARDS.md`](docs/MODEL_CARDS.md).
 
-## ⚙️ Distributed Preprocessing Architecture: Spark vs. Bounded PyArrow
+## Results
 
-To scale to multi-million Zenodo Bitcoin transactions on Windows without unverified native binary dependencies (`winutils.exe` / `hadoop.dll`), the preprocessing pipeline divides responsibilities:
+### Elliptic, test steps 35–49 (mean of 5 seeds; selection by validation only)
 
+| Model | Precision | Recall | Illicit F1 | ROC-AUC | AP |
+|---|---:|---:|---:|---:|---:|
+| **HistGBDT + neighbour aggregates (selected)** | **0.883** | 0.726 | **0.797** | 0.934 | 0.798 |
+| HistGBDT, tuned | 0.887 | 0.718 | 0.793 | 0.938 | 0.799 |
+| Ensemble HistGBDT + HistGBDT-with-GAT | 0.857 | 0.720 | 0.782 ± 0.022 | 0.940 | 0.799 |
+| HistGBDT + cross-fitted GAT embeddings | 0.821 | 0.718 | 0.765 ± 0.028 | 0.939 | 0.795 |
+| HistGBDT, earlier ablation settings (reproduces the earlier report) | 0.802 | 0.722 | 0.758 ± 0.029 | 0.940 | 0.794 |
+| XGBoost, earlier settings | 0.630 | 0.743 | 0.682 | 0.928 | 0.789 |
+| GAT alone | 0.490 | 0.494 | 0.492 ± 0.020 | 0.868 | 0.468 |
+
+All 12 configurations, confusion matrices and per-step metrics: [`docs/VERIFIED_RESULTS.md`](docs/VERIFIED_RESULTS.md) §1. Main points:
+
+* **Learned GAT embeddings do not beat plain gradient boosting** once stacking leakage is removed. The earlier "TGAT-BoostNet" fed the booster embeddings from a GAT trained on the same labels; with that leakage the hybrid scores 0.697.
+* The differences among the top three models (< 0.03 F1) are **within threshold noise** and should not be read as a ranking.
+* **Recall collapses after time step 43**: 0.85 on steps 35–42, 0.03 on steps 43–49. After step 43, illicit transactions look like training-period licit ones (only 6 % of their nearest training neighbours are illicit, vs 82 % before). The data has no timestamps, so it cannot confirm the dark-market-shutdown explanation from the literature.
+
+### Zenodo (unsupervised)
+
+16,889,271 transactions scored; stable across block ranges (PSI < 0.1 per 1,000 blocks); synthetic fan-in/fan-out anomalies are separated (AUROC 1.00 / 0.99) but subtle fee manipulation is not (0.49). Top-ranked real transactions are mostly 150-input → 1-output dust consolidations. A flag means "unusual", not "illicit". Report: [`data/validation/zenodo_anomaly/ZENODO_ANOMALY_REPORT.md`](data/validation/zenodo_anomaly/ZENODO_ANOMALY_REPORT.md).
+
+### Performance (one workstation; not a cluster benchmark)
+
+| Measurement | Value |
+|---|---|
+| Elliptic Spark preprocessing | 218 s |
+| Zenodo Spark feature stage / full scoring of 16.9 M tx | 326 s / 2,319 s |
+| Elliptic inference per ~5,000-node snapshot | 33 ms (+24 ms graph-context construction) |
+| Zenodo in-memory scoring | 12 ms per event; ~17–20k events/s in batches |
+| Kafka → Spark → Parquet at 200 events/s | 217 events/s sustained, e2e p50 2.5 s, p95 4.8 s |
+| Unthrottled replay | 937 events/s sustained (consumer-bound) |
+
+"E2E" = producer send → prediction row written. Elliptic events additionally wait until their whole time-step snapshot has arrived (graph context), so their latency is dominated by snapshot completion.
+
+## Setup (Windows PowerShell)
+
+Requirements: Python 3.12, Java 8 JRE (Spark 3.5.0 and Kafka), ~10 GB free on D:. Exact versions: [`requirements.txt`](requirements.txt).
+
+```powershell
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe scripts\fetch_spark_jars.py          # Kafka connector + pure-Java local FS (SHA-1 verified)
+Copy-Item .env.example .env                                     # placeholders only; adjust paths
 ```
-[ Raw Zenodo Data on D: ]
-           │
-           ▼
-[ Apache Spark Catalyst Engine ]
-  ├─ Raw text parsing & hash validation (64-char hex)
-  ├─ Address disambiguation (unableToDecode / coinbase masking)
-  ├─ Completed transaction grouping & fee aggregation
-  └─ Leakage-safe chronological window features (strictly rowsBetween(unboundedPreceding, -1))
-           │
-           ▼  (Partition-by-partition toLocalIterator streaming; bounded < 1 MB batch RAM)
-[ Native PyArrow Parquet Writer ]
-  ├─ Snappy compression
-  ├─ Chunk-partitioned directory layout (block_chunk={start}-{end}/part-0.parquet)
-  ├─ Safe two-phase replacement with automatic rollback on failure
-  └─ Parquet _SUCCESS marker generation
-           │
-           ▼
-[ Verified Parquet Feature Store on D: ]
+
+Kafka: unpack Apache Kafka 3.7.2 to the path in `BSAD_KAFKA_HOME` (see `.env.example`). Problems: [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md).
+
+## How to run
+
+```powershell
+# 1. Elliptic through Spark, then parity/integrity checks (33 checks)
+.venv\Scripts\python.exe scripts\process_elliptic_spark.py
+.venv\Scripts\python.exe scripts\validate_elliptic_spark_parity.py
+
+# 2. Train, select (validation only) and export the Elliptic model  (~1.5 h with 3 parallel workers)
+.venv\Scripts\python.exe scripts\run_final_model_selection.py --train-only --seeds 42 789      # worker 1
+.venv\Scripts\python.exe scripts\run_final_model_selection.py --train-only --seeds 123 2024    # worker 2
+.venv\Scripts\python.exe scripts\run_final_model_selection.py --train-only --seeds 456         # worker 3
+.venv\Scripts\python.exe scripts\run_final_model_selection.py --aggregate-only --model-version 1.0.2
+.venv\Scripts\python.exe scripts\analyze_step43_shift.py
+
+# 3. Zenodo anomaly pipeline on the existing Parquet store (no raw reconstruction)
+.venv\Scripts\python.exe scripts\zenodo_anomaly_pipeline.py features
+.venv\Scripts\python.exe scripts\zenodo_anomaly_pipeline.py fit --model-version 1.0.1
+.venv\Scripts\python.exe scripts\zenodo_anomaly_pipeline.py score
+.venv\Scripts\python.exe scripts\evaluate_zenodo_anomaly.py
+
+# 4. Kafka + Spark Structured Streaming replay
+.venv\Scripts\python.exe scripts\local_kafka.py start
+.venv\Scripts\python.exe scripts\local_kafka.py topics
+# terminal A: consumer (continuous micro-batches; restart with the same --run-dir resumes from the checkpoint)
+.venv\Scripts\python.exe scripts\streaming_consumer.py --run-dir data\streaming\demo --trigger "2 seconds"
+# terminal B: producers
+.venv\Scripts\python.exe scripts\replay_producer.py elliptic --steps 42 43 44 --rate 300
+.venv\Scripts\python.exe scripts\replay_producer.py zenodo --block-chunk 487000-487999 --limit 4000 --rate 200
+
+# 5. API + dashboard  ->  http://127.0.0.1:8000
+.venv\Scripts\python.exe -m uvicorn src.api.app:app --host 127.0.0.1 --port 8000
 ```
 
-### Architectural Guarantees & Memory Realities:
-1. **Bounded PyArrow Buffer vs. Process Footprint:**
-   - **What is strictly bounded:** The PyArrow writer streams records partition-by-partition via `toLocalIterator()` in discrete micro-batches (`batch_size=1000`, ~1 MB RAM buffer), preventing full dataset materialization in Python.
-   - **Process RSS Reality:** Total process RSS is **not** strictly capped at 100 MB. The Python driver operates between ~50 MB and ~170–240 MB due to Py4J socket buffers, object allocations, and verification data structures. Simultaneously, the JVM child process utilizes ~1.9–2.0 GB of memory for Spark's Catalyst engine, internal shuffle buffers, and Java heap. Total process tree footprint peaks around ~2.1–2.2 GB.
-2. **Drive C: Strict Storage Isolation:** All Spark local scratch space (`spark.local.dir`), temporary files (`java.io.tmpdir`, `TEMP`, `TMP`), Spark warehouse files, pip caches, and Parquet outputs are configured strictly on Drive `D:`. Exactly 0 bytes are written to Drive `C:`.
-3. **Temporal Causality & Change Isolation:** Window operations strictly exclude current and future transactions (`rowsBetween(Window.unboundedPreceding, -1)`). An address participating as both input and change output in transaction $T$ is grouped into a single historical participation event with transferred volume $\max(\text{in}, \text{out})$, preventing change outputs from leaking into transaction $T$'s features or double-counting historical volume.
-4. **Safe Two-Phase Output Replacement:** Output writes are staged in `.staging_{uuid}`. If destination exists, it is backed up to `.backup_{uuid}` before replacement. Any failure during staging or replacement automatically rolls back and cleans up. If automated rollback also encounters a filesystem failure, the backup directory is preserved safely on disk, raising a descriptive `RuntimeError`.
-5. **Memory-Bounded Dataset Validation:** Parquet validation uses `pyarrow.dataset` metadata scanners and micro-batched streams, verifying millions of rows without loading the dataset into driver memory.
+Model versions are never overwritten: export refuses an existing version, and the scorer loads the highest version under `artifacts/models/<dataset>/` unless `BSAD_ELLIPTIC_BUNDLE` / `BSAD_ZENODO_MODEL` pin one. The dashboard reads `BSAD_STREAM_RUN_DIR` (default `data/streaming/demo`); the run selector switches between runs.
 
+The unified scorer is also an HTTP endpoint: `POST /api/score` with canonical events ([`docs/DATA_SCHEMAS.md`](docs/DATA_SCHEMAS.md), JSON Schemas in [`docs/schemas/`](docs/schemas/)).
+
+## Tests and benchmarks
+
+```powershell
+.venv\Scripts\python.exe -m pytest                                        # 92 unit tests, no infrastructure
+.venv\Scripts\python.exe -m pytest tests\integration -m integration -v    # needs the local Kafka broker
+.venv\Scripts\python.exe scripts\benchmark_scoring.py                     # in-memory latency
+.venv\Scripts\python.exe scripts\run_streaming_benchmark.py --events 6000 --rate 200 --name rate200
+.venv\Scripts\python.exe scripts\verify_saved_metrics.py                  # recompute earlier reported metrics
+```
+
+The integration suite covers delivery, dead-lettering, duplicate removal, restart from checkpoint, hard-kill recovery (0 lost / 0 duplicated), dashboard API, mixed-dataset routing and bit-identical stream-vs-batch Elliptic scores. The restart/kill test failed once in seven runs with an uncaptured cause.
+
+## Limitations
+
+1. Elliptic recall after time step 43 is ≈0.03; no model here handles that shift.
+2. Validation (3,513 rows, F1 ≈ 0.97) barely separates strong models; thresholds are fragile (≈±0.03 F1).
+3. Zenodo has no labels; flags are a review queue, and top-set membership varies between refits.
+4. Zenodo address-history features come from the batch store; new blocks would need streaming address state.
+5. Spark Python workers crash on this host, so streaming scoring runs in the Spark driver (`foreachBatch`).
+6. Single plaintext Kafka broker on localhost; topic deletion disabled (Windows file-locking crash).
+7. All measurements are from one Windows workstation.
+
+## Repository map
+
+| Path | Purpose |
+|---|---|
+| `src/spark/` | Spark session (Windows-safe), Elliptic Spark pipeline, Zenodo batch pipeline |
+| `src/models/` | Elliptic training utilities, static GAT encoder, exportable bundle with `predict(nodes, edges)` |
+| `src/anomaly/` | Zenodo features (Spark + identical pandas version) and Isolation Forest detector |
+| `src/contracts/`, `src/scoring/` | Versioned event/prediction schemas, adapters, routing `ScoringService` |
+| `src/streaming_replay/` | Kafka replay producer, Structured Streaming consumer |
+| `src/api/` | FastAPI + dashboard |
+| `scripts/` | Command-line entry points (see "How to run") |
+| `tests/`, `tests/integration/` | Unit and infrastructure tests |
+| `docs/` | Architecture, decisions, schemas, model cards, verified results, status, log |
+| `data/validation/` | Reports and metrics produced by the scripts |
+
+## Earlier work and corrections
+
+Material from the course reviews is kept for reference (`Report_Review2_*`, `Review2_Blockchain_AML_Colab_Notebook.ipynb`, the `.pptx`, `data/validation/tgat_boostnet_*`, and the previous README at [`docs/history/README_before_2026-10-14.md`](docs/history/README_before_2026-10-14.md)). Corrections to claims made there:
+
+* **"TGAT-BoostNet" was not temporal and was leaky.** Its GAT received only a scalar `t/49` (Elliptic edges never cross time steps) and the booster was trained on in-sample embeddings. Its reported numbers do recompute correctly from the saved predictions, but with leakage removed the GAT-hybrid does not beat tabular HistGBDT.
+* The "77.3 % fewer false alarms" figure compared the hybrid with an untuned XGBoost on one seed; tuned tabular models have similar false-positive counts.
+* The Review-2 Colab figures (1.69 ms micro-batch latency, 399,525 tx/s, Amdahl speed-up 3.12×) were in-memory or simulated, not end-to-end measurements. Measured end-to-end figures are above.
+* The step-43 drop was previously attributed to the AlphaBay/Hansa takedown; the data cannot confirm a cause.
+
+The Zenodo raw-data preprocessing results from that period remain valid and are the input to everything here: 10.86 GB of raw text (85.7 M records) → 16,889,271 transactions in 2.13 GB of Parquet, 13,977 s, validated with 0 null keys and 0 negative fees (`data/validation/zenodo_preprocessing_report.json`).
 

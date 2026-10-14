@@ -1,0 +1,39 @@
+{
+  "name": "bench_unthrottled",
+  "complete": true,
+  "events": 20000,
+  "requested_rate_eps": 0.0,
+  "trigger": "1 second",
+  "spark_master": "local[2]",
+  "kafka_partitions": 3,
+  "consumer_startup_seconds": 67.2,
+  "producer": {
+    "events_sent": 20000,
+    "elapsed_seconds": 7.033,
+    "send_rate_eps": 2843.8
+  },
+  "predictions_written": 20000,
+  "unique_event_ids": 20000,
+  "status_counts": {
+    "scored": 19989,
+    "skipped_coinbase": 11
+  },
+  "e2e_latency_ms": {
+    "p50": 14840.0,
+    "p95": 21168.0,
+    "p99": 21578.01,
+    "max": 21779.0,
+    "n": 20000
+  },
+  "sustained_throughput_eps": 936.6,
+  "wall_seconds_producer_start_to_last_prediction": 30.14,
+  "micro_batches_nonempty": 5,
+  "foreachbatch_seconds": {
+    "median": 2.6155,
+    "max": 2.9467
+  },
+  "spark_trigger_duration_ms_median": 5376.5,
+  "peak_process_tree_rss_mb": 1051.9,
+  "errors": 0,
+  "definition": "e2e latency = scored_at - produced_at (producer send -> prediction row written, includes Kafka, trigger wait, Spark micro-batch, validation, scoring and Parquet write)"
+}
