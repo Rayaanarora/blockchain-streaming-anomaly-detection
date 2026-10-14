@@ -30,3 +30,4 @@ data/validation/final_model_selection/seed_*_probs.parquet
 data/validation/final_model_selection/fitted_seed42/
 data/validation/final_model_selection/backup_before_refit_*/
 *.log
+data/validation/snapshift/**/*.parquet

@@ -12,7 +12,7 @@ Source: `data/validation/final_model_selection/summary.csv`, `seed_results.csv`,
 
 | Config | What it is | Val F1 | Test precision | Test recall | **Test illicit F1** (± std) | ROC-AUC | AP | FP | FN |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **hgb_165_nbr** ✓ selected | HistGBDT, 165 features + 95 non-learned neighbour aggregates | **0.9743** | 0.8831 | 0.7258 | **0.7968 ± 0.0000**¹ | 0.9336 | 0.7977 | 104 | 297 |
+| **hgb_165_nbr** ✓ selected (baseline for §1.6) | HistGBDT, 165 features + 95 non-learned neighbour aggregates | **0.9743** | 0.8831 | 0.7258 | **0.7968 ± 0.0000**¹ | 0.9336 | 0.7977 | 104 | 297 |
 | hgb_165_tuned | HistGBDT, 165 features, grid-tuned, early stopping off | 0.9735 | 0.8870 | 0.7175 | 0.7933 ± 0.0000¹ | 0.9376 | 0.7990 | 99 | 306 |
 | ens_hgb_hgbgat | mean of hgb_165_tuned and hgb_165_gat_cf | 0.9721 | 0.8571 | 0.7204 | 0.7817 ± 0.0224 | 0.9399 | 0.7993 | 135 | 303 |
 | rf_165 | Random forest | 0.9695 | 0.8454 | 0.7158 | 0.7746 ± 0.0169 | 0.9055 | 0.7744 | 144 | 308 |
@@ -60,6 +60,22 @@ Per-step metrics for every config and seed: `per_step_metrics.csv`.
 ### 1.5 Verification of earlier reported numbers
 
 `scripts/verify_saved_metrics.py` → `data/validation/metric_verification/metric_verification.json`: all saved seed-42 predictions recompute to the reported precision/recall/F1/ROC-AUC/AP and confusion matrices (same 16,670 rows, positive class = illicit = 1, thresholds from validation). The earlier five-seed table (HistGBDT 0.8017/0.7221/0.7579…, TGAT-BoostNet 0.8718/0.6643/0.7534…) equals the means of `tgat_boostnet_experiment/seed_results.csv`. Limits of that verification: only seed 42's probabilities were saved in the earlier runs, so seeds 123–2024 could not be recomputed from predictions; `6_Tuned_XGBoost_165` probabilities were never saved; legacy XGBoost's five seeds are identical runs. The new run saves probabilities for every seed and config.
+
+### 1.6 SnapShift-Boost (the project's own model; served as bundle 2.0.0)
+
+Design, ablation and discussion: `docs/SNAPSHIFT_BOOST.md`. Sources: `data/validation/snapshift/dev/summary.json` (component selection on rolling folds inside steps 1–34, test steps removed from the data), `data/validation/snapshift/final/seed_42.json` (single test read), `bundle_checks.json` (export reproduction checks).
+
+| | hgb_165_nbr (1.0.1) | **SnapShift-Boost (2.0.0)** |
+|---|---:|---:|
+| Mean F1 over the 3 rolling development folds | 0.9305 | **0.9364** |
+| Validation F1 (steps 30–34) / threshold | 0.9743 / 0.82 | 0.9796 / 0.90 |
+| Test precision / recall | 0.8831 / 0.7258 | **0.8883 / 0.7267** |
+| **Test illicit F1** | 0.7968 | **0.7994** |
+| Test ROC-AUC / AP | **0.9336** / 0.7977 | 0.9315 / **0.8004** |
+| FP / FN | 104 / 297 | 99 / 296 |
+| Recall steps 35–42 / 43–49 | 0.854 / 0.030 | 0.857 / 0.024 |
+
+Paired bootstrap of the test F1 difference: +0.0026, 95 % interval [−0.0048, +0.0107] resampling transactions and [−0.0050, +0.0104] resampling time steps; positive in 76 % of resamples. **A small improvement that is not statistically significant.** It does not change the post-step-43 collapse (§1.4). Deterministic: a second seed gives bit-identical scores on all 203,769 nodes.
 
 ## 2. Elliptic through Spark
 

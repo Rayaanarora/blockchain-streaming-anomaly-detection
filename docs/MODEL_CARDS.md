@@ -1,10 +1,29 @@
 # Model cards
 
-Two models, two datasets, two different score meanings. The scoring service routes by `source_dataset` and never feeds one dataset's events to the other model (`src/scoring/service.py`).
+Two datasets, two different score meanings. The Elliptic model served by default is **SnapShift-Boost 2.0.0**. Bundle 1.0.1 is its baseline and stays available via `BSAD_ELLIPTIC_BUNDLE`. The scoring service routes by `source_dataset` and never feeds one dataset's events to the other model (`src/scoring/service.py`).
 
 ---
 
-## 1. `elliptic-supervised` 1.0.1
+## 1a. `elliptic-supervised` 2.0.0: SnapShift-Boost (served)
+
+| | |
+|---|---|
+| Location | `artifacts/models/elliptic/2.0.0/` (`manifest.json` with `combine: two_stage`, `scaler.joblib`, `snapshift_stage1.joblib`, `snapshift_stage2.joblib`; SHA-256 per file, checked on load) |
+| Design | Two-stage HistGradientBoosting (same hyper-parameters as 1.0.1). Stage 1 = the 1.0.1 feature set (165 + degree + neighbour means of f1–f93). Stage 2 = stage-1 features + 8 score-propagation features: own stage-1 probability; mean and max over in-, out- and undirected neighbours; undirected 2-hop mean. Training rows get out-of-fold stage-1 scores (4 time-step groups); see `docs/SNAPSHIFT_BOOST.md` |
+| Inputs | Same as 1.0.1: one complete time-step snapshot (raw `f1…f165` + edges). `predict` raises without `edges` |
+| Output | `score` = illicit probability (not calibrated); `flagged` = score ≥ **0.90** (validation-F1-optimal, steps 30–34) |
+| Training data | Labelled steps 1–29 (Spark output) |
+| Selection | Component choice on rolling folds inside steps 1–34 with a pre-registered rule (DECISIONS D-23); test steps never seen during development |
+| Test performance (steps 35–49) | precision 0.8883, recall 0.7267, **illicit F1 0.7994**, ROC-AUC 0.9315, AP 0.8004; TN 15,488 / FP 99 / FN 296 / TP 787 |
+| vs 1.0.1 | +0.0026 F1; 95 % paired-bootstrap interval [−0.005, +0.011]: **not significant** |
+| Known weaknesses | Recall after step 43 is 0.024 (unchanged collapse). Threshold set on a near-saturated validation set. Deterministic, so no seed variance |
+| Order invariance / streaming | Bit-identical scores under node reordering and between per-snapshot and full-graph scoring (`bundle_checks.json`, `tests/test_snapshift.py`) |
+| Inference cost | ≈63 ms per ~5,000-node snapshot (13 µs per transaction) + ≈23 ms graph-context construction (`data/validation/scoring_benchmark.json`) |
+| Intended use | Research benchmark on Elliptic only (same restrictions as 1.0.1) |
+
+---
+
+## 1b. `elliptic-supervised` 1.0.1 (baseline)
 
 | | |
 |---|---|

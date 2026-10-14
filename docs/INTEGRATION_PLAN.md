@@ -7,7 +7,7 @@ How the pieces were connected, in execution order, and what remains. Status mark
 | 1 | Audit repository, run existing tests (66 passed at audit time; 92 unit tests now), recompute saved metrics | ✅ | `scripts/verify_saved_metrics.py` → `data/validation/metric_verification/` |
 | 2 | Make Spark usable for native writes and checkpoints on Windows (Java resolution, pure-Java FS) | ✅ | probe: batch Parquet write and rate-source checkpoint succeed |
 | 3 | Elliptic → Spark preprocessing → `data/processed/elliptic_spark` | ✅ | 33/33 parity checks; 6 Spark tests |
-| 4 | Train/select the supervised model from the Spark output (5 seeds, validation-only) and export a bundle | ✅ `hgb_165_nbr`, bundle 1.0.1 (1.0.0 superseded, D-18) | `data/validation/final_model_selection/`, `docs/VERIFIED_RESULTS.md` |
+| 4 | Train/select the supervised model from the Spark output (5 seeds, validation-only) and export a bundle | ✅ baseline `hgb_165_nbr` bundle 1.0.1; SnapShift-Boost bundle 2.0.0 served (D-23, D-24) | `data/validation/final_model_selection/`, `docs/VERIFIED_RESULTS.md` |
 | 5 | Zenodo features (Spark) → detector fit → full scoring → unsupervised evaluation | ✅ | 16,889,271 rows scored; `data/validation/zenodo_anomaly/evaluation.json`; 5 tests |
 | 6 | Versioned event/result contracts, adapters, unified scorer with routing | ✅ | 10 tests (routing, invalid inputs, graph context, checksums) |
 | 7 | Local Kafka (KRaft) on D:, replay producer | ✅ | delivered counts in producer manifests |

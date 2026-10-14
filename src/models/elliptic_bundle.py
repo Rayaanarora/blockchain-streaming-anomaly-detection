@@ -39,8 +39,12 @@ RECIPES = {
     "hgb_165_gat_cf": [("hgb_165_gat_cf", "x165_emb")],
     "hgb_165_gat_insample": [("hgb_165_gat_insample", "x165_emb")],
     "ens_hgb_hgbgat": [("hgb_165_tuned", "x165"), ("hgb_165_gat_cf", "x165_emb")],
+    # SnapShift-Boost (src/models/snapshift.py): stage 1 scores every node of the snapshot, stage 2 adds
+    # the neighbours' stage-1 scores. Combined as a chain, not averaged (see COMBINE).
+    "snapshift_P": [("snapshift_stage1", "x165_nbr"), ("snapshift_stage2", "x165_nbr_prop")],
 }
-GRAPH_RECIPES = {"x165_nbr", "gat_prob", "x165_emb"}
+GRAPH_RECIPES = {"x165_nbr", "gat_prob", "x165_emb", "x165_nbr_prop"}
+COMBINE = {"snapshift_P": "two_stage"}  # default: mean of the component probabilities
 
 
 class InputValidationError(ValueError):
@@ -97,6 +101,7 @@ def export_bundle(out_root: str, version: str, config: str, fitted: Dict, scaler
         "decision_threshold": threshold,
         "threshold_source": "validation steps 30-34, F1-maximising, seed 42",
         "requires_graph": any(r in GRAPH_RECIPES for _, r in recipe),
+        "combine": COMBINE.get(config, "mean"),
         "gat_edge_direction": gat_direction if needs_gat else None,
         "feature_schema": {"id_column": "tx_id", "time_column": "time_step", "features": FEATURE_COLUMNS,
                            "dtype": "float32", "raw_unscaled": True},
@@ -209,6 +214,15 @@ class EllipticModelBundle:
                 p, emb = self.gat.predict(X, make_edge_index(e_idx, self.manifest["gat_edge_direction"]))
                 feats["gat_prob"], feats["x165_emb"] = p, np.hstack([X, emb])
             return feats[name]
+
+        if self.manifest.get("combine", "mean") == "two_stage":
+            from src.models.snapshift import propagation_features
+            (_, f1, stage1), (_, _, stage2) = self.components
+            F1 = recipe(f1)
+            p1 = stage1.predict_proba(F1)[:, 1]
+            score = stage2.predict_proba(np.hstack([F1, propagation_features(p1, e_idx, n)]))[:, 1]
+            return pd.DataFrame({"tx_id": nodes["tx_id"].to_numpy(), "score": score.astype(float),
+                                 "flagged": score >= self.threshold, "graph_context": context})
 
         probs = []
         for name, feat, model in self.components:

@@ -289,7 +289,10 @@ async function loadRuns() {
   try {
     const r = await (await fetch("/api/runs")).json();
     const sel = $("#run");
-    sel.innerHTML = r.runs.map(x => `<option ${x.name === r.default ? "selected" : ""}>${esc(x.name)}</option>`).join("") || `<option>${esc(r.default)}</option>`;
+    const want = new URLSearchParams(location.search).get("run") || r.default;
+    const names = r.runs.map(x => x.name);
+    if (!names.includes(want)) names.push(want);  // a run that has not written predictions yet
+    sel.innerHTML = names.map(n => `<option ${n === want ? "selected" : ""}>${esc(n)}</option>`).join("");
     RUN = sel.value;
   } catch (e) { /* keep default run */ }
 }

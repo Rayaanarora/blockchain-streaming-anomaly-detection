@@ -6,9 +6,10 @@ Legend: ✅ implemented and verified · 🟡 implemented with a stated limitatio
 
 | # | Criterion | Status | Evidence |
 |---|---|---|---|
-| 1 | Existing datasets and artifacts preserved | ✅ | Raw data, `data/parquet/zenodo_features`, legacy `data/processed/elliptic`, earlier validation reports untouched. Changed outputs were backed up first (`final_model_selection/backup_before_refit_*`); bundle 1.0.0 kept beside 1.0.1. Only stray JVM temp files were deleted (D-22) |
+| 1 | Existing datasets and artifacts preserved | ✅ | Raw data, `data/parquet/zenodo_features`, legacy `data/processed/elliptic`, earlier validation reports untouched. Changed outputs were backed up first (`final_model_selection/backup_before_refit_*`); bundles 1.0.0 and 1.0.1 kept beside 2.0.0. Only stray JVM temp files were deleted (D-22) |
 | 2 | Supervised Elliptic baseline reproducible | ✅ | `hgb_165_legacy` reproduces the earlier five-seed HistGBDT means to 4 decimals; saved seed-42 predictions recompute exactly (`metric_verification.json`) |
-| 3 | Selected model saved and loadable for inference | ✅ | `artifacts/models/elliptic/1.0.1`; checksum-verified load; event-path test F1 = offline value (`scoring_benchmark.json`) |
+| 3 | Selected model saved and loadable for inference | ✅ | SnapShift-Boost `artifacts/models/elliptic/2.0.0` (baseline 1.0.1 kept); checksum-verified load; per-snapshot bundle scores = evaluated scores exactly (`data/validation/snapshift/final/bundle_checks.json`) |
+| 3b | Project's own (novel) model, evaluated without test leakage | ✅ | SnapShift-Boost: components chosen on rolling folds in steps 1–34, single test read, F1 0.7994 vs 0.7968 baseline (not significant). `docs/SNAPSHIFT_BOOST.md` |
 | 4 | Elliptic processed through Spark with verified integrity | ✅ | `scripts/process_elliptic_spark.py` (218 s); 33/33 parity checks; `tests/test_elliptic_spark.py` |
 | 5 | Existing Zenodo Parquet reused | ✅ | All Zenodo stages read `data/parquet/zenodo_features`; raw reconstruction not rerun |
 | 6 | Zenodo anomaly-scoring pipeline, appropriately evaluated | ✅ | 16,889,271 tx scored; unsupervised evaluation without fake labels (`ZENODO_ANOMALY_REPORT.md`) |
@@ -18,7 +19,7 @@ Legend: ✅ implemented and verified · 🟡 implemented with a stated limitatio
 | 10 | Deterministic Kafka → Spark replay runs | ✅ | `scripts/replay_producer.py` → `scripts/streaming_consumer.py`; integration tests; demo run `data/streaming/demo` |
 | 11 | Scoring results persisted | ✅ | `<run>/predictions/batch=*.parquet`, `dead_letter/`, `monitoring/` |
 | 12 | Dashboard displays actual results | ✅ | `src/api/app.py` + `static/index.html` read the persisted run; checked against the demo run (21,178 predictions) |
-| 13 | Important unit and integration tests pass | 🟡 | 92/92 unit; integration 2/2 on the latest runs, but the restart/kill test failed once in 7 runs with an uncaptured cause |
+| 13 | Important unit and integration tests pass | ✅ | 96/96 unit; integration 2/2 with SnapShift-Boost 2.0.0 loaded (2026-10-15). The restart/kill test failed once in 7 earlier runs with an uncaptured cause and has passed every run since |
 | 14 | End-to-end latency and throughput measured | ✅ | `data/validation/streaming_replay/*.json`, demo run, `scoring_benchmark.json` (single workstation only) |
 | 15 | README and architecture docs match the implementation | ✅ | `README.md`, `docs/END_TO_END_ARCHITECTURE.md` |
 | 16 | Remaining limitations documented | ✅ | below, `docs/DECISIONS.md` |

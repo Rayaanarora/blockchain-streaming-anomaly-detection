@@ -75,3 +75,14 @@ The five-seed run takes ~40 min per seed (three GAT trainings for cross-fitting 
 
 ## D-22 Forward slashes in Spark JVM options on Windows
 Spark tokenises `spark.driver.extraJavaOptions` with backslash as an escape, so `-Djava.io.tmpdir=D:\a\b` became the drive-relative `D:ab` and JVM temp files (native lz4/snappy copies) piled up in oddly named folders in the repository root. `get_spark` now passes the path with forward slashes (verified via `System.getProperty("java.io.tmpdir")`); the stray folders contained only those temp files and were removed.
+
+## D-23 The project's own model: SnapShift-Boost, chosen on rolling folds inside steps 1–34 — 2026-10-14
+**Context.** The project needs an original model; the leakage-free GAT hybrids did not beat the tree baseline. Elliptic validation (steps 30–34) is near-saturated (val F1 ≈ 0.97 for many models), so it separates candidates poorly.
+**Decision.** Three components (R within-step ranks, I per-step Isolation Forest score, P two-stage score propagation with time-grouped cross-fitting) were compared in all 8 combinations on three rolling-origin folds (1–19→20–24, 1–24→25–29, 1–29→30–34). Test steps were removed from the data inside the development script. The selection rule (mean fold F1, ≥ 0.005 over the baseline, ties → fewer components then AP) was written into `scripts/snapshift_dev.py` before the first run. It selected **P**. The test set was then read once (`scripts/snapshift_final.py`). Details: `docs/SNAPSHIFT_BOOST.md`.
+**Consequence.** Test F1 0.7994 vs 0.7968 for the baseline (+0.0026; 95 % bootstrap interval −0.005 to +0.011, not significant). This is reported as a small, non-significant improvement. No component or threshold was changed after the test read.
+
+## D-24 Bundle 2.0.0 replaces 1.0.1 as the served Elliptic model
+SnapShift-Boost is exported as `artifacts/models/elliptic/2.0.0` with `combine: two_stage` in the manifest (stage 1 → propagation features → stage 2; older bundles keep the default `mean` combination). The major version changes because the scoring function and threshold (0.90) change. The service picks the highest version. Bundles 1.0.0 and 1.0.1 stay on disk, and `BSAD_ELLIPTIC_BUNDLE` pins any of them. Export is gated on three exact-reproduction checks (refit, second seed, per-snapshot scoring).
+
+## D-25 Run the whole streaming demo with one command
+`scripts/run_pipeline.py` starts Kafka if needed, a fresh topic and run directory, the consumer, the dashboard and the producers, and stops what it started on Ctrl+C. It reruns itself with `.venv` if launched by another interpreter (a user hit `ModuleNotFoundError: confluent_kafka` by running plain `python`). The dashboard honours `?run=<name>` so the launcher can open the new run directly.

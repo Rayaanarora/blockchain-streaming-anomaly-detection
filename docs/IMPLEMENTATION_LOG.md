@@ -57,3 +57,34 @@ Removed: three stray directories in the repository root (`blockchainbigdatablock
 * Make GAT inference order-invariant if a GAT-based model is ever exported.
 * Elliptic post-43 concept shift: needs a different approach (e.g. periodic retraining with newer labels); out of scope here.
 * Live ingestion, streaming address-history state for Zenodo, cluster deployment: not implemented (see `IMPLEMENTATION_STATUS.md`).
+
+## Session 2 (continued) — 2026-10-14, evening
+
+### Changes
+
+| File | Change |
+|---|---|
+| `scripts/run_pipeline.py` (new) | one-command demo: Kafka, fresh topic + run dir, consumer, dashboard, producers; Ctrl+C stops what it started; reruns itself with `.venv` (D-25) |
+| `src/api/static/index.html` | dashboard opens the run named in `?run=` |
+| `src/models/snapshift.py` (new) | SnapShift-Boost components: within-step ranks, per-step Isolation Forest, score propagation, time-grouped cross-fitted stage 1 |
+| `scripts/snapshift_dev.py` (new) | component selection on rolling folds inside steps 1–34 (test steps removed from the data), pre-registered rule |
+| `scripts/snapshift_final.py` (new) | single test read + paired bootstrap against `hgb_165_nbr` |
+| `scripts/export_snapshift_bundle.py` (new) | export bundle 2.0.0, gated on three exact-reproduction checks |
+| `src/models/elliptic_bundle.py` | `snapshift_P` recipe, `combine: two_stage` |
+| `tests/test_snapshift.py` (new) | propagation correctness + order invariance, out-of-fold stage 1, no label reads outside training, two-stage bundle parity |
+| `docs/SNAPSHIFT_BOOST.md` (new); `DECISIONS.md` D-23…D-25; `VERIFIED_RESULTS.md` §1.6; `MODEL_CARDS.md`; `README.md`; `END_TO_END_ARCHITECTURE.md`; `IMPLEMENTATION_STATUS.md`; `INTEGRATION_PLAN.md` | documentation |
+
+### Commands and outcomes
+
+| Command | Outcome |
+|---|---|
+| `py scripts\run_pipeline.py --elliptic-steps 42 --zenodo-limit 1000 --no-browser --exit-when-done` | 8,140 events scored (815 flagged), 0 dead-lettered; dashboard shows the run; no stray Spark processes |
+| `py scripts\snapshift_dev.py --fold 1/2/3` (parallel, OMP 5) + `--summarise` | 8 variants × 3 folds, 23:04 → 23:27; selected **P** (mean fold F1 0.9364 vs baseline 0.9305) |
+| `py scripts\snapshift_final.py` | first run crashed on the manifest key (`threshold` → `decision_threshold`) after saving predictions; rerun reused them. Test F1 0.7994 vs 0.7968; bootstrap CI [−0.005, +0.011] |
+| `py scripts\export_snapshift_bundle.py` | checks 1–3 max diff 0.0; bundle 2.0.0 exported |
+| `py -m pytest tests\test_snapshift.py` | 4 passed |
+| `py -m pytest` + `py -m pytest tests\integration -m integration` with bundle 2.0.0 | first attempt stopped by Claude Code because the system ran low on memory (no results captured) |
+| rerun one at a time (2026-10-15): `py -m pytest` | **96 passed** |
+| `py -m pytest tests\integration -m integration -v` (service loads 2.0.0) | **2 passed** (restart/kill recovery; mixed Elliptic+Zenodo, streamed = batch scores). Log: `data/validation/snapshift/final/integration_2.0.0.log` |
+| `py scripts\benchmark_scoring.py` (1.0.1 result kept as `scoring_benchmark_bundle_1.0.1.json`) | SnapShift-Boost: inference p50 63.3 ms per snapshot (median 4,975 nodes; 13 µs/tx), graph context 23.1 ms; event-path test F1 0.7994 = offline |
+| `py scripts\run_pipeline.py --no-browser --exit-when-done` | run_20261015_002100: 15,203 events scored (Elliptic 12,203 with 2.0.0, 1,023 flagged; Zenodo 2,998 + 2 coinbase skipped), 0 dead-lettered, 0 errors |

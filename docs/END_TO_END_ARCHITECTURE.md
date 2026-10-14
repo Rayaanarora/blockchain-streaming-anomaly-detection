@@ -42,7 +42,9 @@ flowchart LR
 | Zenodo batch (existing) | `src/spark/zenodo_batch.py` | Spark + PyArrow writer | reused, not rerun |
 | Zenodo features | `src/anomaly/zenodo_features.py`, `scripts/zenodo_anomaly_pipeline.py features` | Spark | 13 log-scaled features, row-level DQ status, hash sample bucket; identical pandas implementation for streaming |
 | Zenodo detector | `src/anomaly/zenodo_detector.py` | sklearn | Isolation Forest + robust-z reason codes, versioned manifest + SHA-256 |
-| Elliptic models | `src/models/elliptic_training.py`, `src/models/graph_encoder.py`, `scripts/run_final_model_selection.py` | PyTorch Geometric, sklearn, XGBoost | 12 configurations, 5 seeds, validation-only selection; selected `hgb_165_nbr` (HistGBDT + non-learned neighbour aggregates), see `docs/MODEL_CARDS.md` |
+| Elliptic models | `src/models/elliptic_training.py`, `src/models/graph_encoder.py`, `scripts/run_final_model_selection.py` | PyTorch Geometric, sklearn, XGBoost | Baselines: 12 configurations, 5 seeds, validation-only selection; best `hgb_165_nbr` (bundle 1.0.1) |
+| SnapShift-Boost (served Elliptic model) | `src/models/snapshift.py`, `scripts/snapshift_dev.py`, `snapshift_final.py`, `export_snapshift_bundle.py` | sklearn | Two-stage score propagation per snapshot, bundle 2.0.0 (`combine: two_stage`), see `docs/SNAPSHIFT_BOOST.md`, `docs/MODEL_CARDS.md` |
+| One-command demo | `scripts/run_pipeline.py` | — | Starts Kafka, consumer, dashboard and producers for a fresh run; Ctrl+C stops them |
 | Elliptic bundle | `src/models/elliptic_bundle.py` | | manifest, checksums, `predict(nodes, edges)` with explicit graph-context handling; node-order invariant (D-18) |
 | Contracts | `src/contracts/schemas.py`, `adapters.py`, `docs/schemas/*.json` | pydantic v2 | event v1.0 (discriminated by `source_dataset`), prediction result v1.0 |
 | Unified scorer | `src/scoring/service.py` | | routing by validated event type, never cross-dataset |
