@@ -1,0 +1,2 @@
+**Elliptic (feeds TGAT-BoostNet).** Spark vs reference: raw features exact-match rate 100.00%, max |err| 0.00e+00; standardised features max |err| 4.81e-04 (float32 storage), min R² 1.000000. Null rate 0%, malformed lines 0, dangling edges 0. Future-perturbation test: past features unchanged = True. Spark runtime on all 49 steps: 87 s (2341 tx/s), peak process-tree RSS 5774 MB.  
+**Zenodo appendix.** 18,173 transactions compared on 15 features; max |err| 0.00e+00, exact-match rate 100.00%; malformed lines 0, dropped incomplete boundary tx 0.

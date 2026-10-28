@@ -1,0 +1,20 @@
+\begin{table}
+\caption{TGAT-BoostNet efficiency}
+\label{tab:02_efficiency}
+\begin{tabular}{lllll}
+\toprule
+ & mean & std & idle machine (seed 42) & unit \\
+\midrule
+train\_seconds & 1206.99 & 172.81 & 495.21 & s \\
+gat\_full\_seconds & 217.78 & 13.38 & 94.12 & s \\
+crossfit\_seconds & 965.61 & 167.07 & 396.94 & s \\
+gbdt\_seconds & 21.44 & 24.00 & 3.70 & s \\
+latency\_ms\_median & 127.55 & 105.99 & 22.61 & ms / snapshot \\
+latency\_ms\_p95 & 236.91 & 211.12 & 27.13 & ms / snapshot \\
+throughput\_tx\_per\_s & 52377.41 & 32664.47 & 217198.88 & tx / s \\
+n\_params & 44984.00 & 216.09 & 45054.00 & GAT weights + tree nodes \\
+gat\_params & 25762.00 & 0.00 & 25762.00 & GAT weights \\
+size\_bytes & 959070.20 & 7348.54 & 961448.00 & bytes \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,266 @@
+<style type="text/css">
+#T_92541 caption {
+  caption-side: top;
+  font-weight: 600;
+  text-align: left;
+}
+#T_92541 th {
+  background: #f2f1ee;
+  padding: 4px 8px;
+  text-align: left;
+}
+#T_92541 td {
+  padding: 4px 8px;
+  font-variant-numeric: tabular-nums;
+}
+#T_92541  {
+  border-collapse: collapse;
+  font-family: sans-serif;
+  font-size: 12px;
+}
+#T_92541_row8_col0, #T_92541_row8_col1, #T_92541_row8_col2, #T_92541_row8_col3, #T_92541_row8_col4, #T_92541_row8_col5, #T_92541_row8_col6, #T_92541_row8_col7, #T_92541_row8_col8, #T_92541_row8_col9 {
+  background: #fde6dc;
+  font-weight: 600;
+}
+</style>
+<table id="T_92541">
+  <caption>Efficiency (device: cpu)</caption>
+  <thead>
+    <tr>
+      <th class="blank level0" >&nbsp;</th>
+      <th id="T_92541_level0_col0" class="col_heading level0 col0" >F1</th>
+      <th id="T_92541_level0_col1" class="col_heading level0 col1" >PR-AUC</th>
+      <th id="T_92541_level0_col2" class="col_heading level0 col2" >latency_ms</th>
+      <th id="T_92541_level0_col3" class="col_heading level0 col3" >latency_p95_ms</th>
+      <th id="T_92541_level0_col4" class="col_heading level0 col4" >throughput_tx_s</th>
+      <th id="T_92541_level0_col5" class="col_heading level0 col5" >train_s</th>
+      <th id="T_92541_level0_col6" class="col_heading level0 col6" >params</th>
+      <th id="T_92541_level0_col7" class="col_heading level0 col7" >params_unit</th>
+      <th id="T_92541_level0_col8" class="col_heading level0 col8" >size_kb</th>
+      <th id="T_92541_level0_col9" class="col_heading level0 col9" >timing_source</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th id="T_92541_level0_row0" class="row_heading level0 row0" >CatBoost</th>
+      <td id="T_92541_row0_col0" class="data row0 col0" >0.821</td>
+      <td id="T_92541_row0_col1" class="data row0 col1" >0.807</td>
+      <td id="T_92541_row0_col2" class="data row0 col2" >5.507</td>
+      <td id="T_92541_row0_col3" class="data row0 col3" >7.694</td>
+      <td id="T_92541_row0_col4" class="data row0 col4" >810938.736</td>
+      <td id="T_92541_row0_col5" class="data row0 col5" >15.535</td>
+      <td id="T_92541_row0_col6" class="data row0 col6" >70000.000</td>
+      <td id="T_92541_row0_col7" class="data row0 col7" >tree leaves + splits</td>
+      <td id="T_92541_row0_col8" class="data row0 col8" >1110.794</td>
+      <td id="T_92541_row0_col9" class="data row0 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row1" class="row_heading level0 row1" >GCN + XGBoost</th>
+      <td id="T_92541_row1_col0" class="data row1 col0" >0.812</td>
+      <td id="T_92541_row1_col1" class="data row1 col1" >0.795</td>
+      <td id="T_92541_row1_col2" class="data row1 col2" >28.023</td>
+      <td id="T_92541_row1_col3" class="data row1 col3" >39.440</td>
+      <td id="T_92541_row1_col4" class="data row1 col4" >162465.674</td>
+      <td id="T_92541_row1_col5" class="data row1 col5" >1904.563</td>
+      <td id="T_92541_row1_col6" class="data row1 col6" >21464.000</td>
+      <td id="T_92541_row1_col7" class="data row1 col7" >GCN weights + tree nodes</td>
+      <td id="T_92541_row1_col8" class="data row1 col8" >288.052</td>
+      <td id="T_92541_row1_col9" class="data row1 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row2" class="row_heading level0 row2" >GAT + RF</th>
+      <td id="T_92541_row2_col0" class="data row2 col0" >0.809</td>
+      <td id="T_92541_row2_col1" class="data row2 col1" >0.772</td>
+      <td id="T_92541_row2_col2" class="data row2 col2" >41.111</td>
+      <td id="T_92541_row2_col3" class="data row2 col3" >45.529</td>
+      <td id="T_92541_row2_col4" class="data row2 col4" >112481.396</td>
+      <td id="T_92541_row2_col5" class="data row2 col5" >495.635</td>
+      <td id="T_92541_row2_col6" class="data row2 col6" >56002.000</td>
+      <td id="T_92541_row2_col7" class="data row2 col7" >GAT weights + tree nodes</td>
+      <td id="T_92541_row2_col8" class="data row2 col8" >2483.135</td>
+      <td id="T_92541_row2_col9" class="data row2 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row3" class="row_heading level0 row3" >LightGBM</th>
+      <td id="T_92541_row3_col0" class="data row3 col0" >0.807</td>
+      <td id="T_92541_row3_col1" class="data row3 col1" >0.803</td>
+      <td id="T_92541_row3_col2" class="data row3 col2" >6.854</td>
+      <td id="T_92541_row3_col3" class="data row3 col3" >13.511</td>
+      <td id="T_92541_row3_col4" class="data row3 col4" >612395.604</td>
+      <td id="T_92541_row3_col5" class="data row3 col5" >0.809</td>
+      <td id="T_92541_row3_col6" class="data row3 col6" >6100.000</td>
+      <td id="T_92541_row3_col7" class="data row3 col7" >tree nodes</td>
+      <td id="T_92541_row3_col8" class="data row3 col8" >355.980</td>
+      <td id="T_92541_row3_col9" class="data row3 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row4" class="row_heading level0 row4" >Random Forest</th>
+      <td id="T_92541_row4_col0" class="data row4 col0" >0.806</td>
+      <td id="T_92541_row4_col1" class="data row4 col1" >0.783</td>
+      <td id="T_92541_row4_col2" class="data row4 col2" >15.097</td>
+      <td id="T_92541_row4_col3" class="data row4 col3" >16.238</td>
+      <td id="T_92541_row4_col4" class="data row4 col4" >295376.817</td>
+      <td id="T_92541_row4_col5" class="data row4 col5" >2.460</td>
+      <td id="T_92541_row4_col6" class="data row4 col6" >28428.000</td>
+      <td id="T_92541_row4_col7" class="data row4 col7" >tree nodes</td>
+      <td id="T_92541_row4_col8" class="data row4 col8" >2237.442</td>
+      <td id="T_92541_row4_col9" class="data row4 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row5" class="row_heading level0 row5" >GBDT-197 (no cost weight)</th>
+      <td id="T_92541_row5_col0" class="data row5 col0" >0.795</td>
+      <td id="T_92541_row5_col1" class="data row5 col1" >0.792</td>
+      <td id="T_92541_row5_col2" class="data row5 col2" >23.963</td>
+      <td id="T_92541_row5_col3" class="data row5 col3" >31.622</td>
+      <td id="T_92541_row5_col4" class="data row5 col4" >192078.470</td>
+      <td id="T_92541_row5_col5" class="data row5 col5" >494.200</td>
+      <td id="T_92541_row5_col6" class="data row5 col6" >42438.000</td>
+      <td id="T_92541_row5_col7" class="data row5 col7" >GAT weights + tree nodes</td>
+      <td id="T_92541_row5_col8" class="data row5 col8" >852.044</td>
+      <td id="T_92541_row5_col9" class="data row5 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row6" class="row_heading level0 row6" >XGBoost</th>
+      <td id="T_92541_row6_col0" class="data row6 col0" >0.795</td>
+      <td id="T_92541_row6_col1" class="data row6 col1" >0.799</td>
+      <td id="T_92541_row6_col2" class="data row6 col2" >4.712</td>
+      <td id="T_92541_row6_col3" class="data row6 col3" >8.220</td>
+      <td id="T_92541_row6_col4" class="data row6 col4" >862222.461</td>
+      <td id="T_92541_row6_col5" class="data row6 col5" >0.872</td>
+      <td id="T_92541_row6_col6" class="data row6 col6" >4620.000</td>
+      <td id="T_92541_row6_col7" class="data row6 col7" >tree nodes</td>
+      <td id="T_92541_row6_col8" class="data row6 col8" >218.566</td>
+      <td id="T_92541_row6_col9" class="data row6 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row7" class="row_heading level0 row7" >GBDT-165 (w=4.32)</th>
+      <td id="T_92541_row7_col0" class="data row7 col0" >0.793</td>
+      <td id="T_92541_row7_col1" class="data row7 col1" >0.802</td>
+      <td id="T_92541_row7_col2" class="data row7 col2" >13.312</td>
+      <td id="T_92541_row7_col3" class="data row7 col3" >61.750</td>
+      <td id="T_92541_row7_col4" class="data row7 col4" >202817.646</td>
+      <td id="T_92541_row7_col5" class="data row7 col5" >6.463</td>
+      <td id="T_92541_row7_col6" class="data row7 col6" >19034.000</td>
+      <td id="T_92541_row7_col7" class="data row7 col7" >tree nodes</td>
+      <td id="T_92541_row7_col8" class="data row7 col8" >826.214</td>
+      <td id="T_92541_row7_col9" class="data row7 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row8" class="row_heading level0 row8" >TGAT-BoostNet (ours)</th>
+      <td id="T_92541_row8_col0" class="data row8 col0" >0.790</td>
+      <td id="T_92541_row8_col1" class="data row8 col1" >0.792</td>
+      <td id="T_92541_row8_col2" class="data row8 col2" >22.606</td>
+      <td id="T_92541_row8_col3" class="data row8 col3" >27.134</td>
+      <td id="T_92541_row8_col4" class="data row8 col4" >217198.880</td>
+      <td id="T_92541_row8_col5" class="data row8 col5" >495.207</td>
+      <td id="T_92541_row8_col6" class="data row8 col6" >45054.000</td>
+      <td id="T_92541_row8_col7" class="data row8 col7" >GAT weights + GBDT tree nodes</td>
+      <td id="T_92541_row8_col8" class="data row8 col8" >938.914</td>
+      <td id="T_92541_row8_col9" class="data row8 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row9" class="row_heading level0 row9" >MLP</th>
+      <td id="T_92541_row9_col0" class="data row9 col0" >0.617</td>
+      <td id="T_92541_row9_col1" class="data row9 col1" >0.497</td>
+      <td id="T_92541_row9_col2" class="data row9 col2" >2.522</td>
+      <td id="T_92541_row9_col3" class="data row9 col3" >3.546</td>
+      <td id="T_92541_row9_col4" class="data row9 col4" >1826011.683</td>
+      <td id="T_92541_row9_col5" class="data row9 col5" >21.867</td>
+      <td id="T_92541_row9_col6" class="data row9 col6" >8351.000</td>
+      <td id="T_92541_row9_col7" class="data row9 col7" >weights</td>
+      <td id="T_92541_row9_col8" class="data row9 col8" >141.344</td>
+      <td id="T_92541_row9_col9" class="data row9 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row10" class="row_heading level0 row10" >GraphSAGE</th>
+      <td id="T_92541_row10_col0" class="data row10 col0" >0.593</td>
+      <td id="T_92541_row10_col1" class="data row10 col1" >0.577</td>
+      <td id="T_92541_row10_col2" class="data row10 col2" >22.844</td>
+      <td id="T_92541_row10_col3" class="data row10 col3" >34.380</td>
+      <td id="T_92541_row10_col4" class="data row10 col4" >193905.690</td>
+      <td id="T_92541_row10_col5" class="data row10 col5" >335.381</td>
+      <td id="T_92541_row10_col6" class="data row10 col6" >33502.000</td>
+      <td id="T_92541_row10_col7" class="data row10 col7" >weights</td>
+      <td id="T_92541_row10_col8" class="data row10 col8" >133.896</td>
+      <td id="T_92541_row10_col9" class="data row10 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row11" class="row_heading level0 row11" >Skip-GCN</th>
+      <td id="T_92541_row11_col0" class="data row11 col0" >0.584</td>
+      <td id="T_92541_row11_col1" class="data row11 col1" >0.627</td>
+      <td id="T_92541_row11_col2" class="data row11 col2" >9.667</td>
+      <td id="T_92541_row11_col3" class="data row11 col3" >13.163</td>
+      <td id="T_92541_row11_col4" class="data row11 col4" >471629.499</td>
+      <td id="T_92541_row11_col5" class="data row11 col5" >233.758</td>
+      <td id="T_92541_row11_col6" class="data row11 col6" >17134.000</td>
+      <td id="T_92541_row11_col7" class="data row11 col7" >weights</td>
+      <td id="T_92541_row11_col8" class="data row11 col8" >69.833</td>
+      <td id="T_92541_row11_col9" class="data row11 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row12" class="row_heading level0 row12" >SVM (RBF)</th>
+      <td id="T_92541_row12_col0" class="data row12 col0" >0.559</td>
+      <td id="T_92541_row12_col1" class="data row12 col1" >0.467</td>
+      <td id="T_92541_row12_col2" class="data row12 col2" >1222.239</td>
+      <td id="T_92541_row12_col3" class="data row12 col3" >1631.911</td>
+      <td id="T_92541_row12_col4" class="data row12 col4" >4076.169</td>
+      <td id="T_92541_row12_col5" class="data row12 col5" >65.600</td>
+      <td id="T_92541_row12_col6" class="data row12 col6" >567222.000</td>
+      <td id="T_92541_row12_col7" class="data row12 col7" >support-vector values</td>
+      <td id="T_92541_row12_col8" class="data row12 col8" >4472.753</td>
+      <td id="T_92541_row12_col9" class="data row12 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row13" class="row_heading level0 row13" >GCN</th>
+      <td id="T_92541_row13_col0" class="data row13 col0" >0.545</td>
+      <td id="T_92541_row13_col1" class="data row13 col1" >0.572</td>
+      <td id="T_92541_row13_col2" class="data row13 col2" >10.729</td>
+      <td id="T_92541_row13_col3" class="data row13 col3" >14.805</td>
+      <td id="T_92541_row13_col4" class="data row13 col4" >420476.163</td>
+      <td id="T_92541_row13_col5" class="data row13 col5" >229.559</td>
+      <td id="T_92541_row13_col6" class="data row13 col6" >16802.000</td>
+      <td id="T_92541_row13_col7" class="data row13 col7" >weights</td>
+      <td id="T_92541_row13_col8" class="data row13 col8" >68.091</td>
+      <td id="T_92541_row13_col9" class="data row13 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row14" class="row_heading level0 row14" >GAT (alone)</th>
+      <td id="T_92541_row14_col0" class="data row14 col0" >0.493</td>
+      <td id="T_92541_row14_col1" class="data row14 col1" >0.457</td>
+      <td id="T_92541_row14_col2" class="data row14 col2" >10.297</td>
+      <td id="T_92541_row14_col3" class="data row14 col3" >12.869</td>
+      <td id="T_92541_row14_col4" class="data row14 col4" >451136.160</td>
+      <td id="T_92541_row14_col5" class="data row14 col5" >94.117</td>
+      <td id="T_92541_row14_col6" class="data row14 col6" >25762.000</td>
+      <td id="T_92541_row14_col7" class="data row14 col7" >weights</td>
+      <td id="T_92541_row14_col8" class="data row14 col8" >104.130</td>
+      <td id="T_92541_row14_col9" class="data row14 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row15" class="row_heading level0 row15" >EvolveGCN-O</th>
+      <td id="T_92541_row15_col0" class="data row15 col0" >0.424</td>
+      <td id="T_92541_row15_col1" class="data row15 col1" >0.332</td>
+      <td id="T_92541_row15_col2" class="data row15 col2" >189.402</td>
+      <td id="T_92541_row15_col3" class="data row15 col3" >211.240</td>
+      <td id="T_92541_row15_col4" class="data row15 col4" >24094.136</td>
+      <td id="T_92541_row15_col5" class="data row15 col5" >108.779</td>
+      <td id="T_92541_row15_col6" class="data row15 col6" >251642.000</td>
+      <td id="T_92541_row15_col7" class="data row15 col7" >weights</td>
+      <td id="T_92541_row15_col8" class="data row15 col8" >986.874</td>
+      <td id="T_92541_row15_col9" class="data row15 col9" >idle re-run</td>
+    </tr>
+    <tr>
+      <th id="T_92541_level0_row16" class="row_heading level0 row16" >Logistic Regression</th>
+      <td id="T_92541_row16_col0" class="data row16 col0" >0.405</td>
+      <td id="T_92541_row16_col1" class="data row16 col1" >0.360</td>
+      <td id="T_92541_row16_col2" class="data row16 col2" >2.166</td>
+      <td id="T_92541_row16_col3" class="data row16 col3" >2.700</td>
+      <td id="T_92541_row16_col4" class="data row16 col4" >2187611.397</td>
+      <td id="T_92541_row16_col5" class="data row16 col5" >0.355</td>
+      <td id="T_92541_row16_col6" class="data row16 col6" >166.000</td>
+      <td id="T_92541_row16_col7" class="data row16 col7" >weights</td>
+      <td id="T_92541_row16_col8" class="data row16 col8" >1.332</td>
+      <td id="T_92541_row16_col9" class="data row16 col9" >idle re-run</td>
+    </tr>
+  </tbody>
+</table>

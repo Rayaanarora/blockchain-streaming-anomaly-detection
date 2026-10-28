@@ -1,0 +1,17 @@
+,value
+raw_lines,100000.0
+valid_records,100000.0
+malformed_lines,0.0
+tx_groups,18173.0
+completed_tx,18173.0
+dropped_incomplete_tx,0.0
+spark_seconds,8.9937127000303
+malformed-line rate,0.0
+dropped boundary/incomplete tx rate,0.0
+null rate (15 features),0.0
+reference seconds (pure Python),0.6973882000311278
+sanity: negative_fee,0.0
+sanity: output_exceeds_input,0.0
+sanity: negative_fee_rate,0.0
+sanity: zero_output_value_tx,0.0
+"sanity: new_address_fraction_out_of_[0,1]",0.0

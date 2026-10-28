@@ -1,0 +1,17 @@
+model,source,features,reported F1 (paper),"reproduced F1 (ours, mean ± std)",reported AUC (paper),reproduced AUC,reproduction config
+Logistic Regression,Weber2019,AF (all 166),0.481,0.405 ± 0.000,,0.892,Logistic Regression
+Random Forest,Weber2019,AF (all 166),0.788,0.806 ± 0.004,,0.915,Random Forest
+MLP,Weber2019,AF (all 166),0.653,0.617 ± 0.040,,0.869,MLP
+GCN,Weber2019,AF (all 166),0.628,0.545 ± 0.033,,0.879,GCN
+Skip-GCN,Weber2019,AF (all 166),0.705,0.584 ± 0.024,,0.904,Skip-GCN
+EvolveGCN,Weber2019,AF (all 166),0.72,0.424 ± 0.067,,0.843,EvolveGCN-O
+Logistic Regression,EllipticPP2023,Elliptic (EC),0.446,0.405 ± 0.000,,0.892,Logistic Regression
+Random Forest,EllipticPP2023,Elliptic (EC),0.818,0.806 ± 0.004,,0.915,Random Forest
+MLP,EllipticPP2023,Elliptic (EC),0.558,0.617 ± 0.040,,0.869,MLP
+XGBoost,EllipticPP2023,Elliptic (EC),0.761,0.795 ± 0.000,,0.928,XGBoost
+GCN,Maganti2026,raw 165,0.503,0.545 ± 0.033,0.882,0.879,GCN
+GraphSAGE,Maganti2026,raw 165,0.688,0.593 ± 0.021,0.928,0.877,GraphSAGE
+GAT,Maganti2026,raw 165,0.61,0.493 ± 0.022,0.909,0.862,GAT (alone)
+Logistic Regression,Maganti2026,raw 165,0.53,0.405 ± 0.000,0.88,0.892,Logistic Regression
+XGBoost,Maganti2026,raw 165,0.775,0.795 ± 0.000,0.931,0.928,XGBoost
+Random Forest,Maganti2026,raw 165,0.821,0.806 ± 0.004,0.934,0.915,Random Forest

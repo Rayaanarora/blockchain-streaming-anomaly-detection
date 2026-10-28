@@ -1,0 +1,9 @@
+{
+ "raw_lines": 100000,
+ "valid_records": 100000,
+ "malformed_lines": 0,
+ "tx_groups": 18173,
+ "completed_tx": 18173,
+ "dropped_incomplete_tx": 0,
+ "spark_seconds": 8.9937127000303
+}

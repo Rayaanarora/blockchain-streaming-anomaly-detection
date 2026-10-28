@@ -1,0 +1,17 @@
+,causal_reference_max_abs_change,noncausal_control_max_abs_change
+num_inputs,0.0,
+num_outputs,0.0,
+total_input_satoshi,0.0,
+total_output_satoshi,0.0,
+fee_satoshi,0.0,
+fee_rate,0.0,
+is_coinbase,0.0,
+avg_input_val,0.0,
+avg_output_val,0.0,
+input_output_count_ratio,0.0,
+input_output_val_ratio,0.0,
+max_input_prior_tx_count,0.0,
+avg_input_prior_tx_count,0.0,
+max_input_prior_volume_satoshi,0.0,
+new_address_fraction,0.0,
+max_input_total_tx_count (non-causal control),,89.0

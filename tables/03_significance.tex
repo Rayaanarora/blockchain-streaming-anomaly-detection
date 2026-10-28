@@ -1,0 +1,26 @@
+\begin{table}
+\caption{TGAT-BoostNet vs each baseline: paired bootstrap and McNemar (Holm-corrected)}
+\label{tab:03_significance}
+\begin{tabular}{llllllllllllll}
+\toprule
+ & ΔF1 & ΔF1 95\% CI & p (F1 boot) & ΔPR-AUC & ΔPR-AUC 95\% CI & p (AP boot) & McNemar b (ours right) & McNemar c (baseline right) & p (McNemar) & p (F1 boot) Holm & p (AP boot) Holm & p (McNemar) Holm & verdict \\
+\midrule
+CatBoost & -0.0303 & [-0.039, -0.021] & 0.0000 & -0.0144 & [-0.019, -0.010] & 0.0000 & 26 & 55 & 0.0017 & 0.0000 & 0.0000 & 0.0068 & baseline significantly better (F1) \\
+GCN + XGBoost & -0.0219 & [-0.030, -0.014] & 0.0000 & -0.0032 & [-0.007, +0.001] & 0.1240 & 19 & 57 & 0.0000 & 0.0000 & 0.2480 & 0.0001 & baseline significantly better (F1) \\
+GAT + RF & -0.0184 & [-0.025, -0.011] & 0.0000 & 0.0204 & [+0.014, +0.027] & 0.0000 & 12 & 54 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & baseline significantly better (F1) \\
+LightGBM & -0.0167 & [-0.027, -0.006] & 0.0010 & -0.0108 & [-0.016, -0.006] & 0.0000 & 69 & 57 & 0.3271 & 0.0050 & 0.0000 & 0.8958 & baseline significantly better (F1) \\
+Random Forest & -0.0159 & [-0.026, -0.006] & 0.0060 & 0.0090 & [+0.003, +0.016] & 0.0000 & 50 & 62 & 0.2986 & 0.0240 & 0.0000 & 0.8958 & baseline significantly better (F1) \\
+GBDT-197 (no cost weight) & -0.0047 & [-0.009, -0.001] & 0.0190 & -0.0002 & [-0.002, +0.001] & 0.8400 & 12 & 17 & 0.4583 & 0.0570 & 0.8400 & 0.8958 & no significant F1 difference \\
+XGBoost & -0.0045 & [-0.016, +0.007] & 0.4730 & -0.0065 & [-0.012, -0.002] & 0.0040 & 99 & 58 & 0.0013 & 0.9460 & 0.0120 & 0.0067 & no significant F1 difference \\
+GBDT-165 (w=4.32) & -0.0025 & [-0.013, +0.008] & 0.6960 & -0.0101 & [-0.014, -0.006] & 0.0000 & 99 & 54 & 0.0003 & 0.9460 & 0.0000 & 0.0021 & no significant F1 difference \\
+MLP & 0.1737 & [+0.158, +0.190] & 0.0000 & 0.2860 & [+0.264, +0.305] & 0.0000 & 301 & 56 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & ours significantly better (F1) \\
+GraphSAGE & 0.1975 & [+0.178, +0.217] & 0.0000 & 0.2111 & [+0.187, +0.233] & 0.0000 & 393 & 39 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & ours significantly better (F1) \\
+Skip-GCN & 0.2067 & [+0.187, +0.227] & 0.0000 & 0.1647 & [+0.143, +0.185] & 0.0000 & 353 & 38 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & ours significantly better (F1) \\
+SVM (RBF) & 0.2317 & [+0.213, +0.252] & 0.0000 & 0.3252 & [+0.298, +0.350] & 0.0000 & 677 & 38 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & ours significantly better (F1) \\
+GCN & 0.2457 & [+0.223, +0.267] & 0.0000 & 0.2202 & [+0.197, +0.242] & 0.0000 & 420 & 39 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & ours significantly better (F1) \\
+GAT (alone) & 0.2970 & [+0.278, +0.316] & 0.0000 & 0.3351 & [+0.312, +0.361] & 0.0000 & 792 & 27 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & ours significantly better (F1) \\
+EvolveGCN-O & 0.3660 & [+0.348, +0.383] & 0.0000 & 0.4598 & [+0.440, +0.477] & 0.0000 & 396 & 39 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & ours significantly better (F1) \\
+Logistic Regression & 0.3850 & [+0.365, +0.404] & 0.0000 & 0.4324 & [+0.406, +0.456] & 0.0000 & 1796 & 69 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & ours significantly better (F1) \\
+\bottomrule
+\end{tabular}
+\end{table}

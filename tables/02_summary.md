@@ -1,0 +1,1 @@
+**TGAT-BoostNet on test steps 35–49 (5 seeds, threshold 0.5):** illicit F1 0.790 (95 % CI 0.771–0.809), precision 0.939, recall 0.683, ROC-AUC 0.932, PR-AUC 0.792, MCC 0.789, ECE 0.017. Recall before step 43: 0.806; from step 43 on: 0.017 — the model does not survive the step-43 regime change.

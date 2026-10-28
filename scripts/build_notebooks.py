@@ -36,7 +36,14 @@ def parse(path):
     return cells
 
 
-def main():
+def has_outputs(path):
+    if not os.path.exists(path):
+        return False
+    with open(path, encoding="utf-8") as f:
+        return any(c.get("outputs") for c in json.load(f).get("cells", []))
+
+
+def main(force=False):
     os.makedirs(os.path.join(ROOT, "notebooks"), exist_ok=True)
     for n in NAMES:
         nb = {"cells": parse(os.path.join(CELL_DIR, f"{n}.py")),
@@ -46,10 +53,15 @@ def main():
               "nbformat": 4, "nbformat_minor": 5}
         for c in nb["cells"]:
             c["source"] = c["source"].splitlines(keepends=True)
-        with open(os.path.join(ROOT, "notebooks", f"{n}.ipynb"), "w", encoding="utf-8") as f:
+        out = os.path.join(ROOT, "notebooks", f"{n}.ipynb")
+        if not force and has_outputs(out):
+            print("skipped", f"notebooks/{n}.ipynb", "(has executed outputs; use --force to overwrite)")
+            continue
+        with open(out, "w", encoding="utf-8") as f:
             json.dump(nb, f, indent=1, ensure_ascii=False)
         print("wrote", f"notebooks/{n}.ipynb", len(nb["cells"]), "cells")
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(force="--force" in sys.argv[1:])

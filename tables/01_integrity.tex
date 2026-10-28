@@ -1,0 +1,24 @@
+\begin{table}
+\caption{Integrity counts: independent raw-CSV check vs Spark report}
+\label{tab:01_integrity}
+\begin{tabular}{lll}
+\toprule
+ & raw CSV check (independent) & Spark pipeline report \\
+\midrule
+feature lines & 203769 & 203769 \\
+malformed lines (≠167 fields) & 0 & FAILFAST parse: 0 (job would abort) \\
+non-numeric lines & 0 & 0 \\
+malformed-line rate & 0.0 & 0.0 \\
+duplicate tx ids & 0 & 0 \\
+invalid labels & 0 & 0 \\
+edges & 234355 & 234355 \\
+dangling edges (endpoint missing) & 0 & 0 \\
+duplicate edges & 0 & 0 \\
+self-loops & 0 & 0 \\
+time-step range & 1-49 & 1-49 \\
+null rate (output features) & 0.0 & 0.0 \\
+rows dropped (input → output) & 0 & 0 \\
+cross-time-step edges & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}

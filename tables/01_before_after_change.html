@@ -1,0 +1,94 @@
+<style type="text/css">
+#T_11c08 caption {
+  caption-side: top;
+  font-weight: 600;
+  text-align: left;
+}
+#T_11c08 th {
+  background: #f2f1ee;
+  padding: 4px 8px;
+  text-align: left;
+}
+#T_11c08 td {
+  padding: 4px 8px;
+  font-variant-numeric: tabular-nums;
+}
+#T_11c08  {
+  border-collapse: collapse;
+  font-family: sans-serif;
+  font-size: 12px;
+}
+</style>
+<table id="T_11c08">
+  <caption>Change after preprocessing (after - before; negative error = improvement)</caption>
+  <thead>
+    <tr>
+      <th class="blank level0" >&nbsp;</th>
+      <th id="T_11c08_level0_col0" class="col_heading level0 col0" >RMSE</th>
+      <th id="T_11c08_level0_col1" class="col_heading level0 col1" >MSE</th>
+      <th id="T_11c08_level0_col2" class="col_heading level0 col2" >MAE</th>
+      <th id="T_11c08_level0_col3" class="col_heading level0 col3" >MAPE (%)</th>
+      <th id="T_11c08_level0_col4" class="col_heading level0 col4" >R²</th>
+      <th id="T_11c08_level0_col5" class="col_heading level0 col5" >NRMSE</th>
+      <th id="T_11c08_level0_col6" class="col_heading level0 col6" >MedAE</th>
+      <th id="T_11c08_level0_col7" class="col_heading level0 col7" >Bias / ME</th>
+    </tr>
+    <tr>
+      <th class="index_name level0" >model</th>
+      <th class="blank col0" >&nbsp;</th>
+      <th class="blank col1" >&nbsp;</th>
+      <th class="blank col2" >&nbsp;</th>
+      <th class="blank col3" >&nbsp;</th>
+      <th class="blank col4" >&nbsp;</th>
+      <th class="blank col5" >&nbsp;</th>
+      <th class="blank col6" >&nbsp;</th>
+      <th class="blank col7" >&nbsp;</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th id="T_11c08_level0_row0" class="row_heading level0 row0" >Logistic Regression</th>
+      <td id="T_11c08_row0_col0" class="data row0 col0" >+0.0046</td>
+      <td id="T_11c08_row0_col1" class="data row0 col1" >+0.0027</td>
+      <td id="T_11c08_row0_col2" class="data row0 col2" >+0.0071</td>
+      <td id="T_11c08_row0_col3" class="data row0 col3" >+1.9133</td>
+      <td id="T_11c08_row0_col4" class="data row0 col4" >-0.0443</td>
+      <td id="T_11c08_row0_col5" class="data row0 col5" >+0.0046</td>
+      <td id="T_11c08_row0_col6" class="data row0 col6" >+0.0009</td>
+      <td id="T_11c08_row0_col7" class="data row0 col7" >+0.0046</td>
+    </tr>
+    <tr>
+      <th id="T_11c08_level0_row1" class="row_heading level0 row1" >MLP</th>
+      <td id="T_11c08_row1_col0" class="data row1 col0" >-0.0303</td>
+      <td id="T_11c08_row1_col1" class="data row1 col1" >-0.0143</td>
+      <td id="T_11c08_row1_col2" class="data row1 col2" >-0.0145</td>
+      <td id="T_11c08_row1_col3" class="data row1 col3" >+4.8162</td>
+      <td id="T_11c08_row1_col4" class="data row1 col4" >+0.2357</td>
+      <td id="T_11c08_row1_col5" class="data row1 col5" >-0.0303</td>
+      <td id="T_11c08_row1_col6" class="data row1 col6" >-0.0000</td>
+      <td id="T_11c08_row1_col7" class="data row1 col7" >-0.0207</td>
+    </tr>
+    <tr>
+      <th id="T_11c08_level0_row2" class="row_heading level0 row2" >Random Forest</th>
+      <td id="T_11c08_row2_col0" class="data row2 col0" >-0.0022</td>
+      <td id="T_11c08_row2_col1" class="data row2 col1" >-0.0007</td>
+      <td id="T_11c08_row2_col2" class="data row2 col2" >-0.0004</td>
+      <td id="T_11c08_row2_col3" class="data row2 col3" >+0.1186</td>
+      <td id="T_11c08_row2_col4" class="data row2 col4" >+0.0123</td>
+      <td id="T_11c08_row2_col5" class="data row2 col5" >-0.0022</td>
+      <td id="T_11c08_row2_col6" class="data row2 col6" >-0.0000</td>
+      <td id="T_11c08_row2_col7" class="data row2 col7" >-0.0006</td>
+    </tr>
+    <tr>
+      <th id="T_11c08_level0_row3" class="row_heading level0 row3" >TGAT-BoostNet</th>
+      <td id="T_11c08_row3_col0" class="data row3 col0" >+0.0036</td>
+      <td id="T_11c08_row3_col1" class="data row3 col1" >+0.0011</td>
+      <td id="T_11c08_row3_col2" class="data row3 col2" >+0.0012</td>
+      <td id="T_11c08_row3_col3" class="data row3 col3" >+1.7988</td>
+      <td id="T_11c08_row3_col4" class="data row3 col4" >-0.0175</td>
+      <td id="T_11c08_row3_col5" class="data row3 col5" >+0.0036</td>
+      <td id="T_11c08_row3_col6" class="data row3 col6" >-0.0000</td>
+      <td id="T_11c08_row3_col7" class="data row3 col7" >-0.0011</td>
+    </tr>
+  </tbody>
+</table>

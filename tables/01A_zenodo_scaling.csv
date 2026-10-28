@@ -1,0 +1,4 @@
+run,raw_lines,transactions,wall_seconds,lines_per_s,tx_per_s,driver_peak_rss_mb,jvm_peak_rss_mb,tree_peak_rss_mb,output_mb,null_values,source
+50k-line slice,50000,8149,19.8,2525.68,411.63,117.07,1946.18,2036.46,0.98,0,spark_scale_benchmark_50000_v3.json
+100k-line slice,100000,18173,24.66,4055.64,737.03,125.64,2098.39,2155.93,2.2,0,spark_scale_benchmark_100000_v3.json
+full (18 parts),85721542,16889271,13977.35,6132.89,1208.331407598722,940.46,4645.73,5277.75,2132.83,0,zenodo_preprocessing_report.json

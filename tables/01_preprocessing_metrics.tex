@@ -1,0 +1,20 @@
+\begin{table}
+\caption{Preprocessing performance metrics: Spark output vs reference (Elliptic)}
+\label{tab:01_preprocessing_metrics}
+\begin{tabular}{lllll}
+\toprule
+ & \multicolumn{2}{r}{raw features (165)} & \multicolumn{2}{r}{standardised features (165)} \\
+ & mean over features & worst feature & mean over features & worst feature \\
+\midrule
+RMSE & 0.000e+00 & 0.000e+00 & 4.339e-08 & 2.877e-06 \\
+MSE & 0.000e+00 & 0.000e+00 & 5.113e-14 & 8.277e-12 \\
+MAE & 0.000e+00 & 0.000e+00 & 1.118e-08 & 3.669e-08 \\
+MAPE (\%) & 0.000e+00 & 0.000e+00 & 2.104e-06 & 4.911e-06 \\
+R² & 1.000e+00 & 1.000e+00 & 1.000e+00 & 1.000e+00 \\
+NRMSE & 0.000e+00 & 0.000e+00 & 3.195e-09 & 1.725e-08 \\
+MedAE & 0.000e+00 & 0.000e+00 & 7.417e-09 & 4.894e-08 \\
+Bias / ME & 0.000e+00 & 0.000e+00 & -2.766e-10 & 3.553e-08 \\
+exact-match rate & 1.000e+00 & 1.000e+00 & 0.000e+00 & 0.000e+00 \\
+\bottomrule
+\end{tabular}
+\end{table}

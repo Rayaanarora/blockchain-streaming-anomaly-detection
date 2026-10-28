@@ -1,0 +1,124 @@
+<style type="text/css">
+#T_8b1c7 caption {
+  caption-side: top;
+  font-weight: 600;
+  text-align: left;
+}
+#T_8b1c7 th {
+  background: #f2f1ee;
+  padding: 4px 8px;
+  text-align: left;
+}
+#T_8b1c7 td {
+  padding: 4px 8px;
+  font-variant-numeric: tabular-nums;
+}
+#T_8b1c7  {
+  border-collapse: collapse;
+  font-family: sans-serif;
+  font-size: 12px;
+}
+</style>
+<table id="T_8b1c7">
+  <caption>Elliptic Spark preprocessing over growing step subsets</caption>
+  <thead>
+    <tr>
+      <th class="blank level0" >&nbsp;</th>
+      <th id="T_8b1c7_level0_col0" class="col_heading level0 col0" >n_nodes</th>
+      <th id="T_8b1c7_level0_col1" class="col_heading level0 col1" >n_edges</th>
+      <th id="T_8b1c7_level0_col2" class="col_heading level0 col2" >input_lines</th>
+      <th id="T_8b1c7_level0_col3" class="col_heading level0 col3" >input_mb</th>
+      <th id="T_8b1c7_level0_col4" class="col_heading level0 col4" >output_mb</th>
+      <th id="T_8b1c7_level0_col5" class="col_heading level0 col5" >wall_seconds</th>
+      <th id="T_8b1c7_level0_col6" class="col_heading level0 col6" >spark_session_seconds</th>
+      <th id="T_8b1c7_level0_col7" class="col_heading level0 col7" >pipeline_seconds</th>
+      <th id="T_8b1c7_level0_col8" class="col_heading level0 col8" >lines_per_s</th>
+      <th id="T_8b1c7_level0_col9" class="col_heading level0 col9" >tx_per_s</th>
+      <th id="T_8b1c7_level0_col10" class="col_heading level0 col10" >driver_peak_rss_mb</th>
+      <th id="T_8b1c7_level0_col11" class="col_heading level0 col11" >jvm_peak_rss_mb</th>
+      <th id="T_8b1c7_level0_col12" class="col_heading level0 col12" >tree_peak_rss_mb</th>
+    </tr>
+    <tr>
+      <th class="index_name level0" >max_step</th>
+      <th class="blank col0" >&nbsp;</th>
+      <th class="blank col1" >&nbsp;</th>
+      <th class="blank col2" >&nbsp;</th>
+      <th class="blank col3" >&nbsp;</th>
+      <th class="blank col4" >&nbsp;</th>
+      <th class="blank col5" >&nbsp;</th>
+      <th class="blank col6" >&nbsp;</th>
+      <th class="blank col7" >&nbsp;</th>
+      <th class="blank col8" >&nbsp;</th>
+      <th class="blank col9" >&nbsp;</th>
+      <th class="blank col10" >&nbsp;</th>
+      <th class="blank col11" >&nbsp;</th>
+      <th class="blank col12" >&nbsp;</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th id="T_8b1c7_level0_row0" class="row_heading level0 row0" >12</th>
+      <td id="T_8b1c7_row0_col0" class="data row0 col0" >64440</td>
+      <td id="T_8b1c7_row0_col1" class="data row0 col1" >78601</td>
+      <td id="T_8b1c7_row0_col2" class="data row0 col2" >207481</td>
+      <td id="T_8b1c7_row0_col3" class="data row0 col3" >202.39</td>
+      <td id="T_8b1c7_row0_col4" class="data row0 col4" >35.40</td>
+      <td id="T_8b1c7_row0_col5" class="data row0 col5" >118.80</td>
+      <td id="T_8b1c7_row0_col6" class="data row0 col6" >28.77</td>
+      <td id="T_8b1c7_row0_col7" class="data row0 col7" >89.64</td>
+      <td id="T_8b1c7_row0_col8" class="data row0 col8" >1746.49</td>
+      <td id="T_8b1c7_row0_col9" class="data row0 col9" >542.43</td>
+      <td id="T_8b1c7_row0_col10" class="data row0 col10" >2968.24</td>
+      <td id="T_8b1c7_row0_col11" class="data row0 col11" >2213.02</td>
+      <td id="T_8b1c7_row0_col12" class="data row0 col12" >5179.41</td>
+    </tr>
+    <tr>
+      <th id="T_8b1c7_level0_row1" class="row_heading level0 row1" >24</th>
+      <td id="T_8b1c7_row1_col0" class="data row1 col0" >108950</td>
+      <td id="T_8b1c7_row1_col1" class="data row1 col1" >127488</td>
+      <td id="T_8b1c7_row1_col2" class="data row1 col2" >345388</td>
+      <td id="T_8b1c7_row1_col3" class="data row1 col3" >342.19</td>
+      <td id="T_8b1c7_row1_col4" class="data row1 col4" >60.06</td>
+      <td id="T_8b1c7_row1_col5" class="data row1 col5" >76.50</td>
+      <td id="T_8b1c7_row1_col6" class="data row1 col6" >0.10</td>
+      <td id="T_8b1c7_row1_col7" class="data row1 col7" >75.79</td>
+      <td id="T_8b1c7_row1_col8" class="data row1 col8" >4515.01</td>
+      <td id="T_8b1c7_row1_col9" class="data row1 col9" >1424.23</td>
+      <td id="T_8b1c7_row1_col10" class="data row1 col10" >3035.05</td>
+      <td id="T_8b1c7_row1_col11" class="data row1 col11" >2366.23</td>
+      <td id="T_8b1c7_row1_col12" class="data row1 col12" >5399.51</td>
+    </tr>
+    <tr>
+      <th id="T_8b1c7_level0_row2" class="row_heading level0 row2" >36</th>
+      <td id="T_8b1c7_row2_col0" class="data row2 col0" >148165</td>
+      <td id="T_8b1c7_row2_col1" class="data row2 col1" >171007</td>
+      <td id="T_8b1c7_row2_col2" class="data row2 col2" >467337</td>
+      <td id="T_8b1c7_row2_col3" class="data row2 col3" >465.10</td>
+      <td id="T_8b1c7_row2_col4" class="data row2 col4" >81.72</td>
+      <td id="T_8b1c7_row2_col5" class="data row2 col5" >91.87</td>
+      <td id="T_8b1c7_row2_col6" class="data row2 col6" >0.15</td>
+      <td id="T_8b1c7_row2_col7" class="data row2 col7" >91.19</td>
+      <td id="T_8b1c7_row2_col8" class="data row2 col8" >5087.16</td>
+      <td id="T_8b1c7_row2_col9" class="data row2 col9" >1612.84</td>
+      <td id="T_8b1c7_row2_col10" class="data row2 col10" >3087.95</td>
+      <td id="T_8b1c7_row2_col11" class="data row2 col11" >2638.94</td>
+      <td id="T_8b1c7_row2_col12" class="data row2 col12" >5724.12</td>
+    </tr>
+    <tr>
+      <th id="T_8b1c7_level0_row3" class="row_heading level0 row3" >49</th>
+      <td id="T_8b1c7_row3_col0" class="data row3 col0" >203769</td>
+      <td id="T_8b1c7_row3_col1" class="data row3 col1" >234355</td>
+      <td id="T_8b1c7_row3_col2" class="data row3 col2" >641893</td>
+      <td id="T_8b1c7_row3_col3" class="data row3 col3" >665.15</td>
+      <td id="T_8b1c7_row3_col4" class="data row3 col4" >111.93</td>
+      <td id="T_8b1c7_row3_col5" class="data row3 col5" >87.05</td>
+      <td id="T_8b1c7_row3_col6" class="data row3 col6" >0.11</td>
+      <td id="T_8b1c7_row3_col7" class="data row3 col7" >86.71</td>
+      <td id="T_8b1c7_row3_col8" class="data row3 col8" >7373.94</td>
+      <td id="T_8b1c7_row3_col9" class="data row3 col9" >2340.86</td>
+      <td id="T_8b1c7_row3_col10" class="data row3 col10" >2887.02</td>
+      <td id="T_8b1c7_row3_col11" class="data row3 col11" >3012.23</td>
+      <td id="T_8b1c7_row3_col12" class="data row3 col12" >5774.32</td>
+    </tr>
+  </tbody>
+</table>

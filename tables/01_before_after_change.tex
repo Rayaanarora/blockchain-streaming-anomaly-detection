@@ -1,0 +1,15 @@
+\begin{table}
+\caption{Change after preprocessing (after - before; negative error = improvement)}
+\label{tab:01_before_after_change}
+\begin{tabular}{lllllllll}
+\toprule
+ & RMSE & MSE & MAE & MAPE (\%) & R² & NRMSE & MedAE & Bias / ME \\
+model &  &  &  &  &  &  &  &  \\
+\midrule
+Logistic Regression & +0.0046 & +0.0027 & +0.0071 & +1.9133 & -0.0443 & +0.0046 & +0.0009 & +0.0046 \\
+MLP & -0.0303 & -0.0143 & -0.0145 & +4.8162 & +0.2357 & -0.0303 & -0.0000 & -0.0207 \\
+Random Forest & -0.0022 & -0.0007 & -0.0004 & +0.1186 & +0.0123 & -0.0022 & -0.0000 & -0.0006 \\
+TGAT-BoostNet & +0.0036 & +0.0011 & +0.0012 & +1.7988 & -0.0175 & +0.0036 & -0.0000 & -0.0011 \\
+\bottomrule
+\end{tabular}
+\end{table}

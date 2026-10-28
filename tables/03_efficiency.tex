@@ -1,0 +1,27 @@
+\begin{table}
+\caption{Efficiency (device: cpu)}
+\label{tab:03_efficiency}
+\begin{tabular}{lllllllllll}
+\toprule
+ & F1 & PR-AUC & latency\_ms & latency\_p95\_ms & throughput\_tx\_s & train\_s & params & params\_unit & size\_kb & timing\_source \\
+\midrule
+CatBoost & 0.821 & 0.807 & 5.507 & 7.694 & 810938.736 & 15.535 & 70000.000 & tree leaves + splits & 1110.794 & idle re-run \\
+GCN + XGBoost & 0.812 & 0.795 & 28.023 & 39.440 & 162465.674 & 1904.563 & 21464.000 & GCN weights + tree nodes & 288.052 & idle re-run \\
+GAT + RF & 0.809 & 0.772 & 41.111 & 45.529 & 112481.396 & 495.635 & 56002.000 & GAT weights + tree nodes & 2483.135 & idle re-run \\
+LightGBM & 0.807 & 0.803 & 6.854 & 13.511 & 612395.604 & 0.809 & 6100.000 & tree nodes & 355.980 & idle re-run \\
+Random Forest & 0.806 & 0.783 & 15.097 & 16.238 & 295376.817 & 2.460 & 28428.000 & tree nodes & 2237.442 & idle re-run \\
+GBDT-197 (no cost weight) & 0.795 & 0.792 & 23.963 & 31.622 & 192078.470 & 494.200 & 42438.000 & GAT weights + tree nodes & 852.044 & idle re-run \\
+XGBoost & 0.795 & 0.799 & 4.712 & 8.220 & 862222.461 & 0.872 & 4620.000 & tree nodes & 218.566 & idle re-run \\
+GBDT-165 (w=4.32) & 0.793 & 0.802 & 13.312 & 61.750 & 202817.646 & 6.463 & 19034.000 & tree nodes & 826.214 & idle re-run \\
+TGAT-BoostNet (ours) & 0.790 & 0.792 & 22.606 & 27.134 & 217198.880 & 495.207 & 45054.000 & GAT weights + GBDT tree nodes & 938.914 & idle re-run \\
+MLP & 0.617 & 0.497 & 2.522 & 3.546 & 1826011.683 & 21.867 & 8351.000 & weights & 141.344 & idle re-run \\
+GraphSAGE & 0.593 & 0.577 & 22.844 & 34.380 & 193905.690 & 335.381 & 33502.000 & weights & 133.896 & idle re-run \\
+Skip-GCN & 0.584 & 0.627 & 9.667 & 13.163 & 471629.499 & 233.758 & 17134.000 & weights & 69.833 & idle re-run \\
+SVM (RBF) & 0.559 & 0.467 & 1222.239 & 1631.911 & 4076.169 & 65.600 & 567222.000 & support-vector values & 4472.753 & idle re-run \\
+GCN & 0.545 & 0.572 & 10.729 & 14.805 & 420476.163 & 229.559 & 16802.000 & weights & 68.091 & idle re-run \\
+GAT (alone) & 0.493 & 0.457 & 10.297 & 12.869 & 451136.160 & 94.117 & 25762.000 & weights & 104.130 & idle re-run \\
+EvolveGCN-O & 0.424 & 0.332 & 189.402 & 211.240 & 24094.136 & 108.779 & 251642.000 & weights & 986.874 & idle re-run \\
+Logistic Regression & 0.405 & 0.360 & 2.166 & 2.700 & 2187611.397 & 0.355 & 166.000 & weights & 1.332 & idle re-run \\
+\bottomrule
+\end{tabular}
+\end{table}

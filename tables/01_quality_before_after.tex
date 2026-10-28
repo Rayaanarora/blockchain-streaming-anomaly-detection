@@ -1,0 +1,20 @@
+\begin{table}
+\caption{Data quality of the 165 features (training rows)}
+\label{tab:01_quality_before_after}
+\begin{tabular}{llll}
+\toprule
+ & raw & standardised & asinh(standardised) \\
+\midrule
+missing rate (mean) & 0.0000 & 0.0000 & 0.0000 \\
+outliers |z|>3 (mean frac) & 0.0085 & 0.0085 & 0.0144 \\
+outliers 1.5 IQR (mean frac) & 0.1586 & 0.1586 & 0.1561 \\
+|skewness| (median) & 4.3546 & 4.3546 & 2.3415 \\
+excess kurtosis (median) & 22.8358 & 22.8358 & 5.5121 \\
+class SNR (median) & 0.2120 & 0.2120 & 0.3284 \\
+class SNR (max) & 1.2778 & 1.2778 & 1.2837 \\
+feature mean (median |.|) & 0.1162 & 0.0000 & 0.0423 \\
+feature sd (median) & 1.3927 & 1.0000 & 0.5918 \\
+value range (median) & 11.2390 & 8.3036 & 3.2410 \\
+\bottomrule
+\end{tabular}
+\end{table}

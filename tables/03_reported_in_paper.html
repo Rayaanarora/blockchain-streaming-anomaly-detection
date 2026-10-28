@@ -1,0 +1,400 @@
+<style type="text/css">
+#T_96170 caption {
+  caption-side: top;
+  font-weight: 600;
+  text-align: left;
+}
+#T_96170 th {
+  background: #f2f1ee;
+  padding: 4px 8px;
+  text-align: left;
+}
+#T_96170 td {
+  padding: 4px 8px;
+  font-variant-numeric: tabular-nums;
+}
+#T_96170  {
+  border-collapse: collapse;
+  font-family: sans-serif;
+  font-size: 12px;
+}
+</style>
+<table id="T_96170">
+  <caption>Published Elliptic results (REPORTED IN PAPER; split 1-34 / 35-49)</caption>
+  <thead>
+    <tr>
+      <th class="blank" >&nbsp;</th>
+      <th class="blank" >&nbsp;</th>
+      <th class="blank level0" >&nbsp;</th>
+      <th id="T_96170_level0_col0" class="col_heading level0 col0" >precision</th>
+      <th id="T_96170_level0_col1" class="col_heading level0 col1" >recall</th>
+      <th id="T_96170_level0_col2" class="col_heading level0 col2" >f1_illicit</th>
+      <th id="T_96170_level0_col3" class="col_heading level0 col3" >micro_f1</th>
+      <th id="T_96170_level0_col4" class="col_heading level0 col4" >auc</th>
+      <th id="T_96170_level0_col5" class="col_heading level0 col5" >seeds</th>
+      <th id="T_96170_level0_col6" class="col_heading level0 col6" >year</th>
+      <th id="T_96170_level0_col7" class="col_heading level0 col7" >status</th>
+    </tr>
+    <tr>
+      <th class="index_name level0" >source</th>
+      <th class="index_name level1" >model</th>
+      <th class="index_name level2" >features</th>
+      <th class="blank col0" >&nbsp;</th>
+      <th class="blank col1" >&nbsp;</th>
+      <th class="blank col2" >&nbsp;</th>
+      <th class="blank col3" >&nbsp;</th>
+      <th class="blank col4" >&nbsp;</th>
+      <th class="blank col5" >&nbsp;</th>
+      <th class="blank col6" >&nbsp;</th>
+      <th class="blank col7" >&nbsp;</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th id="T_96170_level0_row0" class="row_heading level0 row0" rowspan="11">Weber2019</th>
+      <th id="T_96170_level1_row0" class="row_heading level1 row0" rowspan="3">Logistic Regression</th>
+      <th id="T_96170_level2_row0" class="row_heading level2 row0" >AF (all 166)</th>
+      <td id="T_96170_row0_col0" class="data row0 col0" >0.404</td>
+      <td id="T_96170_row0_col1" class="data row0 col1" >0.593</td>
+      <td id="T_96170_row0_col2" class="data row0 col2" >0.481</td>
+      <td id="T_96170_row0_col3" class="data row0 col3" >0.931</td>
+      <td id="T_96170_row0_col4" class="data row0 col4" ></td>
+      <td id="T_96170_row0_col5" class="data row0 col5" >1</td>
+      <td id="T_96170_row0_col6" class="data row0 col6" >2019</td>
+      <td id="T_96170_row0_col7" class="data row0 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level2_row1" class="row_heading level2 row1" >LF (local 94)</th>
+      <td id="T_96170_row1_col0" class="data row1 col0" >0.348</td>
+      <td id="T_96170_row1_col1" class="data row1 col1" >0.668</td>
+      <td id="T_96170_row1_col2" class="data row1 col2" >0.457</td>
+      <td id="T_96170_row1_col3" class="data row1 col3" >0.920</td>
+      <td id="T_96170_row1_col4" class="data row1 col4" ></td>
+      <td id="T_96170_row1_col5" class="data row1 col5" >1</td>
+      <td id="T_96170_row1_col6" class="data row1 col6" >2019</td>
+      <td id="T_96170_row1_col7" class="data row1 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level2_row2" class="row_heading level2 row2" >AF + GCN emb.</th>
+      <td id="T_96170_row2_col0" class="data row2 col0" >0.537</td>
+      <td id="T_96170_row2_col1" class="data row2 col1" >0.528</td>
+      <td id="T_96170_row2_col2" class="data row2 col2" >0.533</td>
+      <td id="T_96170_row2_col3" class="data row2 col3" >0.945</td>
+      <td id="T_96170_row2_col4" class="data row2 col4" ></td>
+      <td id="T_96170_row2_col5" class="data row2 col5" >1</td>
+      <td id="T_96170_row2_col6" class="data row2 col6" >2019</td>
+      <td id="T_96170_row2_col7" class="data row2 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row3" class="row_heading level1 row3" rowspan="3">Random Forest</th>
+      <th id="T_96170_level2_row3" class="row_heading level2 row3" >AF (all 166)</th>
+      <td id="T_96170_row3_col0" class="data row3 col0" >0.956</td>
+      <td id="T_96170_row3_col1" class="data row3 col1" >0.670</td>
+      <td id="T_96170_row3_col2" class="data row3 col2" >0.788</td>
+      <td id="T_96170_row3_col3" class="data row3 col3" >0.977</td>
+      <td id="T_96170_row3_col4" class="data row3 col4" ></td>
+      <td id="T_96170_row3_col5" class="data row3 col5" >1</td>
+      <td id="T_96170_row3_col6" class="data row3 col6" >2019</td>
+      <td id="T_96170_row3_col7" class="data row3 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level2_row4" class="row_heading level2 row4" >AF + GCN emb.</th>
+      <td id="T_96170_row4_col0" class="data row4 col0" >0.971</td>
+      <td id="T_96170_row4_col1" class="data row4 col1" >0.675</td>
+      <td id="T_96170_row4_col2" class="data row4 col2" >0.796</td>
+      <td id="T_96170_row4_col3" class="data row4 col3" >0.978</td>
+      <td id="T_96170_row4_col4" class="data row4 col4" ></td>
+      <td id="T_96170_row4_col5" class="data row4 col5" >1</td>
+      <td id="T_96170_row4_col6" class="data row4 col6" >2019</td>
+      <td id="T_96170_row4_col7" class="data row4 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level2_row5" class="row_heading level2 row5" >LF (local 94)</th>
+      <td id="T_96170_row5_col0" class="data row5 col0" >0.803</td>
+      <td id="T_96170_row5_col1" class="data row5 col1" >0.611</td>
+      <td id="T_96170_row5_col2" class="data row5 col2" >0.694</td>
+      <td id="T_96170_row5_col3" class="data row5 col3" >0.966</td>
+      <td id="T_96170_row5_col4" class="data row5 col4" ></td>
+      <td id="T_96170_row5_col5" class="data row5 col5" >1</td>
+      <td id="T_96170_row5_col6" class="data row5 col6" >2019</td>
+      <td id="T_96170_row5_col7" class="data row5 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row6" class="row_heading level1 row6" rowspan="2">MLP</th>
+      <th id="T_96170_level2_row6" class="row_heading level2 row6" >AF (all 166)</th>
+      <td id="T_96170_row6_col0" class="data row6 col0" >0.694</td>
+      <td id="T_96170_row6_col1" class="data row6 col1" >0.617</td>
+      <td id="T_96170_row6_col2" class="data row6 col2" >0.653</td>
+      <td id="T_96170_row6_col3" class="data row6 col3" >0.962</td>
+      <td id="T_96170_row6_col4" class="data row6 col4" ></td>
+      <td id="T_96170_row6_col5" class="data row6 col5" >1</td>
+      <td id="T_96170_row6_col6" class="data row6 col6" >2019</td>
+      <td id="T_96170_row6_col7" class="data row6 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level2_row7" class="row_heading level2 row7" >AF + GCN emb.</th>
+      <td id="T_96170_row7_col0" class="data row7 col0" >0.780</td>
+      <td id="T_96170_row7_col1" class="data row7 col1" >0.617</td>
+      <td id="T_96170_row7_col2" class="data row7 col2" >0.689</td>
+      <td id="T_96170_row7_col3" class="data row7 col3" >0.967</td>
+      <td id="T_96170_row7_col4" class="data row7 col4" ></td>
+      <td id="T_96170_row7_col5" class="data row7 col5" >1</td>
+      <td id="T_96170_row7_col6" class="data row7 col6" >2019</td>
+      <td id="T_96170_row7_col7" class="data row7 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row8" class="row_heading level1 row8" >GCN</th>
+      <th id="T_96170_level2_row8" class="row_heading level2 row8" >AF (all 166)</th>
+      <td id="T_96170_row8_col0" class="data row8 col0" >0.812</td>
+      <td id="T_96170_row8_col1" class="data row8 col1" >0.512</td>
+      <td id="T_96170_row8_col2" class="data row8 col2" >0.628</td>
+      <td id="T_96170_row8_col3" class="data row8 col3" >0.961</td>
+      <td id="T_96170_row8_col4" class="data row8 col4" ></td>
+      <td id="T_96170_row8_col5" class="data row8 col5" >1</td>
+      <td id="T_96170_row8_col6" class="data row8 col6" >2019</td>
+      <td id="T_96170_row8_col7" class="data row8 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row9" class="row_heading level1 row9" >Skip-GCN</th>
+      <th id="T_96170_level2_row9" class="row_heading level2 row9" >AF (all 166)</th>
+      <td id="T_96170_row9_col0" class="data row9 col0" >0.812</td>
+      <td id="T_96170_row9_col1" class="data row9 col1" >0.623</td>
+      <td id="T_96170_row9_col2" class="data row9 col2" >0.705</td>
+      <td id="T_96170_row9_col3" class="data row9 col3" >0.966</td>
+      <td id="T_96170_row9_col4" class="data row9 col4" ></td>
+      <td id="T_96170_row9_col5" class="data row9 col5" >1</td>
+      <td id="T_96170_row9_col6" class="data row9 col6" >2019</td>
+      <td id="T_96170_row9_col7" class="data row9 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row10" class="row_heading level1 row10" >EvolveGCN</th>
+      <th id="T_96170_level2_row10" class="row_heading level2 row10" >AF (all 166)</th>
+      <td id="T_96170_row10_col0" class="data row10 col0" >0.850</td>
+      <td id="T_96170_row10_col1" class="data row10 col1" >0.624</td>
+      <td id="T_96170_row10_col2" class="data row10 col2" >0.720</td>
+      <td id="T_96170_row10_col3" class="data row10 col3" >0.968</td>
+      <td id="T_96170_row10_col4" class="data row10 col4" ></td>
+      <td id="T_96170_row10_col5" class="data row10 col5" >1</td>
+      <td id="T_96170_row10_col6" class="data row10 col6" >2019</td>
+      <td id="T_96170_row10_col7" class="data row10 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level0_row11" class="row_heading level0 row11" rowspan="8">EllipticPP2023</th>
+      <th id="T_96170_level1_row11" class="row_heading level1 row11" >Logistic Regression</th>
+      <th id="T_96170_level2_row11" class="row_heading level2 row11" >Elliptic (EC)</th>
+      <td id="T_96170_row11_col0" class="data row11 col0" >0.326</td>
+      <td id="T_96170_row11_col1" class="data row11 col1" >0.707</td>
+      <td id="T_96170_row11_col2" class="data row11 col2" >0.446</td>
+      <td id="T_96170_row11_col3" class="data row11 col3" >0.886</td>
+      <td id="T_96170_row11_col4" class="data row11 col4" ></td>
+      <td id="T_96170_row11_col5" class="data row11 col5" >n/r</td>
+      <td id="T_96170_row11_col6" class="data row11 col6" >2023</td>
+      <td id="T_96170_row11_col7" class="data row11 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row12" class="row_heading level1 row12" >Random Forest</th>
+      <th id="T_96170_level2_row12" class="row_heading level2 row12" >Elliptic (EC)</th>
+      <td id="T_96170_row12_col0" class="data row12 col0" >0.940</td>
+      <td id="T_96170_row12_col1" class="data row12 col1" >0.724</td>
+      <td id="T_96170_row12_col2" class="data row12 col2" >0.818</td>
+      <td id="T_96170_row12_col3" class="data row12 col3" >0.979</td>
+      <td id="T_96170_row12_col4" class="data row12 col4" ></td>
+      <td id="T_96170_row12_col5" class="data row12 col5" >n/r</td>
+      <td id="T_96170_row12_col6" class="data row12 col6" >2023</td>
+      <td id="T_96170_row12_col7" class="data row12 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row13" class="row_heading level1 row13" >MLP</th>
+      <th id="T_96170_level2_row13" class="row_heading level2 row13" >Elliptic (EC)</th>
+      <td id="T_96170_row13_col0" class="data row13 col0" >0.476</td>
+      <td id="T_96170_row13_col1" class="data row13 col1" >0.673</td>
+      <td id="T_96170_row13_col2" class="data row13 col2" >0.558</td>
+      <td id="T_96170_row13_col3" class="data row13 col3" >0.931</td>
+      <td id="T_96170_row13_col4" class="data row13 col4" ></td>
+      <td id="T_96170_row13_col5" class="data row13 col5" >n/r</td>
+      <td id="T_96170_row13_col6" class="data row13 col6" >2023</td>
+      <td id="T_96170_row13_col7" class="data row13 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row14" class="row_heading level1 row14" >LSTM</th>
+      <th id="T_96170_level2_row14" class="row_heading level2 row14" >Elliptic (EC)</th>
+      <td id="T_96170_row14_col0" class="data row14 col0" >0.665</td>
+      <td id="T_96170_row14_col1" class="data row14 col1" >0.350</td>
+      <td id="T_96170_row14_col2" class="data row14 col2" >0.459</td>
+      <td id="T_96170_row14_col3" class="data row14 col3" >0.946</td>
+      <td id="T_96170_row14_col4" class="data row14 col4" ></td>
+      <td id="T_96170_row14_col5" class="data row14 col5" >n/r</td>
+      <td id="T_96170_row14_col6" class="data row14 col6" >2023</td>
+      <td id="T_96170_row14_col7" class="data row14 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row15" class="row_heading level1 row15" >XGBoost</th>
+      <th id="T_96170_level2_row15" class="row_heading level2 row15" >Elliptic (EC)</th>
+      <td id="T_96170_row15_col0" class="data row15 col0" >0.812</td>
+      <td id="T_96170_row15_col1" class="data row15 col1" >0.717</td>
+      <td id="T_96170_row15_col2" class="data row15 col2" >0.761</td>
+      <td id="T_96170_row15_col3" class="data row15 col3" >0.971</td>
+      <td id="T_96170_row15_col4" class="data row15 col4" ></td>
+      <td id="T_96170_row15_col5" class="data row15 col5" >n/r</td>
+      <td id="T_96170_row15_col6" class="data row15 col6" >2023</td>
+      <td id="T_96170_row15_col7" class="data row15 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row16" class="row_heading level1 row16" >RF + XGB ensemble</th>
+      <th id="T_96170_level2_row16" class="row_heading level2 row16" >Elliptic (EC)</th>
+      <td id="T_96170_row16_col0" class="data row16 col0" >0.960</td>
+      <td id="T_96170_row16_col1" class="data row16 col1" >0.704</td>
+      <td id="T_96170_row16_col2" class="data row16 col2" >0.812</td>
+      <td id="T_96170_row16_col3" class="data row16 col3" >0.979</td>
+      <td id="T_96170_row16_col4" class="data row16 col4" ></td>
+      <td id="T_96170_row16_col5" class="data row16 col5" >n/r</td>
+      <td id="T_96170_row16_col6" class="data row16 col6" >2023</td>
+      <td id="T_96170_row16_col7" class="data row16 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row17" class="row_heading level1 row17" >RF + MLP + XGB ensemble</th>
+      <th id="T_96170_level2_row17" class="row_heading level2 row17" >Elliptic (EC)</th>
+      <td id="T_96170_row17_col0" class="data row17 col0" >0.947</td>
+      <td id="T_96170_row17_col1" class="data row17 col1" >0.719</td>
+      <td id="T_96170_row17_col2" class="data row17 col2" >0.817</td>
+      <td id="T_96170_row17_col3" class="data row17 col3" >0.979</td>
+      <td id="T_96170_row17_col4" class="data row17 col4" ></td>
+      <td id="T_96170_row17_col5" class="data row17 col5" >n/r</td>
+      <td id="T_96170_row17_col6" class="data row17 col6" >2023</td>
+      <td id="T_96170_row17_col7" class="data row17 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row18" class="row_heading level1 row18" >Random Forest</th>
+      <th id="T_96170_level2_row18" class="row_heading level2 row18" >Elliptic++ (TX, +17 feats)</th>
+      <td id="T_96170_row18_col0" class="data row18 col0" >0.975</td>
+      <td id="T_96170_row18_col1" class="data row18 col1" >0.719</td>
+      <td id="T_96170_row18_col2" class="data row18 col2" >0.828</td>
+      <td id="T_96170_row18_col3" class="data row18 col3" >0.980</td>
+      <td id="T_96170_row18_col4" class="data row18 col4" ></td>
+      <td id="T_96170_row18_col5" class="data row18 col5" >n/r</td>
+      <td id="T_96170_row18_col6" class="data row18 col6" >2023</td>
+      <td id="T_96170_row18_col7" class="data row18 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level0_row19" class="row_heading level0 row19" rowspan="2">InspectionL2022</th>
+      <th id="T_96170_level1_row19" class="row_heading level1 row19" rowspan="2">Inspection-L (DGI emb. + RF)</th>
+      <th id="T_96170_level2_row19" class="row_heading level2 row19" >AF + DGI emb.</th>
+      <td id="T_96170_row19_col0" class="data row19 col0" >0.972</td>
+      <td id="T_96170_row19_col1" class="data row19 col1" >0.721</td>
+      <td id="T_96170_row19_col2" class="data row19 col2" >0.828</td>
+      <td id="T_96170_row19_col3" class="data row19 col3" ></td>
+      <td id="T_96170_row19_col4" class="data row19 col4" >0.916</td>
+      <td id="T_96170_row19_col5" class="data row19 col5" >n/r</td>
+      <td id="T_96170_row19_col6" class="data row19 col6" >2022</td>
+      <td id="T_96170_row19_col7" class="data row19 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level2_row20" class="row_heading level2 row20" >LF + DGI emb.</th>
+      <td id="T_96170_row20_col0" class="data row20 col0" >0.906</td>
+      <td id="T_96170_row20_col1" class="data row20 col1" >0.712</td>
+      <td id="T_96170_row20_col2" class="data row20 col2" >0.797</td>
+      <td id="T_96170_row20_col3" class="data row20 col3" ></td>
+      <td id="T_96170_row20_col4" class="data row20 col4" >0.895</td>
+      <td id="T_96170_row20_col5" class="data row20 col5" >n/r</td>
+      <td id="T_96170_row20_col6" class="data row20 col6" >2022</td>
+      <td id="T_96170_row20_col7" class="data row20 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level0_row21" class="row_heading level0 row21" rowspan="8">Maganti2026</th>
+      <th id="T_96170_level1_row21" class="row_heading level1 row21" >3-layer MLP</th>
+      <th id="T_96170_level2_row21" class="row_heading level2 row21" >raw 165</th>
+      <td id="T_96170_row21_col0" class="data row21 col0" >0.496</td>
+      <td id="T_96170_row21_col1" class="data row21 col1" >0.616</td>
+      <td id="T_96170_row21_col2" class="data row21 col2" >0.549</td>
+      <td id="T_96170_row21_col3" class="data row21 col3" ></td>
+      <td id="T_96170_row21_col4" class="data row21 col4" >0.889</td>
+      <td id="T_96170_row21_col5" class="data row21 col5" >10 (mean)</td>
+      <td id="T_96170_row21_col6" class="data row21 col6" >2026</td>
+      <td id="T_96170_row21_col7" class="data row21 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row22" class="row_heading level1 row22" >GCN</th>
+      <th id="T_96170_level2_row22" class="row_heading level2 row22" >raw 165</th>
+      <td id="T_96170_row22_col0" class="data row22 col0" >0.567</td>
+      <td id="T_96170_row22_col1" class="data row22 col1" >0.456</td>
+      <td id="T_96170_row22_col2" class="data row22 col2" >0.503</td>
+      <td id="T_96170_row22_col3" class="data row22 col3" ></td>
+      <td id="T_96170_row22_col4" class="data row22 col4" >0.882</td>
+      <td id="T_96170_row22_col5" class="data row22 col5" >10 (mean)</td>
+      <td id="T_96170_row22_col6" class="data row22 col6" >2026</td>
+      <td id="T_96170_row22_col7" class="data row22 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row23" class="row_heading level1 row23" >GraphSAGE</th>
+      <th id="T_96170_level2_row23" class="row_heading level2 row23" >raw 165</th>
+      <td id="T_96170_row23_col0" class="data row23 col0" >0.709</td>
+      <td id="T_96170_row23_col1" class="data row23 col1" >0.670</td>
+      <td id="T_96170_row23_col2" class="data row23 col2" >0.688</td>
+      <td id="T_96170_row23_col3" class="data row23 col3" ></td>
+      <td id="T_96170_row23_col4" class="data row23 col4" >0.928</td>
+      <td id="T_96170_row23_col5" class="data row23 col5" >10 (mean)</td>
+      <td id="T_96170_row23_col6" class="data row23 col6" >2026</td>
+      <td id="T_96170_row23_col7" class="data row23 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row24" class="row_heading level1 row24" >GAT</th>
+      <th id="T_96170_level2_row24" class="row_heading level2 row24" >raw 165</th>
+      <td id="T_96170_row24_col0" class="data row24 col0" >0.588</td>
+      <td id="T_96170_row24_col1" class="data row24 col1" >0.635</td>
+      <td id="T_96170_row24_col2" class="data row24 col2" >0.610</td>
+      <td id="T_96170_row24_col3" class="data row24 col3" ></td>
+      <td id="T_96170_row24_col4" class="data row24 col4" >0.909</td>
+      <td id="T_96170_row24_col5" class="data row24 col5" >10 (mean)</td>
+      <td id="T_96170_row24_col6" class="data row24 col6" >2026</td>
+      <td id="T_96170_row24_col7" class="data row24 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row25" class="row_heading level1 row25" >Logistic Regression</th>
+      <th id="T_96170_level2_row25" class="row_heading level2 row25" >raw 165</th>
+      <td id="T_96170_row25_col0" class="data row25 col0" ></td>
+      <td id="T_96170_row25_col1" class="data row25 col1" ></td>
+      <td id="T_96170_row25_col2" class="data row25 col2" >0.530</td>
+      <td id="T_96170_row25_col3" class="data row25 col3" ></td>
+      <td id="T_96170_row25_col4" class="data row25 col4" >0.880</td>
+      <td id="T_96170_row25_col5" class="data row25 col5" >n/r</td>
+      <td id="T_96170_row25_col6" class="data row25 col6" >2026</td>
+      <td id="T_96170_row25_col7" class="data row25 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row26" class="row_heading level1 row26" >XGBoost</th>
+      <th id="T_96170_level2_row26" class="row_heading level2 row26" >raw 165</th>
+      <td id="T_96170_row26_col0" class="data row26 col0" ></td>
+      <td id="T_96170_row26_col1" class="data row26 col1" ></td>
+      <td id="T_96170_row26_col2" class="data row26 col2" >0.775</td>
+      <td id="T_96170_row26_col3" class="data row26 col3" ></td>
+      <td id="T_96170_row26_col4" class="data row26 col4" >0.931</td>
+      <td id="T_96170_row26_col5" class="data row26 col5" >n/r</td>
+      <td id="T_96170_row26_col6" class="data row26 col6" >2026</td>
+      <td id="T_96170_row26_col7" class="data row26 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row27" class="row_heading level1 row27" >Random Forest</th>
+      <th id="T_96170_level2_row27" class="row_heading level2 row27" >raw 165</th>
+      <td id="T_96170_row27_col0" class="data row27 col0" ></td>
+      <td id="T_96170_row27_col1" class="data row27 col1" ></td>
+      <td id="T_96170_row27_col2" class="data row27 col2" >0.821</td>
+      <td id="T_96170_row27_col3" class="data row27 col3" ></td>
+      <td id="T_96170_row27_col4" class="data row27 col4" >0.934</td>
+      <td id="T_96170_row27_col5" class="data row27 col5" >10</td>
+      <td id="T_96170_row27_col6" class="data row27 col6" >2026</td>
+      <td id="T_96170_row27_col7" class="data row27 col7" >reported in paper</td>
+    </tr>
+    <tr>
+      <th id="T_96170_level1_row28" class="row_heading level1 row28" >RF on [GraphSAGE emb. || raw]</th>
+      <th id="T_96170_level2_row28" class="row_heading level2 row28" >graph + raw</th>
+      <td id="T_96170_row28_col0" class="data row28 col0" ></td>
+      <td id="T_96170_row28_col1" class="data row28 col1" ></td>
+      <td id="T_96170_row28_col2" class="data row28 col2" >0.699</td>
+      <td id="T_96170_row28_col3" class="data row28 col3" ></td>
+      <td id="T_96170_row28_col4" class="data row28 col4" >0.892</td>
+      <td id="T_96170_row28_col5" class="data row28 col5" >n/r</td>
+      <td id="T_96170_row28_col6" class="data row28 col6" >2026</td>
+      <td id="T_96170_row28_col7" class="data row28 col7" >reported in paper</td>
+    </tr>
+  </tbody>
+</table>

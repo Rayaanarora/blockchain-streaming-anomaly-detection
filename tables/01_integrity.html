@@ -1,0 +1,103 @@
+<style type="text/css">
+#T_0ed3b caption {
+  caption-side: top;
+  font-weight: 600;
+  text-align: left;
+}
+#T_0ed3b th {
+  background: #f2f1ee;
+  padding: 4px 8px;
+  text-align: left;
+}
+#T_0ed3b td {
+  padding: 4px 8px;
+  font-variant-numeric: tabular-nums;
+}
+#T_0ed3b  {
+  border-collapse: collapse;
+  font-family: sans-serif;
+  font-size: 12px;
+}
+</style>
+<table id="T_0ed3b">
+  <caption>Integrity counts: independent raw-CSV check vs Spark report</caption>
+  <thead>
+    <tr>
+      <th class="blank level0" >&nbsp;</th>
+      <th id="T_0ed3b_level0_col0" class="col_heading level0 col0" >raw CSV check (independent)</th>
+      <th id="T_0ed3b_level0_col1" class="col_heading level0 col1" >Spark pipeline report</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th id="T_0ed3b_level0_row0" class="row_heading level0 row0" >feature lines</th>
+      <td id="T_0ed3b_row0_col0" class="data row0 col0" >203769</td>
+      <td id="T_0ed3b_row0_col1" class="data row0 col1" >203769</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row1" class="row_heading level0 row1" >malformed lines (≠167 fields)</th>
+      <td id="T_0ed3b_row1_col0" class="data row1 col0" >0</td>
+      <td id="T_0ed3b_row1_col1" class="data row1 col1" >FAILFAST parse: 0 (job would abort)</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row2" class="row_heading level0 row2" >non-numeric lines</th>
+      <td id="T_0ed3b_row2_col0" class="data row2 col0" >0</td>
+      <td id="T_0ed3b_row2_col1" class="data row2 col1" >0</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row3" class="row_heading level0 row3" >malformed-line rate</th>
+      <td id="T_0ed3b_row3_col0" class="data row3 col0" >0.0</td>
+      <td id="T_0ed3b_row3_col1" class="data row3 col1" >0.0</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row4" class="row_heading level0 row4" >duplicate tx ids</th>
+      <td id="T_0ed3b_row4_col0" class="data row4 col0" >0</td>
+      <td id="T_0ed3b_row4_col1" class="data row4 col1" >0</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row5" class="row_heading level0 row5" >invalid labels</th>
+      <td id="T_0ed3b_row5_col0" class="data row5 col0" >0</td>
+      <td id="T_0ed3b_row5_col1" class="data row5 col1" >0</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row6" class="row_heading level0 row6" >edges</th>
+      <td id="T_0ed3b_row6_col0" class="data row6 col0" >234355</td>
+      <td id="T_0ed3b_row6_col1" class="data row6 col1" >234355</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row7" class="row_heading level0 row7" >dangling edges (endpoint missing)</th>
+      <td id="T_0ed3b_row7_col0" class="data row7 col0" >0</td>
+      <td id="T_0ed3b_row7_col1" class="data row7 col1" >0</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row8" class="row_heading level0 row8" >duplicate edges</th>
+      <td id="T_0ed3b_row8_col0" class="data row8 col0" >0</td>
+      <td id="T_0ed3b_row8_col1" class="data row8 col1" >0</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row9" class="row_heading level0 row9" >self-loops</th>
+      <td id="T_0ed3b_row9_col0" class="data row9 col0" >0</td>
+      <td id="T_0ed3b_row9_col1" class="data row9 col1" >0</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row10" class="row_heading level0 row10" >time-step range</th>
+      <td id="T_0ed3b_row10_col0" class="data row10 col0" >1-49</td>
+      <td id="T_0ed3b_row10_col1" class="data row10 col1" >1-49</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row11" class="row_heading level0 row11" >null rate (output features)</th>
+      <td id="T_0ed3b_row11_col0" class="data row11 col0" >0.0</td>
+      <td id="T_0ed3b_row11_col1" class="data row11 col1" >0.0</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row12" class="row_heading level0 row12" >rows dropped (input → output)</th>
+      <td id="T_0ed3b_row12_col0" class="data row12 col0" >0</td>
+      <td id="T_0ed3b_row12_col1" class="data row12 col1" >0</td>
+    </tr>
+    <tr>
+      <th id="T_0ed3b_level0_row13" class="row_heading level0 row13" >cross-time-step edges</th>
+      <td id="T_0ed3b_row13_col0" class="data row13 col0" >0</td>
+      <td id="T_0ed3b_row13_col1" class="data row13 col1" >0</td>
+    </tr>
+  </tbody>
+</table>

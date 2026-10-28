@@ -1,0 +1,15 @@
+\begin{table}
+\caption{Elliptic Spark preprocessing over growing step subsets}
+\label{tab:01_spark_scaling}
+\begin{tabular}{lrrrllllllllll}
+\toprule
+ & n\_nodes & n\_edges & input\_lines & input\_mb & output\_mb & wall\_seconds & spark\_session\_seconds & pipeline\_seconds & lines\_per\_s & tx\_per\_s & driver\_peak\_rss\_mb & jvm\_peak\_rss\_mb & tree\_peak\_rss\_mb \\
+max\_step &  &  &  &  &  &  &  &  &  &  &  &  &  \\
+\midrule
+12 & 64440 & 78601 & 207481 & 202.39 & 35.40 & 118.80 & 28.77 & 89.64 & 1746.49 & 542.43 & 2968.24 & 2213.02 & 5179.41 \\
+24 & 108950 & 127488 & 345388 & 342.19 & 60.06 & 76.50 & 0.10 & 75.79 & 4515.01 & 1424.23 & 3035.05 & 2366.23 & 5399.51 \\
+36 & 148165 & 171007 & 467337 & 465.10 & 81.72 & 91.87 & 0.15 & 91.19 & 5087.16 & 1612.84 & 3087.95 & 2638.94 & 5724.12 \\
+49 & 203769 & 234355 & 641893 & 665.15 & 111.93 & 87.05 & 0.11 & 86.71 & 7373.94 & 2340.86 & 2887.02 & 3012.23 & 5774.32 \\
+\bottomrule
+\end{tabular}
+\end{table}

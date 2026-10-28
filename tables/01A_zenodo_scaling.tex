@@ -1,0 +1,14 @@
+\begin{table}
+\caption{Zenodo Spark preprocessing: bounded slices (v3 reports) and the full run}
+\label{tab:01A_zenodo_scaling}
+\begin{tabular}{lrrlllllllrl}
+\toprule
+ & raw\_lines & transactions & wall\_seconds & lines\_per\_s & tx\_per\_s & driver\_peak\_rss\_mb & jvm\_peak\_rss\_mb & tree\_peak\_rss\_mb & output\_mb & null\_values & source \\
+run &  &  &  &  &  &  &  &  &  &  &  \\
+\midrule
+50k-line slice & 50000 & 8149 & 19.80 & 2525.68 & 411.63 & 117.07 & 1946.18 & 2036.46 & 0.98 & 0 & spark\_scale\_benchmark\_50000\_v3.json \\
+100k-line slice & 100000 & 18173 & 24.66 & 4055.64 & 737.03 & 125.64 & 2098.39 & 2155.93 & 2.20 & 0 & spark\_scale\_benchmark\_100000\_v3.json \\
+full (18 parts) & 85721542 & 16889271 & 13977.35 & 6132.89 & 1208.33 & 940.46 & 4645.73 & 5277.75 & 2132.83 & 0 & zenodo\_preprocessing\_report.json \\
+\bottomrule
+\end{tabular}
+\end{table}
