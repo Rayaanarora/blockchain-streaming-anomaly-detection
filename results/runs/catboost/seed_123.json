@@ -1,0 +1,22 @@
+{
+ "device": "cpu",
+ "quick": false,
+ "torch_threads": 2,
+ "protocol": "train labelled steps 1-34, test labelled steps 35-49, threshold 0.5",
+ "train_seconds": 107.89281034469604,
+ "size_bytes": 1137237,
+ "n_params": 70000,
+ "n_params_note": "tree leaves + splits",
+ "latency_ms_median": 53.13439999008551,
+ "latency_ms_p95": 111.40241001849057,
+ "throughput_tx_per_s": 73724.3924101171,
+ "n_snapshots": 15,
+ "mean_snapshot_size": 4500.266666666666,
+ "model": "catboost",
+ "seed": 123,
+ "test_signature": "ecaa69f927578561",
+ "n_test": 16670,
+ "created": "2026-10-28T15:32:57",
+ "host": "DESKTOP-T43J8EU",
+ "platform": "Windows-11-10.0.26200-SP0"
+}
