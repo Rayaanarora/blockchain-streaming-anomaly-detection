@@ -1,0 +1,22 @@
+{
+ "device": "cuda",
+ "quick": false,
+ "torch_threads": 2,
+ "protocol": "train labelled steps 1-34, test labelled steps 35-49, threshold 0.5",
+ "train_seconds": 101.3829653263092,
+ "size_bytes": 289589,
+ "n_params": 21304,
+ "n_params_note": "GCN weights + tree nodes",
+ "latency_ms_median": 35.97057900014988,
+ "latency_ms_p95": 43.9985643999762,
+ "throughput_tx_per_s": 138822.9273416751,
+ "n_snapshots": 15,
+ "mean_snapshot_size": 4500.266666666666,
+ "model": "gcn_xgb",
+ "seed": 2024,
+ "test_signature": "ecaa69f927578561",
+ "n_test": 16670,
+ "created": "2026-10-28T14:43:11",
+ "host": "0f02a44a00a2",
+ "platform": "Linux-6.6.159+-x86_64-with-glibc2.39"
+}
