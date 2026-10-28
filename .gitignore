@@ -31,3 +31,12 @@ data/validation/final_model_selection/fitted_seed42/
 data/validation/final_model_selection/backup_before_refit_*/
 *.log
 data/validation/snapshift/**/*.parquet
+
+# --- evaluation notebooks (notebooks/0*.ipynb) ---
+!tables/*.csv
+!results/*.csv
+results_quick/
+results_fresh/
+results/logs/
+results/preprocessing/zenodo_slice_*.txt
+*_outputs.zip

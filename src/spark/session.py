@@ -11,6 +11,7 @@ Findings that drive this module (see docs/DECISIONS.md, D-03/D-04):
     installing an unofficial native binary. Jars come from scripts/fetch_spark_jars.py.
   * All scratch space (spark.local.dir, java.io.tmpdir, TEMP/TMP) is kept on drive D:.
 """
+import glob
 import os
 import sys
 from typing import Optional
@@ -23,6 +24,8 @@ JAVA_CANDIDATES = [
     r"C:\Program Files\Java\jre1.8.0_451",
     r"C:\Program Files\Java\jdk-17",
 ]
+# Java 8 auto-updates rename the JRE directory (e.g. jre1.8.0_451 -> jre1.8.0_511); accept any installed one.
+JAVA_CANDIDATES += sorted(glob.glob(r"C:\Program Files\Java\jre1.8*"), reverse=True)
 BARE_FS = "com.globalmentor.apache.hadoop.fs.BareLocalFileSystem"
 BARE_AFS = "com.globalmentor.apache.hadoop.fs.BareStreamingLocalFileSystem"
 

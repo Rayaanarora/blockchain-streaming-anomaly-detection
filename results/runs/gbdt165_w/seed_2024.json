@@ -1,0 +1,22 @@
+{
+ "device": "cpu",
+ "quick": false,
+ "torch_threads": 4,
+ "protocol": "train labelled steps 1-34, test labelled steps 35-49, threshold 0.5",
+ "train_seconds": 8.283405542373657,
+ "size_bytes": 846657,
+ "n_params": 19052,
+ "n_params_note": "tree nodes",
+ "latency_ms_median": 15.142999996896833,
+ "latency_ms_p95": 25.368169997818764,
+ "throughput_tx_per_s": 275690.14421443513,
+ "n_snapshots": 15,
+ "mean_snapshot_size": 4500.266666666666,
+ "model": "gbdt165_w",
+ "seed": 2024,
+ "test_signature": "ecaa69f927578561",
+ "n_test": 16670,
+ "created": "2026-10-28T11:39:39",
+ "host": "DESKTOP-T43J8EU",
+ "platform": "Windows-11-10.0.26200-SP0"
+}

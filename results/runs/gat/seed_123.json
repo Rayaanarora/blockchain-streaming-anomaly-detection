@@ -1,0 +1,22 @@
+{
+ "device": "cpu",
+ "quick": false,
+ "torch_threads": 5,
+ "protocol": "train labelled steps 1-34, test labelled steps 35-49, threshold 0.5",
+ "train_seconds": 213.1875672340393,
+ "size_bytes": 106629,
+ "n_params": 25762,
+ "n_params_note": "weights",
+ "latency_ms_median": 25.59350000228733,
+ "latency_ms_p95": 36.46090000402182,
+ "throughput_tx_per_s": 173074.57603146025,
+ "n_snapshots": 15,
+ "mean_snapshot_size": 4500.266666666666,
+ "model": "gat",
+ "seed": 123,
+ "test_signature": "ecaa69f927578561",
+ "n_test": 16670,
+ "created": "2026-10-28T12:10:17",
+ "host": "DESKTOP-T43J8EU",
+ "platform": "Windows-11-10.0.26200-SP0"
+}
