@@ -85,39 +85,82 @@ checks["edge sets identical"] = sp_pairs == ref_pairs
 display(pd.Series(checks, name="value").to_frame())
 
 # %% [markdown]
-# ## 2. Feature-level error vs the reference
-# * **raw features**: Spark parses the CSV as double and stores float32; the reference parses with pandas.
-# * **scaled features**: Spark standardises in its own job (mean / population std of labelled steps 1–29 in
-#   double precision, stored as float32); the reference recomputes the same in float64 NumPy.
+# ## 2. Preprocessing performance metrics: Spark output vs the independent reference
+# The pipeline's output for every feature is compared with the reference value of the same transaction
+# (the "actual" value), so the course's regression-style metrics measure **how faithfully preprocessing reproduces
+# the correct values**. Lower is better for all errors; R² = 1 is perfect.
 #
-# Definitions: RMSE, MAE, max |err|; relative error = max |err| / max |ref|; R² = 1 − SSE/SST; exact-match rate =
-# share of bit-identical values; CCC = Lin's concordance correlation coefficient.
+# | Metric | Definition here (e = Spark − reference) |
+# |---|---|
+# | MSE / RMSE | mean(e²) / √MSE |
+# | MAE / MedAE | mean \|e\| / median \|e\| |
+# | MAPE | 100 · mean(\|e\| / \|ref\|) over values with ref ≠ 0 (no percentage error exists when ref = 0) |
+# | NRMSE | RMSE / (max(ref) − min(ref)) |
+# | R² | 1 − SSE / SST |
+# | Bias / ME | mean(e): > 0 overestimates, < 0 underestimates |
+#
+# Also reported: max \|e\|, exact-match rate (bit-identical values) and Lin's CCC.
+# * **raw features**: Spark parses the CSV as double and stores float32; the reference parses with pandas.
+# * **standardised features**: Spark standardises in its own job (mean / population std of labelled steps 1–29 in
+#   double precision, stored as float32); the reference recomputes the same in float64 NumPy, so tiny nonzero errors
+#   (~1e-7) here are float32 storage rounding.
 
 # %%
+TEACHER_PRE = ["RMSE", "MSE", "MAE", "MAPE_pct", "R2", "NRMSE", "MedAE", "ME_bias"]
+PRE_LABEL = {"RMSE": "RMSE", "MSE": "MSE", "MAE": "MAE", "MAPE_pct": "MAPE (%)", "R2": "R²", "NRMSE": "NRMSE",
+             "MedAE": "MedAE", "ME_bias": "Bias / ME"}
 err_raw = PP.agreement_table(ref_df, nodes[FEATS].astype(np.float64), FEATS)
 err_scaled = PP.agreement_table(ref_scaled, scaled[FEATS].astype(np.float64), FEATS)
-summ = pd.concat({"raw (165)": err_raw.describe().T[["mean", "min", "max"]],
-                  "scaled (165)": err_scaled.describe().T[["mean", "min", "max"]]}, axis=1)
+def teacher_summary(E_):
+    return pd.DataFrame({"mean over features": E_[TEACHER_PRE].mean(),
+                         "worst feature": [E_[m].min() if m == "R2" else E_[m].abs().max() for m in TEACHER_PRE]},
+                        index=TEACHER_PRE).rename(index=PRE_LABEL)
+pre_tab = pd.concat({"raw features (165)": teacher_summary(err_raw),
+                     "standardised features (165)": teacher_summary(err_scaled)}, axis=1)
+pre_tab.loc["exact-match rate"] = [err_raw.exact_match_rate.mean(), err_raw.exact_match_rate.min(),
+                                   err_scaled.exact_match_rate.mean(), err_scaled.exact_match_rate.min()]
+PL.save_table(pre_tab, "01_preprocessing_metrics", "Preprocessing performance metrics: Spark output vs reference (Elliptic)",
+              float_fmt="{:.3e}")
 PL.save_table(err_raw, "01_feature_error_raw", "Spark vs reference, raw features (per feature)", float_fmt="{:.3e}", png=False)
 PL.save_table(err_scaled, "01_feature_error_scaled", "Spark vs reference, standardised features (per feature)",
               float_fmt="{:.3e}", png=False)
-PL.save_table(summ, "01_feature_error_summary", "Spark vs reference: per-feature error, summarised over 165 features",
-              float_fmt="{:.3e}")
-display(summ)
+display(pre_tab)
 
 # %%
-fig, axes = plt.subplots(1, 2, figsize=(13, 4.2), gridspec_kw={"width_ratios": [1, 1]})
+def log_view(E_):
+    """Per-feature values on a log10 scale: |ME| for the bias and 1 - R² for R²; exact 0 is drawn at -17."""
+    V = E_[TEACHER_PRE].copy()
+    V["ME_bias"] = V["ME_bias"].abs()
+    V["R2"] = 1 - V["R2"]
+    return np.log10(V.clip(lower=1e-17).astype(float))
+ylabels = [PRE_LABEL[m] if m not in ("R2", "ME_bias") else {"R2": "1 − R²", "ME_bias": "|Bias / ME|"}[m] for m in TEACHER_PRE]
+fig, axes = plt.subplots(1, 2, figsize=(13, 4.8))
 for ax, (name, E_) in zip(axes, (("raw", err_raw), ("standardised", err_scaled))):
-    M = E_[["RMSE", "MAE", "max_abs_err", "rel_err"]].T
-    L = np.log10(M.clip(lower=1e-17))
+    L = log_view(E_).T
     im = ax.imshow(L, aspect="auto", cmap=PL.SEQ_CMAP, vmin=-17, vmax=max(-5, float(L.to_numpy().max())))
-    ax.set_yticks(range(4)); ax.set_yticklabels(["RMSE", "MAE", "max |err|", "relative err"])
+    ax.set_yticks(range(len(TEACHER_PRE))); ax.set_yticklabels(ylabels)
     ax.set_xticks(range(0, 165, 10)); ax.set_xticklabels([FEATS[i] for i in range(0, 165, 10)], rotation=90, fontsize=6)
     ax.axvline(92.5, color=PL.INK2, lw=0.8, ls="--"); ax.grid(False)
-    ax.set_title(f"{name}: log10 error per feature (dashed: local | aggregated); exact match "
+    ax.set_title(f"{name}: log10 metric per feature (dashed: local | aggregated); exact match "
                  f"{E_.exact_match_rate.mean():.2%}", loc="left", fontsize=8.5)
-    fig.colorbar(im, ax=ax, fraction=0.03, pad=0.01, label="log10 (0 error shown at -17)")
+    fig.colorbar(im, ax=ax, fraction=0.03, pad=0.01, label="log10 value (exact 0 drawn at -17)")
 fig.tight_layout(); PL.savefig(fig, "01_error_heatmap"); plt.show()
+
+# %%
+fig, axes = plt.subplots(2, 4, figsize=(14, 6), sharey=False)
+rng_ = np.random.default_rng(0)
+for ax, m, lab in zip(axes.ravel(), TEACHER_PRE, ylabels):
+    for i, (name, E_, col) in enumerate((("raw", err_raw, PL.CATEGORICAL[0]), ("standardised", err_scaled, PL.OURS_COLOR))):
+        v = log_view(E_)[m].to_numpy()
+        ax.scatter(i + rng_.uniform(-0.18, 0.18, len(v)), v, s=7, color=col, alpha=0.6, lw=0)
+        ax.hlines(np.median(v), i - 0.3, i + 0.3, color=PL.INK, lw=1.5)
+    ax.set_xticks([0, 1]); ax.set_xticklabels(["raw", "standardised"])
+    ax.set_ylim(-17.8, max(-4, ax.get_ylim()[1])); ax.set_title(lab, fontsize=9)
+    ax.axhline(-17, color=PL.GREY, lw=0.6, ls=":")
+axes[0, 0].set_ylabel("log10 value"); axes[1, 0].set_ylabel("log10 value")
+fig.suptitle("Preprocessing metrics, one dot per feature (165 features; dotted line = exactly 0; bar = median)",
+             x=0.01, ha="left", fontsize=9)
+fig.tight_layout(); PL.savefig(fig, "01_preprocessing_metric_panels"); plt.show()
 
 # %% [markdown]
 # ## 3. Integrity: nulls, malformed lines, dropped rows
@@ -307,44 +350,74 @@ disk = pd.Series({"input CSVs (MB)": bdf.loc[49, "input_mb"], "Spark Parquet out
 display(disk.to_frame("full data"))
 
 # %% [markdown]
-# ## 7. Downstream effect: raw vs preprocessed features
-# Same models, same seeds, same split; only the input preprocessing differs. Tree ensembles are invariant to
-# monotone per-feature scaling (identical splits), so the effect is shown for scale-sensitive models: logistic
-# regression, MLP and TGAT-BoostNet (raw vs standardised GAT input; ablation run `abl_rawfeat`).
+# ## 7. Before vs after preprocessing: RMSE, MSE, MAE, MAPE, R², NRMSE, MedAE, Bias
+# **Before** = the model is trained on the raw CSV features as they are; **after** = the same model, seeds and split,
+# trained on the preprocessed (train-only standardised) features. For each, the error metrics compare the predicted
+# probability P(illicit) with the actual label (1 = illicit, 0 = licit) on test steps 35–49 (MSE = Brier score).
+# MAPE is computed over illicit transactions only, because a percentage error does not exist when the actual value
+# is 0. Lower is better except R² (higher is better); Bias > 0 means probabilities are too high on average.
+#
+# Logistic regression, the MLP and TGAT-BoostNet's GAT depend on feature scale. Tree models split on thresholds, so
+# standardisation should leave them almost unchanged — Random Forest is included to show that; its small residual
+# differences come from float32 rounding of the standardised values moving a few split points.
+# A negative R² means the predicted probabilities fit the labels worse than a constant (the illicit base rate) would.
+# The results are reported whichever way they go: preprocessing does not help every model.
 
 # %%
-from src.evaluation.metrics import full_metrics
+from src.evaluation.metrics import full_metrics, probability_error_metrics, REGRESSION_LABELS
 y_te = ref.y[ref.test_mask]
-ds = []
-for key in ("lr", "mlp"):
-    for prep, Xin in (("raw", ref.X_raw), ("standardised", None)):
-        for s in (B.seeds_for(key) if not QUICK else [42]):
-            r = B.run_tabular(key, ref, s, DEVICE, X=Xin) if prep == "raw" else B.run(key, ref, s, DEVICE)
-            m = full_metrics(y_te, r["p_test"])
-            ds.append(dict(model=B.MODELS[key][0], prep=prep, seed=s, f1=m["f1"], roc_auc=m["roc_auc"], pr_auc=m["pr_auc"]))
-for key, prep in ((B.OURS, "standardised"), ("abl_rawfeat", "raw")):
-    for s in SEEDS:
-        if B.has_run(key, s) or not QUICK:
-            m = full_metrics(y_te, B.run(key, ref, s, DEVICE)["p_test"])
-            ds.append(dict(model="TGAT-BoostNet", prep=prep, seed=s, f1=m["f1"], roc_auc=m["roc_auc"], pr_auc=m["pr_auc"]))
-ds = pd.DataFrame(ds)
-dtab = ds.groupby(["model", "prep"])[["f1", "roc_auc", "pr_auc"]].agg(["mean", "std"])
-dtab.columns = [f"{a}_{b}" for a, b in dtab.columns]
-PL.save_table(dtab, "01_downstream_raw_vs_preprocessed", "Classifier performance, raw vs standardised features (test 35-49)")
-display(dtab)
-fig, axes = plt.subplots(1, 3, figsize=(12, 2.8), sharey=True)
-mods = list(dict.fromkeys(ds.model))
-for ax, met in zip(axes, ("f1", "roc_auc", "pr_auc")):
-    for i, mname in enumerate(mods):
-        a = ds[(ds.model == mname) & (ds.prep == "raw")][met].mean()
-        b = ds[(ds.model == mname) & (ds.prep == "standardised")][met].mean()
-        ax.plot([a, b], [i, i], color=PL.GREY, lw=2, zorder=1)
-        ax.scatter([a], [i], color=PL.CATEGORICAL[0], s=40, zorder=3, label="raw" if i == 0 else None)
-        ax.scatter([b], [i], color=PL.OURS_COLOR, s=40, zorder=3, label="standardised" if i == 0 else None)
-    ax.set_yticks(range(len(mods))); ax.set_yticklabels(mods); ax.set_xlabel(met.upper().replace("_", "-"))
-axes[0].legend(loc="lower right")
-fig.suptitle("Downstream effect of preprocessing (mean of seeds)", x=0.01, ha="left", fontsize=9)
-fig.tight_layout(); PL.savefig(fig, "01_downstream_dumbbell"); plt.show()
+seeds_ = [42] if QUICK else SEEDS
+ba_rows = []
+def add(model, stage, p, seed):
+    ba_rows.append(dict(model=model, stage=stage, seed=seed, **probability_error_metrics(y_te, p),
+                        **{f"cls_{k}": v for k, v in full_metrics(y_te, p).items() if k in ("f1", "roc_auc", "pr_auc", "mcc")}))
+for key in ("lr", "mlp", "rf"):
+    for s in (B.seeds_for(key) if not QUICK else [42]):
+        add(B.MODELS[key][0], "before (raw)", B.run_tabular(key, ref, s, DEVICE, X=ref.X_raw)["p_test"], s)
+        add(B.MODELS[key][0], "after (preprocessed)", B.run(key, ref, s, DEVICE)["p_test"], s)
+for s in seeds_:
+    if (B.has_run("abl_rawfeat", s) and B.has_run(B.OURS, s)) or not QUICK:
+        add("TGAT-BoostNet", "before (raw)", B.run("abl_rawfeat", ref, s, DEVICE)["p_test"], s)
+        add("TGAT-BoostNet", "after (preprocessed)", B.run(B.OURS, ref, s, DEVICE)["p_test"], s)
+ba = pd.DataFrame(ba_rows)
+METS = list(REGRESSION_LABELS)
+mean_ba = ba.groupby(["model", "stage"])[METS + ["cls_f1", "cls_roc_auc", "cls_pr_auc", "cls_mcc"]].mean()
+ba_tab = mean_ba[METS].rename(columns=REGRESSION_LABELS)
+ba_tab = ba_tab.join(mean_ba[["cls_f1", "cls_roc_auc", "cls_pr_auc", "cls_mcc"]].rename(
+    columns={"cls_f1": "F1 (illicit)", "cls_roc_auc": "ROC-AUC", "cls_pr_auc": "PR-AUC", "cls_mcc": "MCC"}))
+order_stage = {"before (raw)": 0, "after (preprocessed)": 1}
+ba_tab = ba_tab.sort_index(key=lambda idx: idx.map(order_stage) if idx.name == "stage" else idx)
+PL.save_table(ba_tab, "01_before_after_preprocessing",
+              "Before vs after preprocessing: prediction error and classification scores (test 35-49, mean of seeds)",
+              float_fmt="{:.4f}")
+display(ba_tab)
+delta = (mean_ba.xs("after (preprocessed)", level="stage")[METS] - mean_ba.xs("before (raw)", level="stage")[METS])
+delta = delta.rename(columns=REGRESSION_LABELS)
+PL.save_table(delta, "01_before_after_change", "Change after preprocessing (after - before; negative error = improvement)",
+              float_fmt="{:+.4f}")
+display(delta)
+
+# %%
+models_ = list(dict.fromkeys(ba.model))
+fig, axes = plt.subplots(2, 4, figsize=(15, 6.2))
+for ax, m in zip(axes.ravel(), METS):
+    before = ba[ba.stage == "before (raw)"].groupby("model")[m].mean().reindex(models_)
+    after = ba[ba.stage == "after (preprocessed)"].groupby("model")[m].mean().reindex(models_)
+    yy = np.arange(len(models_))[::-1]
+    for y_, a, b in zip(yy, before, after):
+        ax.annotate("", (b, y_), (a, y_), arrowprops=dict(arrowstyle="->", color=PL.GREY, lw=1.6))
+    ax.scatter(before, yy, s=55, facecolor="white", edgecolor=PL.CATEGORICAL[0], lw=1.6, zorder=3, label="before (raw)")
+    ax.scatter(after, yy, s=55, color=PL.OURS_COLOR, zorder=4, label="after (preprocessed)")
+    for y_, b in zip(yy, after):
+        ax.text(b, y_ + 0.28, f"{b:.3f}" if abs(b) < 100 else f"{b:.0f}", ha="center", fontsize=6.5, color=PL.INK2)
+    ax.set_yticks(yy); ax.set_yticklabels(models_ if ax in axes[:, 0] else [], fontsize=7.5)
+    ax.set_ylim(-0.7, len(models_) - 0.3)
+    better = "higher = better" if m == "R2" else ("0 = unbiased" if m == "ME_bias" else "lower = better")
+    ax.set_title(f"{REGRESSION_LABELS[m]} ({better})", fontsize=8.5)
+axes[0, 0].legend(fontsize=7, loc="lower left")
+fig.suptitle("Before -> after preprocessing: error of predicted P(illicit) vs actual label (mean of seeds; hollow = before, filled = after)",
+             x=0.01, ha="left", fontsize=9)
+fig.tight_layout(); PL.savefig(fig, "01_before_after_preprocessing"); plt.show()
 
 # %% [markdown]
 # ## A. Appendix — Zenodo Spark pipeline vs the pure-Python causal reference
@@ -371,15 +444,16 @@ zerr = PP.agreement_table(mz[[f + "_ref" for f in PP.ZENODO_FEATURES]].set_axis(
                           mz[[f + "_spark" for f in PP.ZENODO_FEATURES]].set_axis(PP.ZENODO_FEATURES, axis=1), PP.ZENODO_FEATURES)
 PL.save_table(zerr, "01A_zenodo_feature_error", f"Zenodo: Spark vs pure-Python reference, {ZEN_LINES:,}-line slice",
               float_fmt="{:.3e}")
-display(zerr)
-fig, ax = plt.subplots(figsize=(8, 4.2))
-L = np.log10(zerr[["RMSE", "MAE", "max_abs_err", "rel_err"]].clip(lower=1e-17))
+display(zerr[TEACHER_PRE].rename(columns=PRE_LABEL))
+fig, ax = plt.subplots(figsize=(9, 5))
+L = log_view(zerr)
 im = ax.imshow(L.T, aspect="auto", cmap=PL.SEQ_CMAP, vmin=-17, vmax=max(-5, float(L.to_numpy().max())))
 ax.set_xticks(range(15)); ax.set_xticklabels(PP.ZENODO_FEATURES, rotation=50, ha="right", fontsize=7)
-ax.set_yticks(range(4)); ax.set_yticklabels(["RMSE", "MAE", "max |err|", "relative err"]); ax.grid(False)
-for i in range(4):
+ax.set_yticks(range(len(TEACHER_PRE))); ax.set_yticklabels(ylabels); ax.grid(False)
+raw_vals = zerr[TEACHER_PRE].copy(); raw_vals["R2"] = 1 - raw_vals["R2"]
+for i in range(len(TEACHER_PRE)):
     for j in range(15):
-        v = zerr[["RMSE", "MAE", "max_abs_err", "rel_err"]].iat[j, i]
+        v = abs(raw_vals.iat[j, i])
         ax.text(j, i, "0" if v == 0 else f"{v:.0e}", ha="center", va="center", fontsize=6, color=PL.INK)
 fig.colorbar(im, ax=ax, fraction=0.03, label="log10 error (0 shown at -17)")
 ax.set_title("Zenodo: per-feature error of Spark vs reference", loc="left"); fig.tight_layout()

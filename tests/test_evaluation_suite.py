@@ -144,3 +144,25 @@ def test_tgat_boostnet_cross_fitting_and_shapes(monkeypatch):
     assert seen[0] == {1, 2, 3, 4} and seen[1] == {3, 4} and seen[2] == {1, 2}
     assert all(5 not in s and 6 not in s for s in seen)
     assert r["infer"](5).shape == ((data.time_steps == 5).sum(),)
+
+
+def test_probability_error_metrics_definitions():
+    from src.evaluation.metrics import probability_error_metrics
+    y = np.array([0, 0, 1, 1])
+    p = np.array([0.1, 0.3, 0.6, 1.0])
+    r = probability_error_metrics(y, p)
+    e = p - y
+    assert r["MSE"] == pytest.approx((e ** 2).mean()) and r["RMSE"] == pytest.approx(np.sqrt((e ** 2).mean()))
+    assert r["MAE"] == pytest.approx(np.abs(e).mean()) and r["ME_bias"] == pytest.approx(e.mean())
+    assert r["MAPE_pct"] == pytest.approx(100 * (0.4 + 0.0) / 2)  # illicit rows only
+    assert r["MedAE"] == pytest.approx(np.median(np.abs(e)))
+    assert r["R2"] == pytest.approx(1 - (e ** 2).sum() / ((y - y.mean()) ** 2).sum())
+
+
+def test_agreement_table_course_metrics():
+    a = pd.DataFrame({"x": [0.0, 2.0, 4.0, 10.0]})
+    b = pd.DataFrame({"x": [0.0, 3.0, 4.0, 10.0]})
+    t = agreement_table(a, b, ["x"]).loc["x"]
+    assert t.MSE == pytest.approx(0.25) and t.RMSE == pytest.approx(0.5) and t.ME_bias == pytest.approx(0.25)
+    assert t.MAPE_pct == pytest.approx(100 * (0.5 + 0 + 0) / 3)  # zero reference excluded
+    assert t.NRMSE == pytest.approx(0.5 / 10) and t.MedAE == pytest.approx(0.0)

@@ -36,8 +36,13 @@ ZENODO_LOCAL_RAW = os.path.join(REPO_ROOT, "data", "raw", "sample_a", "btc-tx-48
 def agreement_table(ref: pd.DataFrame, test: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
     """Per-feature error of ``test`` against ``ref`` (rows already aligned on the same keys).
 
-    RMSE, MAE, max |error|, relative error = max|err| / max(|ref|) (scale-free), R^2, exact-match
-    rate (bitwise equal values) and Lin's concordance correlation coefficient (CCC).
+    The course's preprocessing metrics, with e = test - ref:
+      MSE = mean(e^2); RMSE = sqrt(MSE); MAE = mean|e|; MedAE = median|e|; ME (bias) = mean(e);
+      MAPE = 100 * mean(|e| / |ref|) over rows with ref != 0 (zero references have no percentage error);
+      NRMSE = RMSE / (max(ref) - min(ref)) (range-normalised; 0 when the feature is constant and e = 0);
+      R^2 = 1 - SSE / SST.
+    Plus max |error|, relative error = max|e| / max|ref|, exact-match rate (bitwise equal values) and
+    Lin's concordance correlation coefficient (CCC).
     """
     rows = {}
     for c in cols:
@@ -47,7 +52,13 @@ def agreement_table(ref: pd.DataFrame, test: pd.DataFrame, cols: List[str]) -> p
         ss_tot = ((a - a.mean()) ** 2).sum()
         va, vb = a.var(), b.var()
         ccc = (2 * np.cov(a, b, bias=True)[0, 1] / (va + vb + (a.mean() - b.mean()) ** 2)) if va + vb > 0 else 1.0
-        rows[c] = {"RMSE": np.sqrt((e ** 2).mean()), "MAE": np.abs(e).mean(), "max_abs_err": np.abs(e).max(),
+        nz = a != 0
+        rmse = np.sqrt((e ** 2).mean())
+        rng = a.max() - a.min()
+        rows[c] = {"MSE": (e ** 2).mean(), "RMSE": rmse, "MAE": np.abs(e).mean(), "MedAE": float(np.median(np.abs(e))),
+                   "ME_bias": e.mean(), "MAPE_pct": 100 * float(np.mean(np.abs(e[nz]) / np.abs(a[nz]))) if nz.any() else 0.0,
+                   "NRMSE": rmse / rng if rng > 0 else (0.0 if rmse == 0 else np.inf),
+                   "max_abs_err": np.abs(e).max(),
                    "rel_err": np.abs(e).max() / max(np.abs(a).max(), 1e-300),
                    "R2": 1 - (e ** 2).sum() / ss_tot if ss_tot > 0 else (1.0 if np.all(e == 0) else 0.0),
                    "exact_match_rate": float((a == b).mean()), "CCC": ccc,

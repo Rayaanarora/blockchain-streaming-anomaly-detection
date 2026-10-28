@@ -169,3 +169,27 @@ def bootstrap_metrics_table(y, probs_by_seed, n_boot: int = 1000, seed: int = 0,
     return pd.DataFrame({"mean": per_seed.mean(), "std": per_seed.std(ddof=1) if len(per_seed) > 1 else 0.0,
                          "ci_low": np.nanquantile(reps, 0.025, axis=0), "ci_high": np.nanquantile(reps, 0.975, axis=0)},
                         index=keys)
+
+
+REGRESSION_LABELS = {"RMSE": "RMSE", "MSE": "MSE", "MAE": "MAE", "MAPE_pct": "MAPE (%)", "R2": "R²",
+                     "NRMSE": "NRMSE", "MedAE": "MedAE", "ME_bias": "Bias / ME"}
+
+
+def probability_error_metrics(y, p) -> dict:
+    """Regression-style error of the predicted P(illicit) against the true label (1 illicit, 0 licit).
+
+    e = p - y. MSE equals the Brier score. MAPE is computed over illicit rows only (y = 1): a percentage
+    error does not exist where the actual value is 0. NRMSE = RMSE / (max(y) - min(y)) = RMSE for 0/1 labels.
+    R^2 = 1 - SSE / SST against the label mean. Bias > 0 means probabilities are too high on average.
+    """
+    y = np.asarray(y, dtype=float)
+    p = np.asarray(p, dtype=float)
+    e = p - y
+    mse = float((e ** 2).mean())
+    sst = float(((y - y.mean()) ** 2).sum())
+    pos = y == 1
+    return {"RMSE": mse ** 0.5, "MSE": mse, "MAE": float(np.abs(e).mean()),
+            "MAPE_pct": float(100 * np.mean(np.abs(e[pos]) / y[pos])) if pos.any() else float("nan"),
+            "R2": 1 - float((e ** 2).sum()) / sst if sst > 0 else float("nan"),
+            "NRMSE": mse ** 0.5 / (y.max() - y.min()) if y.max() > y.min() else float("nan"),
+            "MedAE": float(np.median(np.abs(e))), "ME_bias": float(e.mean())}

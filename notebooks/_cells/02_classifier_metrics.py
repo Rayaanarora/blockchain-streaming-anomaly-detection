@@ -68,6 +68,41 @@ PL.save_table(per_seed, "02_tgat_boostnet_metrics_per_seed", "TGAT-BoostNet metr
 display(tab[["mean ± std (5 seeds)", "95% CI"]])
 
 # %% [markdown]
+# ### 3b. The course's classification metrics
+# Accuracy, Precision, Recall, F1, Specificity, AUC-ROC, Log Loss, MCC, Cohen's Kappa and Balanced Accuracy
+# (illicit = positive class; Precision / Recall / F1 are for the illicit class). Dots = 5-seed mean, bars = 95 %
+# bootstrap CI. Accuracy and specificity are dominated by the 93.5 % licit majority, so MCC, Kappa, Balanced
+# Accuracy and the illicit-class scores are the informative ones on this imbalanced data.
+
+# %%
+TEACHER_CLS = ["accuracy", "precision", "recall", "f1", "specificity", "roc_auc", "log_loss", "mcc", "kappa",
+               "balanced_accuracy"]
+tt = tab.copy(); tt.index = list(METRIC_LABELS)          # back to metric keys
+course = tt.loc[TEACHER_CLS, ["mean", "std", "ci_low", "ci_high"]]
+course.index = [METRIC_LABELS[k] for k in TEACHER_CLS]
+PL.save_table(course, "02_course_metrics", "TGAT-BoostNet: course classification metrics (test 35-49, 5 seeds, 95% CI)",
+              float_fmt="{:.4f}")
+display(course)
+fig, axes = plt.subplots(1, 2, figsize=(11, 4), gridspec_kw={"width_ratios": [4, 1]})
+unit = [k for k in TEACHER_CLS if k != "log_loss"]
+c = tt.loc[unit]
+ypos = np.arange(len(unit))[::-1]
+axes[0].hlines(ypos, c.ci_low, c.ci_high, color=PL.OURS_COLOR, lw=2.5, alpha=0.5)
+axes[0].plot(c["mean"], ypos, "o", color=PL.OURS_COLOR, ms=7, mec="white", mew=1)
+for y_, (k, r) in zip(ypos, c.iterrows()):
+    axes[0].text(r.ci_high + 0.01, y_, f"{r['mean']:.3f}", va="center", fontsize=8, color=PL.INK)
+axes[0].set_yticks(ypos); axes[0].set_yticklabels([METRIC_LABELS[k] for k in unit])
+axes[0].set_xlim(min(0.5, c.ci_low.min() - 0.05), 1.06); axes[0].set_xlabel("score (higher is better)")
+axes[0].set_title("TGAT-BoostNet: course classification metrics (mean, 95 % CI)", loc="left")
+ll = tt.loc["log_loss"]
+axes[1].errorbar([0], [ll["mean"]], yerr=[[ll["mean"] - ll.ci_low], [ll.ci_high - ll["mean"]]], fmt="o",
+                 color=PL.OURS_COLOR, capsize=4, ms=7)
+axes[1].text(0.08, ll["mean"], f"{ll['mean']:.3f}", va="center", fontsize=8)
+axes[1].set_xticks([0]); axes[1].set_xticklabels(["Log loss"]); axes[1].set_xlim(-0.5, 0.6)
+axes[1].set_ylim(0, max(0.3, ll.ci_high * 1.3)); axes[1].set_title("lower is better", loc="left", fontsize=8)
+fig.tight_layout(); PL.savefig(fig, "02_course_metrics"); plt.show()
+
+# %% [markdown]
 # ## 4. Confusion matrices (row-normalised), one per seed
 
 # %%
