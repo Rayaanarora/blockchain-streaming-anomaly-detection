@@ -1,0 +1,14 @@
+\begin{table}
+\caption{Configurations selected on validation steps 30-34}
+\label{tab:04_selected_configs}
+\begin{tabular}{lllll}
+\toprule
+ & validation PR-AUC & validation F1 @ threshold & threshold & selected params \\
+\midrule
+TGAT-BoostNet (ours) & 0.991140 & 0.968671 & 0.370000 & \{"n\_estimators": 500, "max\_depth": 8, "learning\_rate": 0.03, "subsample": 0.8, "colsample\_bytree": 0.6, "min\_child\_weight": 1, "reg\_lambda": 1.0, "w\_illicit": 4.32, "heads": 8, "epochs": 100\} \\
+LightGBM & 0.992752 & 0.977929 & 0.900000 & \{"n\_estimators": 800, "num\_leaves": 15, "learning\_rate": 0.1, "min\_child\_samples": 50, "subsample": 1.0, "colsample\_bytree": 0.6, "reg\_lambda": 0.0, "scale\_pos\_weight": 7.63\} \\
+Random Forest & 0.989860 & 0.969905 & 0.450000 & \{"n\_estimators": 50, "max\_features": "sqrt", "max\_depth": 30, "min\_samples\_leaf": 2, "class\_weight": "balanced"\} \\
+XGBoost & 0.991267 & 0.968457 & 0.410000 & \{"n\_estimators": 800, "max\_depth": 3, "learning\_rate": 0.1, "subsample": 0.8, "colsample\_bytree": 0.8, "min\_child\_weight": 3, "reg\_lambda": 1.0, "w\_illicit": 2.0\} \\
+\bottomrule
+\end{tabular}
+\end{table}

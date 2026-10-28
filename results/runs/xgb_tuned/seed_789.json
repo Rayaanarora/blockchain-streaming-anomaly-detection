@@ -1,0 +1,31 @@
+{
+ "device": "cuda",
+ "threshold": 0.41,
+ "selected_params": {
+  "n_estimators": 800,
+  "max_depth": 3,
+  "learning_rate": 0.1,
+  "subsample": 0.8,
+  "colsample_bytree": 0.8,
+  "min_child_weight": 3,
+  "reg_lambda": 1.0,
+  "w_illicit": 2.0
+ },
+ "protocol": "validation-tuned on 1-29/30-34; refit 1-34; test 35-49 scored once at the validation threshold",
+ "train_seconds": 1.7538206577301025,
+ "size_bytes": 880275,
+ "n_params": 10324,
+ "n_params_note": "tree nodes",
+ "latency_ms_median": 18.57269800029826,
+ "latency_ms_p95": 26.367035399880475,
+ "throughput_tx_per_s": 249404.39018012126,
+ "n_snapshots": 15,
+ "mean_snapshot_size": 4500.266666666666,
+ "model": "xgb_tuned",
+ "seed": 789,
+ "test_signature": "ecaa69f927578561",
+ "n_test": 16670,
+ "created": "2026-10-28T09:50:09",
+ "host": "64f3a2cdbc41",
+ "platform": "Linux-6.6.159+-x86_64-with-glibc2.39"
+}

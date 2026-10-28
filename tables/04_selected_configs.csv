@@ -1,0 +1,5 @@
+,validation PR-AUC,validation F1 @ threshold,threshold,selected params
+TGAT-BoostNet (ours),0.9911398365580789,0.9686706181202371,0.37,"{""n_estimators"": 500, ""max_depth"": 8, ""learning_rate"": 0.03, ""subsample"": 0.8, ""colsample_bytree"": 0.6, ""min_child_weight"": 1, ""reg_lambda"": 1.0, ""w_illicit"": 4.32, ""heads"": 8, ""epochs"": 100}"
+LightGBM,0.9927523488030616,0.9779286926994907,0.9,"{""n_estimators"": 800, ""num_leaves"": 15, ""learning_rate"": 0.1, ""min_child_samples"": 50, ""subsample"": 1.0, ""colsample_bytree"": 0.6, ""reg_lambda"": 0.0, ""scale_pos_weight"": 7.63}"
+Random Forest,0.9898602581138167,0.9699054170249355,0.45,"{""n_estimators"": 50, ""max_features"": ""sqrt"", ""max_depth"": 30, ""min_samples_leaf"": 2, ""class_weight"": ""balanced""}"
+XGBoost,0.9912673891423771,0.96845694799659,0.41,"{""n_estimators"": 800, ""max_depth"": 3, ""learning_rate"": 0.1, ""subsample"": 0.8, ""colsample_bytree"": 0.8, ""min_child_weight"": 3, ""reg_lambda"": 1.0, ""w_illicit"": 2.0}"

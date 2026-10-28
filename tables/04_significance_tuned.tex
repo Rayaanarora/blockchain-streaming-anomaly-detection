@@ -1,0 +1,13 @@
+\begin{table}
+\caption{Tuned TGAT-BoostNet vs tuned baselines (positive = ours better)}
+\label{tab:04_significance_tuned}
+\begin{tabular}{lllllllllll}
+\toprule
+ & ΔF1 & ΔF1 95\% CI & p F1 & ΔPR-AUC & ΔPR-AUC 95\% CI & p PR-AUC & p McNemar & p F1 (Holm) & p PR-AUC (Holm) & p McNemar (Holm) \\
+\midrule
+LightGBM (tuned) & -0.010278 & [-0.017, -0.003] & 0.002000 & -0.007851 & [-0.012, -0.004] & 0.000000 & 0.288784 & 0.0040 & 0.0000 & 0.5129 \\
+Random Forest (tuned) & 0.001501 & [-0.007, +0.010] & 0.658000 & 0.010764 & [+0.006, +0.016] & 0.000000 & 0.256442 & 0.6580 & 0.0000 & 0.5129 \\
+XGBoost (tuned) & 0.029307 & [+0.020, +0.039] & 0.000000 & 0.002082 & [-0.002, +0.006] & 0.328000 & 0.000000 & 0.0000 & 0.3280 & 0.0000 \\
+\bottomrule
+\end{tabular}
+\end{table}
