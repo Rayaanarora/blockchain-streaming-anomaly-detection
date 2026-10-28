@@ -16,6 +16,7 @@ import os
 import subprocess
 import sys
 import time
+from typing import Optional
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, ROOT)
@@ -60,13 +61,51 @@ def _config():
     return dst
 
 
+import logging  # noqa: E402
+
+_QUIET = logging.getLogger("bsad.kafka.probe")
+_QUIET.addHandler(logging.NullHandler())
+_QUIET.propagate = False
+
+
 def is_up(timeout=3.0) -> bool:
     from confluent_kafka.admin import AdminClient
     try:
-        AdminClient({"bootstrap.servers": BOOTSTRAP}).list_topics(timeout=timeout)
+        # a "down" broker is an expected answer here: send librdkafka's connect errors to a silent logger
+        AdminClient({"bootstrap.servers": BOOTSTRAP, "logger": _QUIET}).list_topics(timeout=timeout)
         return True
     except Exception:
         return False
+
+
+def _pid() -> Optional[int]:
+    path = os.path.join(RUN, "broker.pid")
+    try:
+        return int(open(path).read().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def _alive(pid: int) -> bool:
+    import psutil
+    try:
+        return psutil.Process(pid).is_running() and psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
+    except psutil.Error:
+        return False
+
+
+def _send_ctrl_c(pid: int) -> bool:
+    """Deliver CTRL_C_EVENT to the broker's own (hidden) console so the JVM runs its shutdown hooks.
+
+    Done from a throwaway helper process: it detaches from our console, attaches to the broker's,
+    ignores Ctrl+C itself and broadcasts the event to that console only.
+    """
+    helper = ("import ctypes,sys;k=ctypes.windll.kernel32;k.FreeConsole();"
+              f"ok=k.AttachConsole({pid});k.SetConsoleCtrlHandler(None,1);"
+              "ok=ok and k.GenerateConsoleCtrlEvent(0,0);sys.exit(0 if ok else 1)")
+    r = subprocess.run([sys.executable, "-c", helper], capture_output=True,
+                       creationflags=subprocess.CREATE_NO_WINDOW)
+    return r.returncode == 0
 
 
 def start():
@@ -78,16 +117,38 @@ def start():
     if not os.path.exists(os.path.join(DATA, "meta.properties")):
         os.makedirs(DATA, exist_ok=True)
         subprocess.run(_java("kafka.tools.StorageTool", "format", "-t", CLUSTER_ID, "-c", cfg), env=env, check=True)
-    out = open(os.path.join(RUN, "broker.out"), "ab")
-    flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0)
-    p = subprocess.Popen(_java("kafka.Kafka", cfg), env=env, stdout=out, stderr=out, creationflags=flags)
+    log_path = os.path.join(RUN, "broker.out")
+    out = open(log_path, "ab")
+    clean = os.path.exists(os.path.join(DATA, ".kafka_cleanshutdown"))
+    # Own console (hidden window) instead of DETACHED_PROCESS: stop() can then send it a real Ctrl+C,
+    # so Kafka shuts down cleanly and the next start skips log recovery.
+    si = subprocess.STARTUPINFO()
+    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    si.wShowWindow = 0  # SW_HIDE
+    # The "ignore Ctrl+C" console flag is inherited by child processes; some launchers (IDE terminals,
+    # Git Bash, services) set it. Clear it so the broker can receive the Ctrl+C that stop() sends.
+    import ctypes
+    ctypes.windll.kernel32.SetConsoleCtrlHandler(None, False)
+    p = subprocess.Popen(_java("kafka.Kafka", cfg), env=env, stdout=out, stderr=out, startupinfo=si,
+                         creationflags=subprocess.CREATE_NEW_CONSOLE)
     open(os.path.join(RUN, "broker.pid"), "w").write(str(p.pid))
-    for _ in range(60):
+    note = "" if clean else " (previous shutdown was not clean: Kafka re-checks every topic log, ~1 min)"
+    print(f"waiting for Kafka to start{note} ...", flush=True)
+    t0 = time.time()
+    last = 0
+    while time.time() - t0 < 240:
+        if p.poll() is not None:
+            tail = "".join(open(log_path, encoding="utf-8", errors="replace").readlines()[-15:])
+            raise RuntimeError(f"Kafka exited during startup (code {p.returncode}); last log lines:\n{tail}")
         if is_up(2.0):
-            print(f"kafka up at {BOOTSTRAP} (pid {p.pid}, data {DATA})")
+            print(f"kafka up at {BOOTSTRAP} after {time.time() - t0:.0f}s (pid {p.pid}, data {DATA})", flush=True)
             return
-        time.sleep(2)
-    raise RuntimeError(f"kafka did not come up; see {os.path.join(RUN, 'broker.out')}")
+        if time.time() - last >= 10:
+            if last:
+                print(f"  still starting ({time.time() - t0:.0f}s) ...", flush=True)
+            last = time.time()
+        time.sleep(1)
+    raise RuntimeError(f"kafka did not come up within 240 s; see {log_path}")
 
 
 def create_topics():
@@ -101,19 +162,28 @@ def create_topics():
     print("topics:", sorted(t for t in admin.list_topics(timeout=10).topics if not t.startswith("__")))
 
 
-def stop():
+def stop(timeout: float = 60.0):
+    """Clean shutdown via Ctrl+C to the broker's console; force-kill only as a fallback."""
     pid_file = os.path.join(RUN, "broker.pid")
+    pid = _pid()
+    if pid and _alive(pid):
+        how = "forced"
+        if _send_ctrl_c(pid):
+            t0 = time.time()
+            while time.time() - t0 < timeout and _alive(pid):
+                time.sleep(0.5)
+            if not _alive(pid):
+                how = "clean"
+        if how == "forced":
+            subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
+        print(f"kafka stopped ({how} shutdown)")
     if os.path.exists(pid_file):
-        pid = open(pid_file).read().strip()
-        # The broker is the java.exe we launched; without /F Windows asks it to close (no console -> forced).
-        subprocess.run(["taskkill", "/PID", pid, "/T", "/F"], capture_output=True)
         os.remove(pid_file)
     for _ in range(15):
         if not is_up(1.0):
-            print("kafka stopped")
             return
         time.sleep(1)
-    raise RuntimeError("kafka still reachable after stop")
+    raise RuntimeError("kafka still reachable after stop (started by something other than this script?)")
 
 
 if __name__ == "__main__":

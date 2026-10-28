@@ -16,3 +16,4 @@
 | Dashboard shows "No predictions in this run yet" | Run dir empty | Pick a run in the selector or run producer + consumer (README §6) |
 | `FileExistsError` from a pipeline script | Output already exists; scripts never overwrite silently | Pass `--overwrite` (old output is moved to `*.backup_<timestamp>`) or bump `--model-version` |
 | C: drive filling up | Tools writing to `%TEMP%`/`~\.ivy2` | All scripts pin scratch to D:. Keep `PIP_CACHE_DIR` on D: (`.env.example`) |
+| `run_pipeline.py` prints nothing for a while after "starting Kafka" | Broker start-up; after a forced stop Kafka re-checks every topic log (~15–60 s) | Wait for `kafka up at ... after Ns`; the script now prints progress every 10 s. Stop Kafka with `local_kafka.py stop` (clean shutdown) rather than killing java.exe, so the next start skips recovery. `kafka stopped (forced shutdown)` means the Ctrl+C event was not delivered; check `data\kafka_run/broker.out` |

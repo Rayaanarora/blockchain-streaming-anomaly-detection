@@ -11,7 +11,7 @@ An end-to-end pipeline that prepares Bitcoin transaction data with Apache Spark,
 | | Status |
 |---|---|
 | Spark batch preprocessing of Elliptic (203,769 tx) and Zenodo (16.9 M tx) | ✅ implemented, run on the full data |
-| Supervised illicit-transaction model on Elliptic: **SnapShift-Boost**, the project's own two-stage graph model, vs 12 baseline configs × 5 seeds | ✅ test illicit F1 **0.799** (baseline 0.797) |
+| Supervised illicit-transaction model on Elliptic: **GAT-BoostNet**, a deep-learning hybrid (graph attention network + gradient boosting), vs 12 baseline configs × 5 seeds and the tree-only SnapShift-Boost | ✅ test illicit F1 **0.782 ± 0.022** over 5 seeds (served copy 0.800); best tree model 0.799 |
 | Unsupervised anomaly scoring of all 16.9 M Zenodo transactions | ✅ no labels exist, so no accuracy claim |
 | Kafka → Spark Structured Streaming → scoring → Parquet, with checkpoints, de-duplication, dead letters, crash recovery | ✅ replay of stored data, integration-tested |
 | Dashboard over the persisted outputs | ✅ |
@@ -28,7 +28,7 @@ Full matrix: [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
 flowchart LR
   EC[Elliptic CSVs] -->|Spark: process_elliptic_spark.py| ES[(elliptic_spark<br/>nodes / edges / splits)]
   ZP[(Zenodo Parquet store<br/>16.9 M tx, reused)] -->|Spark: zenodo_anomaly_pipeline.py| ZF[(features)]
-  ES -->|snapshift_dev / final / export| EM[[SnapShift-Boost<br/>elliptic-supervised 2.0.0]]
+  ES -->|run_final_model_selection / export_gat_hybrid| EM[[GAT-BoostNet<br/>elliptic-supervised 3.0.0]]
   ZF -->|fit 2 % sample| ZM[[zenodo-isolation-forest 1.0.0]]
   ZF -->|batch score| ZS[(16.9 M scores)]
   ES -->|replay_producer.py| K[(Kafka)]
@@ -60,7 +60,19 @@ The two models produce **different kinds of scores** and are never mixed: `illic
 
 ## Results
 
-### Our model: SnapShift-Boost
+### Served model: GAT-BoostNet (deep learning)
+
+A 2-layer, 8-head **Graph Attention Network** (PyTorch Geometric) turns each transaction's time-step neighbourhood into a 32-number embedding. Gradient-boosted trees classify on the 165 features plus that embedding, and the result is averaged with trees on the 165 features alone. Training rows get **cross-fitted** embeddings, so the trees never learn from an embedding fitted on its own label. Model, seed and threshold were all chosen on validation steps 30–34 (DECISIONS D-27).
+
+| | Precision | Recall | Illicit F1 | ROC-AUC | Recall steps 43–49 |
+|---|---:|---:|---:|---:|---:|
+| **GAT-BoostNet, mean of 5 seeds** | 0.857 | 0.720 | **0.782 ± 0.022** | **0.940** | |
+| GAT-BoostNet, served copy (bundle 3.0.0, seed 123) | 0.914 | 0.712 | 0.800 | 0.939 | 0.006 |
+| SnapShift-Boost (tree-only, bundle 2.0.0) | 0.888 | 0.727 | 0.799 | 0.932 | 0.024 |
+
+The deep-learning hybrid is within seed noise of the best tree models but not better on F1. Its value is the learned graph encoder; the GAT on its own reaches only 0.492. Details: [`docs/VERIFIED_RESULTS.md`](docs/VERIFIED_RESULTS.md) §1.7, [`docs/MODEL_CARDS.md`](docs/MODEL_CARDS.md).
+
+### Tree-only alternative: SnapShift-Boost
 
 A two-stage graph model. Stage 1 scores every transaction in a time-step snapshot. Stage 2 adds what stage 1 predicted for each transaction's **neighbours** (mean and max over in-, out- and all neighbours, plus the 2-hop mean). Training rows get out-of-fold stage-1 scores, so stage 2 never learns from a score fitted on its own label. Every feature is computed from one complete snapshot and is exactly node-order invariant, so streamed scores equal batch scores. Design, ablation and discussion: [`docs/SNAPSHIFT_BOOST.md`](docs/SNAPSHIFT_BOOST.md).
 
@@ -107,6 +119,86 @@ All 12 configurations, confusion matrices and per-step metrics: [`docs/VERIFIED_
 | Unthrottled replay | 937 events/s sustained (consumer-bound) |
 
 "E2E" = producer send → prediction row written. Elliptic events additionally wait until their whole time-step snapshot has arrived (graph context), so their latency is dominated by snapshot completion.
+
+## Evaluation suite: Results & Reproducibility
+
+Four Colab notebooks (branch `eval-notebooks`) evaluate TGAT-BoostNet (4-head GAT → 32-d embeddings ⊕ 165
+features → cost-weighted XGBoost, `scale_pos_weight=4.32`) against reproduced baselines. Shared code is in
+`src/evaluation/`; figures go to `figures/` (PNG + PDF, 300 dpi) and tables to `tables/` (CSV + LaTeX + HTML).
+
+| Notebook | Contents | Open |
+|---|---|---|
+| `01_preprocessing_metrics` | Spark vs pandas agreement (MSE, RMSE, MAE, MAPE, R², NRMSE, MedAE, bias), data quality before/after, leakage tests, Spark scaling, **before vs after preprocessing** (raw vs standardised features), Zenodo appendix | [Colab](https://colab.research.google.com/github/Rayaanarora/blockchain-streaming-anomaly-detection/blob/eval-notebooks/notebooks/01_preprocessing_metrics.ipynb) |
+| `02_classifier_metrics` | Accuracy, precision, recall, F1, specificity, ROC-AUC, log loss, MCC, Cohen's κ, balanced accuracy (+ PR-AUC, Brier, ECE) with bootstrap CIs; confusion, per-time-step, ROC/PR, calibration, SHAP, embeddings | [Colab](https://colab.research.google.com/github/Rayaanarora/blockchain-streaming-anomaly-detection/blob/eval-notebooks/notebooks/02_classifier_metrics.ipynb) |
+| `03_model_comparison` | Leaderboard, reproduced vs reported-in-paper, McNemar + paired bootstrap (Holm), Friedman/Nemenyi CD, ablations, sensitivity, auto-generated summary | [Colab](https://colab.research.google.com/github/Rayaanarora/blockchain-streaming-anomaly-detection/blob/eval-notebooks/notebooks/03_model_comparison.ipynb) |
+| `04_finetuning` | Validation-only tuning (fit 1–29, select 30–34, 40 trials/family), refit 1–34, test once | [Colab](https://colab.research.google.com/github/Rayaanarora/blockchain-streaming-anomaly-detection/blob/eval-notebooks/notebooks/04_finetuning.ipynb) |
+
+**Protocol.** Train on labelled steps 1–34 (29,894 tx), test on labelled steps 35–49 (16,670 tx, 1,083
+illicit); illicit = positive; threshold 0.5 for untuned models; seeds 42, 123, 456, 789, 2024 (LR is
+deterministic: 1 run). No hyper-parameter or threshold is chosen on test data.
+
+**Reproduced results** (test steps 35–49, mean ± std over 5 seeds, computed from `results/runs/`):
+
+| Model | F1 (illicit) | PR-AUC | ROC-AUC | MCC |
+|---|---|---|---|---|
+| CatBoost (defaults, not tuned) | 0.821 ± 0.002 | 0.807 | 0.938 | 0.819 |
+| LightGBM (tuned) | 0.821 ± 0.002 | 0.809 | 0.937 | 0.818 |
+| GCN emb. + XGBoost | 0.812 ± 0.005 | 0.795 | 0.920 | 0.811 |
+| **TGAT-BoostNet (tuned)** | **0.810 ± 0.008** | **0.803** | **0.937** | **0.809** |
+| Random Forest (tuned) | 0.809 ± 0.006 | 0.792 | 0.923 | 0.803 |
+| GAT emb. + RF | 0.809 ± 0.005 | 0.772 | 0.893 | 0.807 |
+| LightGBM (defaults) | 0.807 ± 0.000 | 0.803 | 0.940 | 0.800 |
+| Random Forest (Weber config) | 0.806 ± 0.004 | 0.783 | 0.915 | 0.801 |
+| XGBoost (defaults) | 0.795 ± 0.000 | 0.799 | 0.928 | 0.786 |
+| **TGAT-BoostNet (a-priori config)** | **0.790 ± 0.011** | **0.792** | **0.932** | **0.789** |
+| XGBoost (tuned) | 0.781 ± 0.006 | 0.801 | 0.931 | 0.769 |
+| MLP | 0.617 ± 0.040 | 0.497 | 0.869 | 0.595 |
+| GraphSAGE | 0.593 ± 0.021 | 0.577 | 0.877 | 0.577 |
+| Skip-GCN | 0.584 ± 0.024 | 0.627 | 0.904 | 0.583 |
+| SVM (RBF) | 0.559 ± 0.000 | 0.467 | 0.869 | 0.527 |
+| GCN | 0.545 ± 0.033 | 0.572 | 0.879 | 0.540 |
+| GAT alone | 0.493 ± 0.022 | 0.457 | 0.862 | 0.457 |
+| EvolveGCN-O (own implementation) | 0.424 ± 0.067 | 0.332 | 0.843 | 0.383 |
+| Logistic Regression | 0.405 | 0.360 | 0.892 | 0.382 |
+
+Tuned rows use the threshold that maximised F1 on validation steps 30–34.
+
+**Honest reading.**
+- TGAT-BoostNet is **not** the top model. After tuning it is statistically tied with tuned RF on F1
+  (paired bootstrap p = 0.66), better on PR-AUC (+0.011, Holm p < 0.001), and significantly better
+  than tuned XGBoost (+0.029 F1). Tuned LightGBM beats it (−0.010 F1, Holm p = 0.004; −0.008 PR-AUC);
+  McNemar on the predictions themselves is not significant (Holm p = 0.51). Untuned CatBoost also
+  scores 0.821 and was not in the tuning set.
+- The a-priori configuration (0.790) scores below every one of its own ablations (1 head 0.808,
+  16-d embeddings 0.808, raw features 0.805, 8 heads 0.803, temporal 0.803, 64-d 0.800). In other
+  words, the specific 4-head/32-d/standardised setting was not the best choice, and the differences
+  between ablations are within about 1–2 standard deviations.
+- Graph embeddings + gradient boosting clearly beat end-to-end GNNs (GCN, Skip-GCN, GraphSAGE, GAT,
+  EvolveGCN: 0.42–0.59 F1).
+- Not reproduced: Weber et al. report EvolveGCN F1 0.720, GCN 0.628, Skip-GCN 0.705; our runs of the
+  same recipe score lower (0.424, 0.545, 0.584).
+
+**Reported in paper (not run by us; same 1–34 / 35–49 split):** Weber et al. 2019 RF 0.788,
+EvolveGCN 0.720; Elliptic++ (Elmougy & Liu, KDD 2023) RF 0.818 on the original features;
+Inspection-L (Lo et al. 2022, preprint) DGI + RF 0.828; Maganti 2026 (preprint) RF 0.821 (10 seeds).
+Full table with sources: `src/evaluation/literature.py`, notebook 03.
+
+**Reproduce.** Open a notebook in Colab → *Run all*. `USE_CACHED_RESULTS = True` (in the setup cell)
+reuses `results/runs/`, which takes a few minutes. `False` retrains everything into `results_fresh/`
+(several hours; use a GPU runtime). Locally:
+
+```powershell
+python scripts/run_evaluation_suite.py --group comparison --threads 4      # all baselines, 5 seeds
+python scripts/run_evaluation_suite.py --group ablations  --threads 4
+python scripts/build_notebooks.py                                         # regenerate notebooks/*.ipynb
+python -m pytest tests/test_evaluation_suite.py
+```
+
+Devices: `abl_rawfeat`, `abl_dim64`, `gcn_xgb` and the four `*_tuned` models ran on a Colab T4 GPU; all
+other runs used CPU (each `results/runs/<model>/seed_*.json` records its device). GPU and CPU runs are
+not bit-identical for the same seed. For the two seeds run on both, F1 differed by 0.004 and 0.005,
+which is about the size of the seed-to-seed std. Training-time and latency numbers come from a separate
+single-seed pass on an idle CPU (`results/timing/`).
 
 ## Setup (Windows PowerShell)
 

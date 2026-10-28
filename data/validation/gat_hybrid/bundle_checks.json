@@ -1,0 +1,36 @@
+{
+  "bundle": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\artifacts/models/elliptic\\3.0.0",
+  "config": "ens_hgb_hgbgat",
+  "seed": 123,
+  "threshold": 0.71,
+  "requires_graph": true,
+  "snapshots_scored": 15,
+  "nodes_scored": 67504,
+  "snapshot_scoring_seconds": 1.02,
+  "max_abs_diff_vs_training_time_test_probs": 0.0,
+  "test_metrics_from_bundle": {
+    "precision": 0.9135071090047393,
+    "recall": 0.7119113573407202,
+    "f1_illicit": 0.8002075765438506,
+    "roc_auc": 0.9390568684832834,
+    "average_precision": 0.7985199025280391,
+    "threshold": 0.71,
+    "tn": 15514,
+    "fp": 73,
+    "fn": 312,
+    "tp": 771
+  },
+  "test_metrics_training_time": {
+    "precision": 0.9135071090047393,
+    "recall": 0.7119113573407202,
+    "f1_illicit": 0.8002075765438506,
+    "roc_auc": 0.9390568684832834,
+    "average_precision": 0.7985199025280391,
+    "threshold": 0.71,
+    "tn": 15514,
+    "fp": 73,
+    "fn": 312,
+    "tp": 771
+  },
+  "pass": true
+}

@@ -71,7 +71,9 @@ def _save_component(obj, directory: str, name: str) -> str:
 
 
 def export_bundle(out_root: str, version: str, config: str, fitted: Dict, scaler, gat_direction: str,
-                  threshold: float, metrics_seed42: Dict, summary: Dict, meta: Dict) -> str:
+                  threshold: float, metrics_seed42: Dict, summary: Dict, meta: Dict, seed: int = 42) -> str:
+    """``seed``: which training seed produced the exported copy (its validation threshold and test
+    metrics are recorded). ``metrics_seed42`` keeps its historical name; it holds that seed's metrics."""
     import torch
     directory = os.path.join(out_root, version)
     if os.path.exists(os.path.join(directory, "manifest.json")):
@@ -99,7 +101,8 @@ def export_bundle(out_root: str, version: str, config: str, fitted: Dict, scaler
         "score_semantics": "Probability-like score of the Elliptic 'illicit' class (label 1) from a supervised "
                            "model trained on labelled steps 1-29. Not calibrated across datasets.",
         "decision_threshold": threshold,
-        "threshold_source": "validation steps 30-34, F1-maximising, seed 42",
+        "threshold_source": f"validation steps 30-34, F1-maximising, seed {seed}",
+        "export_seed": seed,
         "requires_graph": any(r in GRAPH_RECIPES for _, r in recipe),
         "combine": COMBINE.get(config, "mean"),
         "gat_edge_direction": gat_direction if needs_gat else None,
@@ -107,7 +110,7 @@ def export_bundle(out_root: str, version: str, config: str, fitted: Dict, scaler
                            "dtype": "float32", "raw_unscaled": True},
         "components": components,
         "files": {**files, **{c["name"]: c["file"] for c in components if c["file"]}},
-        "test_metrics_seed42": metrics_seed42,
+        f"test_metrics_seed{seed}": metrics_seed42,
         "five_seed_summary": summary,
         "training_meta": meta,
         "created_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

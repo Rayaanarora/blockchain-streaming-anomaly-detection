@@ -1,0 +1,34 @@
+{
+  "seed": 123,
+  "gat_best_epoch": 148,
+  "gat_best_val_ap": 0.9050724743829826,
+  "retrain_seconds": 908.0,
+  "torch_threads": 6,
+  "components": {
+    "hgb_165_tuned": {
+      "val_max_abs_prob_diff": 0.0,
+      "test_max_abs_prob_diff": 0.0
+    },
+    "hgb_165_gat_cf": {
+      "val_max_abs_prob_diff": 0.6296359035281784,
+      "test_max_abs_prob_diff": 0.6960776634243488
+    },
+    "gat_alone": {
+      "val_max_abs_prob_diff": 0.3286871910095215,
+      "test_max_abs_prob_diff": 0.6744296550750732
+    },
+    "ens_hgb_hgbgat": {
+      "val_max_abs_prob_diff": 0.3148179517640893,
+      "test_max_abs_prob_diff": 0.3480388317121744
+    }
+  },
+  "threshold": {
+    "retrained": 0.5,
+    "saved": 0.71
+  },
+  "test_f1": {
+    "retrained": 0.7789266371245692,
+    "saved": 0.8002075765438506
+  },
+  "reproduced": false
+}

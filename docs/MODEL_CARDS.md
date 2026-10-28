@@ -1,10 +1,28 @@
 # Model cards
 
-Two datasets, two different score meanings. The Elliptic model served by default is **SnapShift-Boost 2.0.0**. Bundle 1.0.1 is its baseline and stays available via `BSAD_ELLIPTIC_BUNDLE`. The scoring service routes by `source_dataset` and never feeds one dataset's events to the other model (`src/scoring/service.py`).
+Two datasets, two different score meanings. The Elliptic model served by default is **GAT-BoostNet 3.0.0**, a deep-learning hybrid (graph attention network + gradient boosting). SnapShift-Boost 2.0.0 (tree-only) and baseline 1.0.1 stay available via `BSAD_ELLIPTIC_BUNDLE`. The scoring service routes by `source_dataset` and never feeds one dataset's events to the other model (`src/scoring/service.py`).
 
 ---
 
-## 1a. `elliptic-supervised` 2.0.0: SnapShift-Boost (served)
+## 0. `elliptic-supervised` 3.0.0: GAT-BoostNet, deep-learning hybrid (served)
+
+| | |
+|---|---|
+| Location | `artifacts/models/elliptic/3.0.0/` (`manifest.json`, `scaler.joblib`, `gat.pt`, `hgb_165_tuned.joblib`, `hgb_165_gat_cf.joblib`; SHA-256 per file, checked on load; `export_seed: 123`) |
+| Design | Mean of two HistGradientBoosting models: A on the 165 standardised features; B on 165 + 32 GAT embeddings. GAT: `GraphAttentionEncoder` (`src/models/graph_encoder.py`), GATConv 165 → 8 heads × 32 → 32, ELU, dropout 0.3, bidirectional edges, no time input (not a temporal model) |
+| Training | GAT: Adam lr 0.005, weight decay 5e-4, class-weighted cross-entropy (8.19), early stopping on validation AP (max 150 epochs, patience 20), trained on the steps 1–34 subgraph. B's training rows use cross-fitted embeddings (3 time-step blocks) to avoid stacking leakage |
+| Inputs | One complete time-step snapshot (raw `f1…f165` + edges). `predict` raises without `edges` |
+| Output | `score` = illicit probability (not calibrated); `flagged` = score ≥ **0.71** (validation-F1-optimal, steps 30–34) |
+| Selection | Highest mean validation F1 among GAT-containing configs over 5 seeds; exported seed = best validation F1 (123). Test not used for either (DECISIONS D-27) |
+| Test performance (steps 35–49) | 5-seed mean: precision 0.857, recall 0.720, **F1 0.782 ± 0.022**, ROC-AUC 0.940. Exported copy: precision 0.9135, recall 0.7119, F1 0.8002, ROC-AUC 0.9391, AP 0.7985; TN 15,514 / FP 73 / FN 312 / TP 771 |
+| Known weaknesses | Recall after step 43 is 0.006. Seed variance ± 0.022 F1. GAT training is bit-reproducible only at a fixed CPU thread count (5 for this export) |
+| Streaming | Per-snapshot bundle scores = evaluated scores (max diff 0.0); Kafka → Spark replay scores = batch scores (max diff 0.0) |
+| Inference cost | ≈54 ms per ~5,000-node snapshot (11 µs per transaction) + ≈22 ms graph-context construction |
+| Intended use | Research benchmark on Elliptic only (same restrictions as 1.0.1) |
+
+---
+
+## 1a. `elliptic-supervised` 2.0.0: SnapShift-Boost (tree-only; served until 2026-10-15)
 
 | | |
 |---|---|

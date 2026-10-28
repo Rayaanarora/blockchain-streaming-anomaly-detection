@@ -61,7 +61,7 @@ Per-step metrics for every config and seed: `per_step_metrics.csv`.
 
 `scripts/verify_saved_metrics.py` → `data/validation/metric_verification/metric_verification.json`: all saved seed-42 predictions recompute to the reported precision/recall/F1/ROC-AUC/AP and confusion matrices (same 16,670 rows, positive class = illicit = 1, thresholds from validation). The earlier five-seed table (HistGBDT 0.8017/0.7221/0.7579…, TGAT-BoostNet 0.8718/0.6643/0.7534…) equals the means of `tgat_boostnet_experiment/seed_results.csv`. Limits of that verification: only seed 42's probabilities were saved in the earlier runs, so seeds 123–2024 could not be recomputed from predictions; `6_Tuned_XGBoost_165` probabilities were never saved; legacy XGBoost's five seeds are identical runs. The new run saves probabilities for every seed and config.
 
-### 1.6 SnapShift-Boost (the project's own model; served as bundle 2.0.0)
+### 1.6 SnapShift-Boost (tree-only model; served as bundle 2.0.0 until 2026-10-15, now the ML baseline)
 
 Design, ablation and discussion: `docs/SNAPSHIFT_BOOST.md`. Sources: `data/validation/snapshift/dev/summary.json` (component selection on rolling folds inside steps 1–34, test steps removed from the data), `data/validation/snapshift/final/seed_42.json` (single test read), `bundle_checks.json` (export reproduction checks).
 
@@ -76,6 +76,24 @@ Design, ablation and discussion: `docs/SNAPSHIFT_BOOST.md`. Sources: `data/valid
 | Recall steps 35–42 / 43–49 | 0.854 / 0.030 | 0.857 / 0.024 |
 
 Paired bootstrap of the test F1 difference: +0.0026, 95 % interval [−0.0048, +0.0107] resampling transactions and [−0.0050, +0.0104] resampling time steps; positive in 76 % of resamples. **A small improvement that is not statistically significant.** It does not change the post-step-43 collapse (§1.4). Deterministic: a second seed gives bit-identical scores on all 203,769 nodes.
+
+### 1.7 GAT-BoostNet: the deep-learning model (served as bundle 3.0.0)
+
+The faculty guide asked for a deep-learning model. GAT-BoostNet = config `ens_hgb_hgbgat`: the mean probability of (a) HistGBDT on the 165 features and (b) HistGBDT on 165 features + 32 **cross-fitted** embeddings from a 2-layer, 8-head GAT (PyTorch Geometric, bidirectional edges). Choices, all on validation only: among the GAT-containing configurations it has the highest mean validation F1 (0.9721, vs 0.9655 for `hgb_165_gat_cf`); the exported copy is the seed with the highest validation F1 for this config (seed 123: 0.9751). Sources: `summary.csv`, `seed_results.csv`, `data/validation/gat_hybrid/{reproduction.json,bundle_checks.json}`, `scripts/export_gat_hybrid.py`.
+
+| | 5-seed mean (expected) | Exported copy (seed 123, bundle 3.0.0) | SnapShift-Boost 2.0.0 |
+|---|---:|---:|---:|
+| Validation F1 / threshold | 0.9721 | 0.9751 / 0.71 | 0.9796 / 0.90 |
+| Test precision / recall | 0.857 / 0.720 | **0.9135 / 0.7119** | 0.8883 / 0.7267 |
+| **Test illicit F1** | **0.782 ± 0.022** | **0.8002** | 0.7994 |
+| Test ROC-AUC / AP | 0.940 / 0.799 | 0.9391 / 0.7985 | 0.9315 / 0.8004 |
+| TN / FP / FN / TP | | 15,514 / 73 / 312 / 771 | 15,488 / 99 / 296 / 787 |
+| Recall steps 35–42 / 43–49 | | 0.842 / 0.006 | 0.857 / 0.024 |
+
+* **Report the 5-seed mean as the model's performance.** The exported copy's 0.8002 is one draw that was picked by validation; across seeds the hybrid is 0.01–0.02 F1 below the best tree models, within seed noise.
+* **Reproduction.** Retraining seed 123 reproduces every saved validation and test probability with a maximum difference of 0.0, **but only with the original thread count** (`--torch-threads 5`, `OMP_NUM_THREADS=5`). With 6 threads the GAT diverged (best epoch 148 vs 147, test F1 0.779); the export script refused to export that copy (`reproduction_attempt1_threads6.json`).
+* **Serving.** Scoring each test time step as one complete snapshot through the bundle gives the evaluated scores exactly (`bundle_checks.json`, max difference 0.0). End-to-end replay of Elliptic steps 42–43 + 500 Zenodo transactions through Kafka → Spark: 12,703 scored, 923 flagged, 0 errors, streamed scores = batch scores (max difference 0.0).
+* **Inference cost** (`scoring_benchmark.json`): 54 ms per ~5,000-node snapshot (11 µs per transaction) + 22 ms graph-context construction; model load 0.03 s.
 
 ## 2. Elliptic through Spark
 

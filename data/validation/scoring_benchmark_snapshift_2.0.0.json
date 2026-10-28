@@ -1,0 +1,57 @@
+{
+  "host_cpu_count": 16,
+  "torch_threads": 4,
+  "elliptic_bundle": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\artifacts/models/elliptic\\2.0.0",
+  "elliptic_model_load_seconds_median": 0.0333,
+  "zenodo_model_load_seconds_median": 0.0271,
+  "elliptic_config": "snapshift_P",
+  "elliptic_requires_graph": true,
+  "elliptic_snapshot": {
+    "snapshots": 15,
+    "nodes_per_snapshot_median": 4975,
+    "graph_context_construction": {
+      "p50_ms": 23.108,
+      "p95_ms": 34.56,
+      "max_ms": 39.719,
+      "n": 15
+    },
+    "model_inference": {
+      "p50_ms": 63.259,
+      "p95_ms": 91.585,
+      "max_ms": 103.765,
+      "n": 15
+    },
+    "full_service_call_incl_validation": {
+      "p50_ms": 214.014,
+      "p95_ms": 290.929,
+      "max_ms": 311.788,
+      "n": 15
+    },
+    "per_transaction_us_median": 13.16,
+    "sanity_check_streaming_path_test_f1": 0.7994,
+    "note": "sanity_check_* recomputes test F1 through the event/adapter path to prove it matches the offline evaluation of the exported model; it is not a new result."
+  },
+  "zenodo": {
+    "single_event_latency": {
+      "p50_ms": 12.56,
+      "p95_ms": 14.281,
+      "max_ms": 15.88,
+      "n": 300
+    },
+    "batch": {
+      "100": {
+        "median_seconds": 0.0172,
+        "events_per_second": 5814.8
+      },
+      "1000": {
+        "median_seconds": 0.054,
+        "events_per_second": 18505.9
+      },
+      "5000": {
+        "median_seconds": 0.2903,
+        "events_per_second": 17223.8
+      }
+    }
+  },
+  "process_rss_mb": 610.3
+}

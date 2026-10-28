@@ -28,8 +28,14 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _VENV_PY = os.path.join(ROOT, ".venv", "Scripts", "python.exe")
 if os.path.exists(_VENV_PY) and os.path.normcase(os.path.abspath(sys.prefix)) != os.path.normcase(
         os.path.join(ROOT, ".venv")):
-    # started with another interpreter (e.g. plain `python`): rerun with the project's virtual environment
-    sys.exit(subprocess.call([_VENV_PY, os.path.abspath(__file__), *sys.argv[1:]]))
+    # started with another interpreter (e.g. plain `python`): rerun with the project's virtual environment.
+    # Ctrl+C reaches the child too (shared console); wait for its cleanup instead of printing a traceback.
+    _child = subprocess.Popen([_VENV_PY, os.path.abspath(__file__), *sys.argv[1:]])
+    while True:
+        try:
+            sys.exit(_child.wait())
+        except KeyboardInterrupt:
+            continue
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import local_kafka  # noqa: E402
@@ -104,15 +110,16 @@ def main():
             _say("Kafka already running")
         else:
             _say("starting Kafka ...")
+            kafka_started = True  # set first: Ctrl+C during start-up must still stop the broker
             local_kafka.start()
-            kafka_started = True
         from confluent_kafka.admin import AdminClient, NewTopic
-        admin = AdminClient({"bootstrap.servers": local_kafka.BOOTSTRAP})
+        admin = AdminClient({"bootstrap.servers": local_kafka.BOOTSTRAP, "logger": local_kafka._QUIET})
         admin.create_topics([NewTopic(topic, 3, 1)])[topic].result()
+        del admin  # an idle client would log connection errors once the broker stops
         _say(f"topic {topic}, run directory data\\streaming\\{run_name}")
 
         # 2. consumer
-        _say("starting Spark streaming consumer (takes ~30 s) ...")
+        _say("starting Spark streaming consumer (usually 30-90 s) ...")
         consumer = _spawn(["scripts/streaming_consumer.py", "--topic", topic, "--run-dir", run_dir,
                            "--trigger", "2 seconds", "--max-offsets-per-trigger", "2000"],
                           os.path.join(run_dir, "consumer.out"))
