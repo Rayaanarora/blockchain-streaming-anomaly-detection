@@ -139,6 +139,8 @@ def random_search(family: str, Xf, yf, Xv, yv, device: str = "cpu", log=print, s
 
 
 def _parse(v):
+    if hasattr(v, "item"):  # numpy scalar -> Python scalar
+        v = v.item()
     if isinstance(v, str):
         if v == "None":
             return None
@@ -163,7 +165,7 @@ def selected(family: str, search: pd.DataFrame) -> dict:
     if family == "lgbm":
         for k in ("learning_rate", "subsample", "colsample_bytree", "reg_lambda", "scale_pos_weight"):
             params[k] = float(best[k])
-    return {"params": params, "threshold": float(best["best_threshold"]), "val_pr_auc": float(best["val_pr_auc"]),
+    return {"params": _clean(params), "threshold": float(best["best_threshold"]), "val_pr_auc": float(best["val_pr_auc"]),
             "val_f1": float(best["val_f1_at_best_t"])}
 
 
@@ -186,7 +188,7 @@ def tune_all(data: Elliptic, device: str = "cpu", log=print) -> Dict[str, dict]:
     for fam in ("lgbm", "rf", "xgb"):
         log(f"{fam}: random search")
         out[fam] = selected(fam, random_search(fam, Xf, yf, Xv, yv, device, log))
-    json.dump(out, open(sel_path, "w"), indent=1, default=str)
+    json.dump(out, open(sel_path, "w"), indent=1)
     return out
 
 
