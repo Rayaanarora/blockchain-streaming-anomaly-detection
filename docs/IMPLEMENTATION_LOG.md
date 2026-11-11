@@ -88,3 +88,28 @@ Removed: three stray directories in the repository root (`blockchainbigdatablock
 | `py -m pytest tests\integration -m integration -v` (service loads 2.0.0) | **2 passed** (restart/kill recovery; mixed Elliptic+Zenodo, streamed = batch scores). Log: `data/validation/snapshift/final/integration_2.0.0.log` |
 | `py scripts\benchmark_scoring.py` (1.0.1 result kept as `scoring_benchmark_bundle_1.0.1.json`) | SnapShift-Boost: inference p50 63.3 ms per snapshot (median 4,975 nodes; 13 µs/tx), graph context 23.1 ms; event-path test F1 0.7994 = offline |
 | `py scripts\run_pipeline.py --no-browser --exit-when-done` | run_20261015_002100: 15,203 events scored (Elliptic 12,203 with 2.0.0, 1,023 flagged; Zenodo 2,998 + 2 coinbase skipped), 0 dead-lettered, 0 errors |
+
+## Session 3 — 2026-11-11: serve TGAT-BoostNet (bundle 4.0.0), dashboard redesign
+
+### Changes
+
+| File | Change |
+|---|---|
+| `src/models/elliptic_bundle.py` | `tgat_boostnet` recipe (XGBoost on 165 + GAT embedding); `FixedStandardiser` (float64 statistics, same arithmetic as the evaluated runs); `export_bundle` accepts `score_semantics` / `threshold_source` |
+| `scripts/kaggle_train_tgat_boostnet.py` (new) | one-shot Kaggle GPU training of the tuned config (seed 42) with the repo's `fit_tgat_boostnet`; writes portable artefacts + `run_meta.json` + zip |
+| `scripts/export_tgat_boostnet.py` (rewritten) | loads the Kaggle artefacts on CPU; gates C0–C5; stages the bundle and promotes it to `artifacts/models/elliptic/4.0.0` only after C5 |
+| `tests/test_tgat_boostnet_bundle.py` (new) | standardiser bit-equality, bundle round trip, manifest, missing-edges error |
+| `infra/kafka/server.properties` | `log.retention.ms=-1`, `log.retention.bytes=-1` (D-29) |
+| `src/api/analytics.py` (new), `src/api/app.py`, `src/api/static/index.html` | dashboard redesign: `/api/stream-analytics`, `/api/graph`, `/api/offline`; overview, detection, investigate, models, batch and log views |
+| `README.md`, `docs/MODEL_CARDS.md`, `VERIFIED_RESULTS.md` §1.8, `DECISIONS.md` D-28/D-29, `IMPLEMENTATION_STATUS.md`, `END_TO_END_ARCHITECTURE.md`, `SNAPSHIFT_BOOST.md` | documentation |
+
+### Commands and outcomes
+
+| Command | Outcome |
+|---|---|
+| Kaggle notebook (Tesla T4, `kaggle_train_tgat_boostnet.py`), one run | 49 s training; test signature matched; artefacts in `data/validation/tgat_boostnet_bundle/kaggle_seed42/` |
+| `py scripts\export_tgat_boostnet.py --dry-run` | C0–C4 passed (C1 ΔF1 −0.0065, ΔPR-AUC −0.0055; C4 0 flips) |
+| `py scripts\export_tgat_boostnet.py` | C5 max diff 0.0 on 67,504 nodes; promoted to 4.0.0; test F1 0.8101 |
+| `py -m pytest` | **117 passed, 1 skipped** (11 min) |
+| `py -m pytest tests\integration -m integration -v` | first run: 2 failed, the broker shut down on a retention-driven segment delete (D-29); after the fix and a restart: **2 passed** |
+| `py scripts\run_pipeline.py --no-browser --exit-when-done --keep-kafka` | run_20261111_210240: 15,203 events scored (Elliptic 12,203 with 4.0.0, 841 flagged; Zenodo 2,998 + 2 coinbase skipped), 0 dead-lettered |

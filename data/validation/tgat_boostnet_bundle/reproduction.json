@@ -1,0 +1,334 @@
+{
+  "artifacts": "D:\\blockchainbigdata\\blockchain-streaming-anomaly-detection\\data\\validation\\tgat_boostnet_bundle\\kaggle_seed42",
+  "smoke_test": false,
+  "smoke_test_note": null,
+  "seed": 42,
+  "threshold": 0.37,
+  "local_cpu_seconds": 0.5179948806762695,
+  "kaggle_versions": {
+    "python": "3.13.16",
+    "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "numpy": "2.1.3",
+    "torch": "2.11.0+cu130",
+    "torch_cuda": "13.0",
+    "torch_geometric": "2.8.1",
+    "xgboost": "3.4.1",
+    "sklearn": "1.6.1",
+    "cuda_available": true,
+    "gpu": "Tesla T4",
+    "pandas": "2.3.3"
+  },
+  "kaggle_repo": {
+    "sha": "752a4b53da63d888f4cd30716ed9274a3575aaf1",
+    "expected_sha": "752a4b53da63d888f4cd30716ed9274a3575aaf1",
+    "matches_expected": true,
+    "tracked_files_modified": false
+  },
+  "C0_integrity": {
+    "files": {
+      "gat.pt": {
+        "expected": "37ba5703398ba6da271a870533606294b36513de8b5a14aecc8bc174f9c33d51",
+        "local": "37ba5703398ba6da271a870533606294b36513de8b5a14aecc8bc174f9c33d51"
+      },
+      "gat_weights.npz": {
+        "expected": "4418cd693d4e02bf9fb4111efc4339f23a97223fb7535c6c51bcf7bda07be258",
+        "local": "4418cd693d4e02bf9fb4111efc4339f23a97223fb7535c6c51bcf7bda07be258"
+      },
+      "tgat_boostnet_xgb.ubj": {
+        "expected": "39736a9d06339dc8c16d00420e3e8c3fb66f1501d508fa036ac0cc12876ecab6",
+        "local": "39736a9d06339dc8c16d00420e3e8c3fb66f1501d508fa036ac0cc12876ecab6"
+      },
+      "tgat_boostnet_xgb.json": {
+        "expected": "42d8d0cdcfc4440a4e0210f06abf24705c1835cdfcb1c5e5ed50719cc47aeacc",
+        "local": "42d8d0cdcfc4440a4e0210f06abf24705c1835cdfcb1c5e5ed50719cc47aeacc"
+      },
+      "scaler_stats.npz": {
+        "expected": "b9e5866b5836f2a63818e1ec5853c78a1c3b5d7a30249bc983638cca8163372a",
+        "local": "b9e5866b5836f2a63818e1ec5853c78a1c3b5d7a30249bc983638cca8163372a"
+      },
+      "test_outputs.npz": {
+        "expected": "2a11e554ff279d9ed0235f6cc728bb3a4611f7936ebe5ea24edee4fc9f7db417",
+        "local": "2a11e554ff279d9ed0235f6cc728bb3a4611f7936ebe5ea24edee4fc9f7db417"
+      }
+    },
+    "files_ok": true,
+    "data": {
+      "X_raw": {
+        "kaggle": "a1d490ea5108f2122c0dcca8343b4ed1cbd92805028a963e8415ad6826fba09b",
+        "local": "a1d490ea5108f2122c0dcca8343b4ed1cbd92805028a963e8415ad6826fba09b"
+      },
+      "tx_ids": {
+        "kaggle": "7de057207d7ee79caab5bcacca1832629159592114fcd83d48bf3d1fe3f0fda2",
+        "local": "7de057207d7ee79caab5bcacca1832629159592114fcd83d48bf3d1fe3f0fda2"
+      },
+      "y": {
+        "kaggle": "9ad6f93f27ab5775f011e5317b29dc709e302c674f97e34b706db95043a4322e",
+        "local": "9ad6f93f27ab5775f011e5317b29dc709e302c674f97e34b706db95043a4322e"
+      },
+      "edge_index": {
+        "kaggle": "b1bc07e7d80d5ac80b8221180d7aab6cdaccfc32924aef107c9c6938229534f7",
+        "local": "b1bc07e7d80d5ac80b8221180d7aab6cdaccfc32924aef107c9c6938229534f7"
+      },
+      "time_steps": {
+        "kaggle": "545dfc6125329be49e27c9d1ac3ea06499cec914fb37262f84770d9b37fd51c7",
+        "local": "545dfc6125329be49e27c9d1ac3ea06499cec914fb37262f84770d9b37fd51c7"
+      }
+    },
+    "data_ok": true,
+    "test_rows_aligned": true,
+    "mu_bit_equal": true,
+    "sd_bit_equal": true,
+    "mu_max_abs_diff": 0.0,
+    "sd_max_abs_diff": 0.0,
+    "x_test_sha256_kaggle": "c31785e75f6b965d632ba92dfaebf25b8b80754e6d9bd95a1eb15151f0180e7b",
+    "x_test_sha256_local_fixed_standardiser": "c31785e75f6b965d632ba92dfaebf25b8b80754e6d9bd95a1eb15151f0180e7b",
+    "x_test_sha256_local_standardise_on": "c31785e75f6b965d632ba92dfaebf25b8b80754e6d9bd95a1eb15151f0180e7b",
+    "fixed_standardiser_equals_standardise_on": true,
+    "gat_loaded_from": "gat.pt",
+    "feature_hash_ok": true,
+    "pass": true
+  },
+  "C1_gpu_vs_gpu": {
+    "metrics": {
+      "precision": 0.9446494464944649,
+      "recall": 0.7091412742382271,
+      "f1_illicit": 0.810126582278481,
+      "roc_auc": 0.9458412350989036,
+      "average_precision": 0.8100208001099308,
+      "threshold": 0.37,
+      "tn": 15542,
+      "fp": 45,
+      "fn": 315,
+      "tp": 768
+    },
+    "metrics_reference": {
+      "precision": 0.947560975609756,
+      "recall": 0.7174515235457064,
+      "f1_illicit": 0.8166053599579611,
+      "roc_auc": 0.946381940676586,
+      "average_precision": 0.8155244380268751,
+      "threshold": 0.37,
+      "tn": 15544,
+      "fp": 43,
+      "fn": 306,
+      "tp": 777
+    },
+    "f1_diff": -0.00647877767948013,
+    "pr_auc_diff": -0.005503637916944304,
+    "max_abs_diff": 0.6669155955314636,
+    "median_abs_diff": 9.411193605046719e-05,
+    "p99_abs_diff": 0.07814663264900497,
+    "n_above_1e-4": 8178,
+    "n_above_1e-3": 3442,
+    "n_above_1e-2": 992,
+    "decision_flips": 33,
+    "decision_agreement": 0.9980203959208158,
+    "reference": "results/runs/tgat_boostnet_tuned/seed_42.npz (Colab T4 GPU)",
+    "five_seed_f1": {
+      "42": 0.8166053599579611,
+      "123": 0.8135235076597993,
+      "456": 0.79768177028451,
+      "789": 0.8148936170212766,
+      "2024": 0.8088467614533965
+    },
+    "five_seed_f1_range": [
+      0.79768177028451,
+      0.8166053599579611
+    ],
+    "kaggle_f1_inside_five_seed_range": true,
+    "gate": {
+      "abs_f1_diff_max": 0.02,
+      "abs_pr_auc_diff_max": 0.02
+    },
+    "pass": true
+  },
+  "C2_portability": {
+    "metrics": {
+      "precision": 0.9446494464944649,
+      "recall": 0.7091412742382271,
+      "f1_illicit": 0.810126582278481,
+      "roc_auc": 0.9458412943380796,
+      "average_precision": 0.8100208866701666,
+      "threshold": 0.37,
+      "tn": 15542,
+      "fp": 45,
+      "fn": 315,
+      "tp": 768
+    },
+    "metrics_reference": {
+      "precision": 0.9446494464944649,
+      "recall": 0.7091412742382271,
+      "f1_illicit": 0.810126582278481,
+      "roc_auc": 0.9458412350989036,
+      "average_precision": 0.8100208001099308,
+      "threshold": 0.37,
+      "tn": 15542,
+      "fp": 45,
+      "fn": 315,
+      "tp": 768
+    },
+    "f1_diff": 0.0,
+    "pr_auc_diff": 8.656023575692728e-08,
+    "max_abs_diff": 3.5762786865234375e-07,
+    "median_abs_diff": 3.128661774098873e-10,
+    "p99_abs_diff": 1.1920928955078125e-07,
+    "n_above_1e-4": 0,
+    "n_above_1e-3": 0,
+    "n_above_1e-2": 0,
+    "decision_flips": 0,
+    "decision_agreement": 1.0,
+    "vs_kaggle_cpu_booster_on_gpu_emb_max_abs_diff": 4.656612873077393e-10,
+    "gate": {
+      "max_abs_diff": 1e-05,
+      "max_decision_flips": 0
+    },
+    "pass": true
+  },
+  "C3_cpu_vs_cpu": {
+    "metrics": {
+      "precision": 0.9446494464944649,
+      "recall": 0.7091412742382271,
+      "f1_illicit": 0.810126582278481,
+      "roc_auc": 0.9458412943380796,
+      "average_precision": 0.8100208866701666,
+      "threshold": 0.37,
+      "tn": 15542,
+      "fp": 45,
+      "fn": 315,
+      "tp": 768
+    },
+    "metrics_reference": {
+      "precision": 0.9446494464944649,
+      "recall": 0.7091412742382271,
+      "f1_illicit": 0.810126582278481,
+      "roc_auc": 0.9458412943380796,
+      "average_precision": 0.8100208866701666,
+      "threshold": 0.37,
+      "tn": 15542,
+      "fp": 45,
+      "fn": 315,
+      "tp": 768
+    },
+    "f1_diff": 0.0,
+    "pr_auc_diff": 0.0,
+    "max_abs_diff": 4.656612873077393e-10,
+    "median_abs_diff": 0.0,
+    "p99_abs_diff": 0.0,
+    "n_above_1e-4": 0,
+    "n_above_1e-3": 0,
+    "n_above_1e-2": 0,
+    "decision_flips": 0,
+    "decision_agreement": 1.0,
+    "emb_max_abs_diff": 6.103515625e-05,
+    "emb_median_abs_diff": 0.0,
+    "emb_bit_equal": false,
+    "emb_local_vs_kaggle_gpu_max_abs_diff": 6.103515625e-05,
+    "gating": false
+  },
+  "C4_device_effect": {
+    "metrics": {
+      "precision": 0.9446494464944649,
+      "recall": 0.7091412742382271,
+      "f1_illicit": 0.810126582278481,
+      "roc_auc": 0.9458412943380796,
+      "average_precision": 0.8100208866701666,
+      "threshold": 0.37,
+      "tn": 15542,
+      "fp": 45,
+      "fn": 315,
+      "tp": 768
+    },
+    "metrics_reference": {
+      "precision": 0.9446494464944649,
+      "recall": 0.7091412742382271,
+      "f1_illicit": 0.810126582278481,
+      "roc_auc": 0.9458412350989036,
+      "average_precision": 0.8100208001099308,
+      "threshold": 0.37,
+      "tn": 15542,
+      "fp": 45,
+      "fn": 315,
+      "tp": 768
+    },
+    "f1_diff": 0.0,
+    "pr_auc_diff": 8.656023575692728e-08,
+    "max_abs_diff": 3.5762786865234375e-07,
+    "median_abs_diff": 3.128661774098873e-10,
+    "p99_abs_diff": 1.1920928955078125e-07,
+    "n_above_1e-4": 0,
+    "n_above_1e-3": 0,
+    "n_above_1e-2": 0,
+    "decision_flips": 0,
+    "decision_agreement": 1.0,
+    "flipped_rows": [],
+    "gate": {
+      "min_decision_agreement": 0.999,
+      "abs_f1_diff_max": 0.005,
+      "abs_pr_auc_diff_max": 0.005
+    },
+    "pass": true
+  },
+  "gates_passed": {
+    "C0": true,
+    "C1": true,
+    "C2": true,
+    "C4": true
+  },
+  "export_allowed": true,
+  "C5_bundle": {
+    "bundle_staged": "artifacts/models/_staging_elliptic/4.0.0",
+    "config": "tgat_boostnet",
+    "requires_graph": true,
+    "threshold": 0.37,
+    "graph_contexts": [
+      "complete"
+    ],
+    "snapshots_scored": 15,
+    "nodes_scored": 67504,
+    "snapshot_scoring_seconds": 0.9941887855529785,
+    "max_abs_diff_vs_local_cpu": 0.0,
+    "test_metrics_from_bundle": {
+      "precision": 0.9446494464944649,
+      "recall": 0.7091412742382271,
+      "f1_illicit": 0.810126582278481,
+      "roc_auc": 0.9458412943380796,
+      "average_precision": 0.8100208866701666,
+      "threshold": 0.37,
+      "tn": 15542,
+      "fp": 45,
+      "fn": 315,
+      "tp": 768
+    },
+    "test_metrics_local_cpu": {
+      "precision": 0.9446494464944649,
+      "recall": 0.7091412742382271,
+      "f1_illicit": 0.810126582278481,
+      "roc_auc": 0.9458412943380796,
+      "average_precision": 0.8100208866701666,
+      "threshold": 0.37,
+      "tn": 15542,
+      "fp": 45,
+      "fn": 315,
+      "tp": 768
+    },
+    "order_diagnostic_non_gating": {
+      "35": {
+        "n_nodes": 5507,
+        "n_changed_gt_1e-6": 0,
+        "max_abs_diff": 0.0,
+        "decision_flips": 0
+      },
+      "42": {
+        "n_nodes": 7140,
+        "n_changed_gt_1e-6": 0,
+        "max_abs_diff": 0.0,
+        "decision_flips": 0
+      }
+    },
+    "gate": {
+      "max_abs_diff": 1e-05,
+      "identical_f1": true
+    },
+    "pass": true
+  }
+}

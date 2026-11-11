@@ -1,5 +1,6 @@
 """
-Export the deep-learning hybrid (GAT embeddings + gradient boosting) as the served Elliptic model.
+Export the deep-learning hybrid GAT-BoostNet (GAT embeddings + gradient boosting) as Elliptic bundle 3.0.0.
+Served from 2026-10-15 to 2026-11-11; superseded by TGAT-BoostNet 4.0.0 (scripts/export_tgat_boostnet.py).
 
 Config (default) ``ens_hgb_hgbgat`` = mean of
   (a) HistGBDT on the 165 standardised features, and

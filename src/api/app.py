@@ -230,6 +230,28 @@ def create_app(run_dir: Optional[str] = None) -> FastAPI:
                                                    "feature_version", "created_utc")}
         return _clean(out)
 
+    @app.get("/api/stream-analytics")
+    def stream_analytics_(run: Optional[str] = None):
+        """Chart data for one run: event flow, per-snapshot score distributions with ground truth, reasons."""
+        from src.api.analytics import stream_analytics
+        return stream_analytics(predictions(resolve(run)))
+
+    @app.get("/api/graph")
+    def graph(tx: str = Query(..., min_length=1, max_length=80), run: Optional[str] = None,
+              max_nodes: int = Query(140, ge=10, le=400)):
+        """Same-snapshot 2-hop neighbourhood of an Elliptic transaction, coloured by this run's scores."""
+        from src.api.analytics import ego_graph
+        try:
+            return ego_graph(predictions(resolve(run)), tx, max_nodes)
+        except KeyError:
+            raise HTTPException(404, f"transaction {tx} is not an Elliptic prediction in this run")
+
+    @app.get("/api/offline")
+    def offline():
+        """Offline evaluation tables (notebooks 01-04) for the model-evaluation view."""
+        from src.api.analytics import offline_results
+        return offline_results()
+
     @app.post("/api/score")
     def score(events: List[dict] = Body(..., max_length=5000)):
         """Unified scoring interface over HTTP (same routing/validation as the stream consumer)."""

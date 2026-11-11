@@ -39,6 +39,9 @@ RECIPES = {
     "hgb_165_gat_cf": [("hgb_165_gat_cf", "x165_emb")],
     "hgb_165_gat_insample": [("hgb_165_gat_insample", "x165_emb")],
     "ens_hgb_hgbgat": [("hgb_165_tuned", "x165"), ("hgb_165_gat_cf", "x165_emb")],
+    # TGAT-BoostNet (src/evaluation/tgat_boostnet.py, validation-tuned in notebook 04): XGBoost on the
+    # 165 standardised features + the 32-d embedding of a per-snapshot 2-layer GAT (cross-fitted on training rows).
+    "tgat_boostnet": [("tgat_boostnet_xgb", "x165_emb")],
     # SnapShift-Boost (src/models/snapshift.py): stage 1 scores every node of the snapshot, stage 2 adds
     # the neighbours' stage-1 scores. Combined as a chain, not averaged (see COMBINE).
     "snapshift_P": [("snapshift_stage1", "x165_nbr"), ("snapshift_stage2", "x165_nbr_prop")],
@@ -49,6 +52,26 @@ COMBINE = {"snapshift_P": "two_stage"}  # default: mean of the component probabi
 
 class InputValidationError(ValueError):
     """Raised when a snapshot does not satisfy the model's input contract."""
+
+
+class FixedStandardiser:
+    """(X - mu) / sd in float64 with shipped training statistics; same arithmetic as
+    evaluation.tgat_boostnet._standardise_on.
+
+    ``_standardise_on`` computes ``((X_float32 - mu_float64) / sd_float64).astype(float32)``: numpy promotes
+    the float32 features to float64 before subtracting. ``transform`` does the same, so with the training
+    statistics ``transform(X).astype(np.float32)`` is bit-identical to the evaluated runs' features. sklearn's
+    StandardScaler on float32 input is not (it differs in the last bit on a large share of elements, which
+    moves XGBoost hist splits on Elliptic's discrete-valued features).
+    """
+
+    def __init__(self, mu, sd):
+        self.mean_ = np.array(mu, dtype=np.float64, copy=True)
+        self.scale_ = np.array(sd, dtype=np.float64, copy=True)
+        self.scale_[self.scale_ == 0] = 1.0  # same rule as _standardise_on (no-op for its own sd)
+
+    def transform(self, X):
+        return (np.asarray(X, dtype=np.float32) - self.mean_) / self.scale_
 
 
 def _sha256(path: str) -> str:
@@ -71,9 +94,11 @@ def _save_component(obj, directory: str, name: str) -> str:
 
 
 def export_bundle(out_root: str, version: str, config: str, fitted: Dict, scaler, gat_direction: str,
-                  threshold: float, metrics_seed42: Dict, summary: Dict, meta: Dict, seed: int = 42) -> str:
+                  threshold: float, metrics_seed42: Dict, summary: Dict, meta: Dict, seed: int = 42,
+                  score_semantics: Optional[str] = None, threshold_source: Optional[str] = None) -> str:
     """``seed``: which training seed produced the exported copy (its validation threshold and test
-    metrics are recorded). ``metrics_seed42`` keeps its historical name; it holds that seed's metrics."""
+    metrics are recorded). ``metrics_seed42`` keeps its historical name; it holds that seed's metrics.
+    ``score_semantics`` / ``threshold_source`` override the defaults written for the 1-29 / 30-34 bundles."""
     import torch
     directory = os.path.join(out_root, version)
     if os.path.exists(os.path.join(directory, "manifest.json")):
@@ -98,10 +123,11 @@ def export_bundle(out_root: str, version: str, config: str, fitted: Dict, scaler
         "model_version": version,
         "config": config,
         "score_type": "illicit_probability",
-        "score_semantics": "Probability-like score of the Elliptic 'illicit' class (label 1) from a supervised "
-                           "model trained on labelled steps 1-29. Not calibrated across datasets.",
+        "score_semantics": score_semantics or (
+            "Probability-like score of the Elliptic 'illicit' class (label 1) from a supervised "
+            "model trained on labelled steps 1-29. Not calibrated across datasets."),
         "decision_threshold": threshold,
-        "threshold_source": f"validation steps 30-34, F1-maximising, seed {seed}",
+        "threshold_source": threshold_source or f"validation steps 30-34, F1-maximising, seed {seed}",
         "export_seed": seed,
         "requires_graph": any(r in GRAPH_RECIPES for _, r in recipe),
         "combine": COMBINE.get(config, "mean"),

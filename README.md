@@ -11,7 +11,7 @@ An end-to-end pipeline that prepares Bitcoin transaction data with Apache Spark,
 | | Status |
 |---|---|
 | Spark batch preprocessing of Elliptic (203,769 tx) and Zenodo (16.9 M tx) | ✅ implemented, run on the full data |
-| Supervised illicit-transaction model on Elliptic: **GAT-BoostNet**, a deep-learning hybrid (graph attention network + gradient boosting), vs 12 baseline configs × 5 seeds and the tree-only SnapShift-Boost | ✅ test illicit F1 **0.782 ± 0.022** over 5 seeds (served copy 0.800); best tree model 0.799 |
+| Supervised illicit-transaction model on Elliptic: **TGAT-BoostNet** (tuned), a deep-learning hybrid (8-head graph attention network embeddings + XGBoost), vs reproduced baselines × 5 seeds | ✅ test illicit F1 **0.810 ± 0.008** over 5 seeds (served copy 0.810); tuned LightGBM 0.821 is higher |
 | Unsupervised anomaly scoring of all 16.9 M Zenodo transactions | ✅ no labels exist, so no accuracy claim |
 | Kafka → Spark Structured Streaming → scoring → Parquet, with checkpoints, de-duplication, dead letters, crash recovery | ✅ replay of stored data, integration-tested |
 | Dashboard over the persisted outputs | ✅ |
@@ -28,7 +28,7 @@ Full matrix: [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
 flowchart LR
   EC[Elliptic CSVs] -->|Spark: process_elliptic_spark.py| ES[(elliptic_spark<br/>nodes / edges / splits)]
   ZP[(Zenodo Parquet store<br/>16.9 M tx, reused)] -->|Spark: zenodo_anomaly_pipeline.py| ZF[(features)]
-  ES -->|run_final_model_selection / export_gat_hybrid| EM[[GAT-BoostNet<br/>elliptic-supervised 3.0.0]]
+  ES -->|Kaggle GPU train / export_tgat_boostnet| EM[[TGAT-BoostNet<br/>elliptic-supervised 4.0.0]]
   ZF -->|fit 2 % sample| ZM[[zenodo-isolation-forest 1.0.0]]
   ZF -->|batch score| ZS[(16.9 M scores)]
   ES -->|replay_producer.py| K[(Kafka)]
@@ -60,9 +60,21 @@ The two models produce **different kinds of scores** and are never mixed: `illic
 
 ## Results
 
-### Served model: GAT-BoostNet (deep learning)
+### Served model: TGAT-BoostNet, tuned (bundle 4.0.0)
 
-A 2-layer, 8-head **Graph Attention Network** (PyTorch Geometric) turns each transaction's time-step neighbourhood into a 32-number embedding. Gradient-boosted trees classify on the 165 features plus that embedding, and the result is averaged with trees on the 165 features alone. Training rows get **cross-fitted** embeddings, so the trees never learn from an embedding fitted on its own label. Model, seed and threshold were all chosen on validation steps 30–34 (DECISIONS D-27).
+A 2-layer, 8-head **Graph Attention Network** (PyTorch Geometric) turns each transaction's time-step neighbourhood into a 32-number embedding; cost-weighted **XGBoost** (500 trees, depth 8, `w_illicit` 4.32) classifies on the 165 standardised features plus that embedding. The booster's training rows get **cross-fitted** embeddings (5 step blocks of 1–34). Configuration and threshold (0.37) come from validation-only tuning (fit 1–29, select 30–34; notebook 04, `results/tuning/selected.json`); the served copy is seed 42, fixed before export (DECISIONS D-28).
+
+| Test steps 35–49 | Precision | Recall | Illicit F1 | ROC-AUC | PR-AUC |
+|---|---:|---:|---:|---:|---:|
+| **TGAT-BoostNet tuned, mean of 5 seeds** (Colab T4) | 0.946 | 0.709 | **0.810 ± 0.008** | 0.937 | 0.803 |
+| **TGAT-BoostNet, served copy (bundle 4.0.0, seed 42, scored on CPU)** | 0.945 | 0.709 | **0.810** | 0.946 | 0.810 |
+| GAT-BoostNet, previous served copy (bundle 3.0.0, seed 123) | 0.914 | 0.712 | 0.800 | 0.939 | 0.799 |
+
+Served copy: TN 15,542 / FP 45 / FN 315 / TP 768 (`data/validation/tgat_boostnet_bundle/bundle_checks.json`). It was trained once on a Kaggle T4 GPU (`scripts/kaggle_train_tgat_boostnet.py`) and exported on CPU by `scripts/export_tgat_boostnet.py`, which refuses to export unless every check passes (`reproduction.json`): against the evaluated Colab seed-42 run, ΔF1 −0.0065 and ΔPR-AUC −0.0055 (gate ±0.02; 99.80 % identical decisions); GPU → CPU, 0 of 16,670 decisions changed; per-snapshot bundle scores = CPU scores (max difference 0.0, also under shuffled node/edge order). It is **not** the top model: tuned LightGBM scores 0.821 (see the evaluation suite below). Recall still collapses after step 43.
+
+### Previous served model: GAT-BoostNet (bundle 3.0.0)
+
+A 2-layer, 8-head **Graph Attention Network** (PyTorch Geometric) turns each transaction's time-step neighbourhood into a 32-number embedding. Gradient-boosted trees classify on the 165 features plus that embedding, and the result is averaged with trees on the 165 features alone. Training rows get **cross-fitted** embeddings, so the trees never learn from an embedding fitted on its own label. Model, seed and threshold were all chosen on validation steps 30–34 (DECISIONS D-27). Served from 2026-10-15 to 2026-11-11; still on disk and selectable with `BSAD_ELLIPTIC_BUNDLE`.
 
 | | Precision | Recall | Illicit F1 | ROC-AUC | Recall steps 43–49 |
 |---|---:|---:|---:|---:|---:|
@@ -80,7 +92,7 @@ The components were chosen on rolling folds inside steps 1–34 by a rule fixed 
 
 | | Precision | Recall | Illicit F1 | ROC-AUC | AP | Recall steps 43–49 |
 |---|---:|---:|---:|---:|---:|---:|
-| **SnapShift-Boost (bundle 2.0.0, served)** | **0.888** | **0.727** | **0.799** | 0.932 | **0.800** | 0.024 |
+| **SnapShift-Boost (bundle 2.0.0)** | **0.888** | **0.727** | **0.799** | 0.932 | **0.800** | 0.024 |
 | Best baseline: HistGBDT + neighbour aggregates (1.0.1) | 0.883 | 0.726 | 0.797 | **0.934** | 0.798 | 0.030 |
 
 SnapShift-Boost is better on F1, precision, recall and AP, but the F1 gain (+0.003) is **not statistically significant** (95 % paired-bootstrap interval −0.005 to +0.011), and like every model here it fails after step 43. Of the three components tried, only neighbour-score propagation helped. Within-step feature ranks hurt, and a per-step Isolation Forest score was neutral.
@@ -113,7 +125,7 @@ All 12 configurations, confusion matrices and per-step metrics: [`docs/VERIFIED_
 |---|---|
 | Elliptic Spark preprocessing | 218 s |
 | Zenodo Spark feature stage / full scoring of 16.9 M tx | 326 s / 2,319 s |
-| Elliptic inference per ~5,000-node snapshot | baseline 33 ms (+24 ms graph-context construction); SnapShift-Boost 63 ms (two models; 13 µs per transaction) |
+| Elliptic inference per ~5,000-node snapshot | baseline 33 ms (+24 ms graph-context construction); SnapShift-Boost 63 ms (two models; 13 µs per transaction); TGAT-BoostNet 4.0.0: 15 test snapshots (67,504 tx) in 0.99 s, ≈66 ms per snapshot (`bundle_checks.json`, not the separate scoring benchmark) |
 | Zenodo in-memory scoring | 12 ms per event; ~17–20k events/s in batches |
 | Kafka → Spark → Parquet at 200 events/s | 217 events/s sustained, e2e p50 2.5 s, p95 4.8 s |
 | Unthrottled replay | 937 events/s sustained (consumer-bound) |
@@ -245,6 +257,14 @@ The stages below rebuild every artifact from scratch. Steps 2 and 3 are slow and
 .venv\Scripts\python.exe scripts\snapshift_dev.py --summarise
 .venv\Scripts\python.exe scripts\snapshift_final.py
 .venv\Scripts\python.exe scripts\export_snapshift_bundle.py      # refuses to export unless 3 reproduction checks pass
+
+# 2c. TGAT-BoostNet (served, bundle 4.0.0): train once on a Kaggle GPU, export locally on CPU
+#     Kaggle (GPU T4, Internet on, input dataset ellipticco/elliptic-data-set):
+#       pip install torch_geometric==2.8.1 xgboost==3.4.1; clone this repo; then
+#       python scripts/kaggle_train_tgat_boostnet.py --repo-dir <checkout>   -> tgat_boostnet_seed42.zip
+#     unzip into data\validation\tgat_boostnet_bundle\kaggle_seed42, then:
+.venv\Scripts\python.exe scripts\export_tgat_boostnet.py --dry-run   # checks C0-C4 only
+.venv\Scripts\python.exe scripts\export_tgat_boostnet.py             # stage, check C5, then promote to 4.0.0
 
 # 3. Zenodo anomaly pipeline on the existing Parquet store (no raw reconstruction)
 .venv\Scripts\python.exe scripts\zenodo_anomaly_pipeline.py features

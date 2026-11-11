@@ -1,10 +1,30 @@
 # Model cards
 
-Two datasets, two different score meanings. The Elliptic model served by default is **GAT-BoostNet 3.0.0**, a deep-learning hybrid (graph attention network + gradient boosting). SnapShift-Boost 2.0.0 (tree-only) and baseline 1.0.1 stay available via `BSAD_ELLIPTIC_BUNDLE`. The scoring service routes by `source_dataset` and never feeds one dataset's events to the other model (`src/scoring/service.py`).
+Two datasets, two different score meanings. The Elliptic model served by default is **TGAT-BoostNet 4.0.0** (tuned), a deep-learning hybrid (graph attention network embeddings + XGBoost). GAT-BoostNet 3.0.0, SnapShift-Boost 2.0.0 (tree-only) and baseline 1.0.1 stay available via `BSAD_ELLIPTIC_BUNDLE`. The scoring service routes by `source_dataset` and never feeds one dataset's events to the other model (`src/scoring/service.py`).
 
 ---
 
-## 0. `elliptic-supervised` 3.0.0: GAT-BoostNet, deep-learning hybrid (served)
+## 0. `elliptic-supervised` 4.0.0: TGAT-BoostNet, tuned (served since 2026-11-11)
+
+| | |
+|---|---|
+| Location | `artifacts/models/elliptic/4.0.0/` (`manifest.json`, `scaler.joblib` = `FixedStandardiser`, `gat.pt`, `tgat_boostnet_xgb.ubj`; SHA-256 per file, checked on load; `export_seed: 42`) |
+| Design | XGBoost on [165 standardised features ‖ 32 GAT embeddings]. GAT: `GraphAttentionEncoder` (`src/models/graph_encoder.py`), 2 layers, 8 heads, hidden 32, embedding 32, dropout 0.3, bidirectional edges, no time input (despite the name, not a temporal model) |
+| Training | `src.evaluation.tgat_boostnet.fit_tgat_boostnet`, config from `results/tuning/selected.json`: GAT 100 epochs, Adam lr 0.005, weight decay 5e-4; XGBoost 500 trees, depth 8, lr 0.03, subsample 0.8, colsample 0.6, `w_illicit` 4.32. Booster training rows use cross-fitted embeddings (5 step blocks of 1–34); the served GAT is the one trained on all of 1–34. Trained once on a Kaggle Tesla T4 (torch 2.11.0+cu130, PyG 2.8.1, xgboost 3.4.1; `run_meta.json`), scored on CPU |
+| Standardisation | `FixedStandardiser`: training mean/std in float64, same arithmetic as the evaluated runs (`_standardise_on`); sklearn `StandardScaler` differs in the last bits and would move XGBoost split decisions |
+| Inputs | One complete time-step snapshot (raw `f1…f165` + edges). `predict` raises without `edges` |
+| Output | `score` = illicit probability (not calibrated); `flagged` = score ≥ **0.37** (validation-F1 maximiser of the tuning stage, fit 1–29 / validate 30–34) |
+| Selection | Configuration and threshold from validation-only tuning (notebook 04). Seed 42 = first protocol seed, fixed before export; one Kaggle run, not rerun (DECISIONS D-28) |
+| Test performance (steps 35–49) | 5-seed mean (Colab T4): precision 0.946, recall 0.709, **F1 0.810 ± 0.008**, ROC-AUC 0.937, PR-AUC 0.803. Served copy on CPU: precision 0.9446, recall 0.7091, F1 0.8101, ROC-AUC 0.9458, PR-AUC 0.8100; TN 15,542 / FP 45 / FN 315 / TP 768 |
+| Reproduction | vs the evaluated Colab seed-42 run: ΔF1 −0.0065, ΔPR-AUC −0.0055 (gate ±0.02), 99.80 % identical decisions; Kaggle GPU → local CPU: 0 / 16,670 decisions changed, max score difference 3.6e-7 (`data/validation/tgat_boostnet_bundle/reproduction.json`) |
+| Known weaknesses | Not the best model: tuned LightGBM F1 0.821. Recall collapses after step 43 (live demo run: step 43 F1 0.000). GPU training is not bit-reproducible |
+| Streaming | Per-snapshot bundle scores = CPU scores (max diff 0.0, also under shuffled node/edge order); Kafka → Spark replay of steps 48–49 = direct scores (integration test, atol 1e-6) |
+| Inference cost | 15 test snapshots (67,504 tx) in 0.99 s, ≈66 ms per snapshot (`bundle_checks.json`) |
+| Intended use | Research benchmark on Elliptic only (same restrictions as 1.0.1) |
+
+---
+
+## 0b. `elliptic-supervised` 3.0.0: GAT-BoostNet, deep-learning hybrid (served 2026-10-15 to 2026-11-11)
 
 | | |
 |---|---|

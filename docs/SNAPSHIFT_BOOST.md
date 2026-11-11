@@ -111,7 +111,7 @@ Nothing was tuned after the test read. The first run of `snapshift_final.py` cra
 2. A different seed gives identical probabilities on all 203,769 nodes (max |diff| 0.0).
 3. The bundle, scoring one complete snapshot at a time as the streaming consumer does, reproduces the evaluated test scores exactly (max |diff| 0.0, test F1 0.7994).
 
-The scoring service loads the highest bundle version, so the streaming pipeline, `/api/score` and the dashboard use 2.0.0. Verified end to end on 2026-10-15: unit suite 96/96; Kafka + Spark integration tests 2/2 with 2.0.0 loaded, including streamed = batch scores; inference ≈63 ms per ~5,000-node snapshot. Set `BSAD_ELLIPTIC_BUNDLE` to `artifacts\models\elliptic\1.0.1` to run the baseline instead.
+The scoring service loads the highest bundle version, so the streaming pipeline, `/api/score` and the dashboard used 2.0.0 until 3.0.0 (GAT-BoostNet) was exported on 2026-10-15; since 2026-11-11 the served model is TGAT-BoostNet 4.0.0 (`docs/MODEL_CARDS.md`). Verified end to end on 2026-10-15: unit suite 96/96; Kafka + Spark integration tests 2/2 with 2.0.0 loaded, including streamed = batch scores; inference ≈63 ms per ~5,000-node snapshot. Set `BSAD_ELLIPTIC_BUNDLE` to `artifacts\models\elliptic\1.0.1` to run the baseline instead.
 
 ## 5. Novelty and related work
 

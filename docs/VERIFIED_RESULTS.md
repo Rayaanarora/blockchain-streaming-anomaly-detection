@@ -77,7 +77,7 @@ Design, ablation and discussion: `docs/SNAPSHIFT_BOOST.md`. Sources: `data/valid
 
 Paired bootstrap of the test F1 difference: +0.0026, 95 % interval [−0.0048, +0.0107] resampling transactions and [−0.0050, +0.0104] resampling time steps; positive in 76 % of resamples. **A small improvement that is not statistically significant.** It does not change the post-step-43 collapse (§1.4). Deterministic: a second seed gives bit-identical scores on all 203,769 nodes.
 
-### 1.7 GAT-BoostNet: the deep-learning model (served as bundle 3.0.0)
+### 1.7 GAT-BoostNet: the deep-learning model (served as bundle 3.0.0 from 2026-10-15 to 2026-11-11)
 
 The faculty guide asked for a deep-learning model. GAT-BoostNet = config `ens_hgb_hgbgat`: the mean probability of (a) HistGBDT on the 165 features and (b) HistGBDT on 165 features + 32 **cross-fitted** embeddings from a 2-layer, 8-head GAT (PyTorch Geometric, bidirectional edges). Choices, all on validation only: among the GAT-containing configurations it has the highest mean validation F1 (0.9721, vs 0.9655 for `hgb_165_gat_cf`); the exported copy is the seed with the highest validation F1 for this config (seed 123: 0.9751). Sources: `summary.csv`, `seed_results.csv`, `data/validation/gat_hybrid/{reproduction.json,bundle_checks.json}`, `scripts/export_gat_hybrid.py`.
 
@@ -94,6 +94,31 @@ The faculty guide asked for a deep-learning model. GAT-BoostNet = config `ens_hg
 * **Reproduction.** Retraining seed 123 reproduces every saved validation and test probability with a maximum difference of 0.0, **but only with the original thread count** (`--torch-threads 5`, `OMP_NUM_THREADS=5`). With 6 threads the GAT diverged (best epoch 148 vs 147, test F1 0.779); the export script refused to export that copy (`reproduction_attempt1_threads6.json`).
 * **Serving.** Scoring each test time step as one complete snapshot through the bundle gives the evaluated scores exactly (`bundle_checks.json`, max difference 0.0). End-to-end replay of Elliptic steps 42–43 + 500 Zenodo transactions through Kafka → Spark: 12,703 scored, 923 flagged, 0 errors, streamed scores = batch scores (max difference 0.0).
 * **Inference cost** (`scoring_benchmark.json`): 54 ms per ~5,000-node snapshot (11 µs per transaction) + 22 ms graph-context construction; model load 0.03 s.
+
+### 1.8 TGAT-BoostNet tuned: served as bundle 4.0.0 (since 2026-11-11)
+
+Configuration and threshold 0.37 from validation-only tuning (notebook 04, `results/tuning/selected.json`); five-seed results in `tables/04_tuned_vs_untuned.csv` (Colab T4). The served copy is seed 42, trained once on a Kaggle T4 (`scripts/kaggle_train_tgat_boostnet.py`) and exported on CPU (`scripts/export_tgat_boostnet.py`). Sources: `data/validation/tgat_boostnet_bundle/{kaggle_seed42/run_meta.json,reproduction.json,bundle_checks.json}`.
+
+| Test steps 35–49 | 5-seed mean (Colab T4) | Evaluated Colab run, seed 42 | Served copy (Kaggle-trained, CPU-scored) | Previous: 3.0.0 |
+|---|---:|---:|---:|---:|
+| Precision / recall | 0.946 / 0.709 | 0.9476 / 0.7175 | **0.9446 / 0.7091** | 0.9135 / 0.7119 |
+| **Illicit F1** | **0.810 ± 0.008** | 0.8166 | **0.8101** | 0.8002 |
+| ROC-AUC / PR-AUC | 0.937 / 0.803 | 0.9464 / 0.8155 | 0.9458 / 0.8100 | 0.9391 / 0.7985 |
+| TN / FP / FN / TP | | 15,544 / 43 / 306 / 777 | 15,542 / 45 / 315 / 768 | 15,514 / 73 / 312 / 771 |
+
+Export gates, fixed before the Kaggle run and all passed:
+
+| Check | Result |
+|---|---|
+| C0 integrity: file hashes, data hashes, row alignment, standardisation statistics, standardised-feature hash | all identical |
+| C1 Kaggle GPU vs evaluated Colab seed-42 run (gate \|ΔF1\|, \|ΔPR-AUC\| ≤ 0.02) | ΔF1 −0.0065, ΔPR-AUC −0.0055; 99.80 % identical decisions. GPU training is not bit-reproducible; the first complete Kaggle run was kept, not rerun |
+| C2 local CPU XGBoost on the GPU embeddings vs GPU scores (≤ 1e-5, 0 flips) | max diff 3.6e-7, 0 flips |
+| C3 local CPU vs Kaggle CPU replay (report only) | embeddings max diff 6.1e-5, scores max diff 4.7e-10 |
+| C4 local CPU vs Kaggle GPU (agreement ≥ 0.999, \|ΔF1\|, \|ΔPR-AUC\| ≤ 0.005) | agreement 1.00000, ΔF1 0.0000, ΔPR-AUC 0.0000 |
+| C5 bundle scoring each test step as one snapshot vs CPU scores (≤ 1e-5, same F1) | max diff 0.0 on 67,504 nodes; shuffled node/edge order on steps 35 and 42: 0 changed |
+
+* **Report the 5-seed mean as the model's performance.** It is not the top model: tuned LightGBM scores 0.821 ± 0.002 (Holm p = 0.004 on F1).
+* **Streaming.** Kafka integration tests 2/2 with 4.0.0 (steps 48–49 streamed = direct scores, atol 1e-6). End-to-end `run_pipeline.py` run `data/streaming/run_20261111_210240`: 15,203 events (Elliptic steps 42–43: 12,203, all `model_version` 4.0.0, threshold 0.37, graph context complete; Zenodo 3,000), 841 flagged, 0 dead-lettered. Labels joined afterwards: step 42 precision 0.975, recall 0.808, F1 0.883; step 43 F1 0.000 (0 of 24 illicit found); both steps 0.970 / 0.734 / 0.835 (the previous live run with 3.0.0, `run_20261015_154025`: 0.931 / 0.722 / 0.814).
 
 ## 2. Elliptic through Spark
 
