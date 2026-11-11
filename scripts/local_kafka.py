@@ -108,10 +108,25 @@ def _send_ctrl_c(pid: int) -> bool:
     return r.returncode == 0
 
 
+def _release_deleted_snapshots():
+    """On Windows, KRaft metadata snapshots are written read-only; when Kafka later supersedes one it renames
+    it to *.checkpoint.deleted but cannot delete it (AccessDeniedException), and the next start aborts in
+    KafkaMetadataLog.recoverSnapshots (seen 2026-11-12). Clear the read-only flag on files Kafka itself has
+    already marked as deleted so it can finish removing them. Live snapshots are not touched."""
+    import glob
+    import stat
+    for f in glob.glob(os.path.join(DATA, "__cluster_metadata-0", "*.deleted")):
+        try:
+            os.chmod(f, stat.S_IWRITE | stat.S_IREAD)
+        except OSError:
+            pass
+
+
 def start():
     if is_up():
         print("kafka already running at", BOOTSTRAP)
         return
+    _release_deleted_snapshots()
     cfg = _config()
     env = _env()
     if not os.path.exists(os.path.join(DATA, "meta.properties")):

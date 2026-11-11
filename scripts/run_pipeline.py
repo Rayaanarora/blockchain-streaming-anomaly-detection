@@ -4,6 +4,7 @@ One command for the whole streaming demo: Kafka -> Spark Structured Streaming ->
     .venv\\Scripts\\python.exe scripts\\run_pipeline.py
 
 What it does, in order:
+  0. starts Apache Superset in WSL in the background (the console's charts; skip with --no-superset)
   1. starts the local Kafka broker (if it is not already running)
   2. creates a fresh topic and run directory (data\\streaming\\run_<timestamp>), so every run starts clean
   3. starts the Spark streaming consumer and waits until it is processing
@@ -82,6 +83,30 @@ def _api_up(port):
         return False
 
 
+SUPERSET_URL = "http://127.0.0.1:8088"
+# repository path as seen from the Ubuntu WSL distribution that hosts Superset (D:\x\y -> /mnt/d/x/y)
+WSL_ROOT = "/mnt/" + ROOT[0].lower() + ROOT[2:].replace("\\", "/")
+
+
+def _superset_up():
+    try:
+        return urllib.request.urlopen(f"{SUPERSET_URL}/health", timeout=2).status == 200
+    except Exception:
+        return False
+
+
+def _start_superset():
+    """Start Superset (docs/BI_SUPERSET.md) inside WSL without waiting; returns the launcher process."""
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    return subprocess.Popen(["wsl.exe", "-d", "Ubuntu", "--", "bash", f"{WSL_ROOT}/scripts/bi/start_superset.sh", "--log"],
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=flags)
+
+
+def _stop_superset():
+    subprocess.run(["wsl.exe", "-d", "Ubuntu", "--", "bash", f"{WSL_ROOT}/scripts/bi/stop_bi.sh"],
+                   capture_output=True, timeout=60)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--elliptic-steps", type=int, nargs="+", default=[42, 43], help="Elliptic time steps to replay")
@@ -92,6 +117,8 @@ def main():
     ap.add_argument("--no-browser", action="store_true")
     ap.add_argument("--keep-kafka", action="store_true", help="leave the broker running on exit")
     ap.add_argument("--exit-when-done", action="store_true", help="shut down once every event is scored")
+    ap.add_argument("--no-superset", action="store_true", help="do not start the Superset charts (saves ~1 GB RAM)")
+    ap.add_argument("--keep-superset", action="store_true", help="leave Superset running on exit")
     args = ap.parse_args()
 
     stamp = time.strftime("%Y%m%d_%H%M%S")
@@ -101,10 +128,22 @@ def main():
     url = f"http://127.0.0.1:{args.port}/?run={run_name}"
     consumer = api = None
     producers = []
-    kafka_started = False
+    kafka_started = superset_started = False
     grace = 20  # after Ctrl+C the children received it too; give Spark time to stop cleanly
 
     try:
+        # 0. Superset charts: start in the background now, it is ready by the time the dashboard opens
+        if args.no_superset:
+            _say("Superset charts skipped (--no-superset)")
+        elif _superset_up():
+            _say("Superset already running")
+        elif os.path.exists(os.path.join(ROOT, "data", "bi", "embed.json")):
+            _say("starting Superset in WSL (charts) ...")
+            superset_started = True
+            _start_superset()
+        else:
+            _say("Superset dashboards not built yet (docs/BI_SUPERSET.md); continuing without charts")
+
         # 1. Kafka
         if local_kafka.is_up():
             _say("Kafka already running")
@@ -144,6 +183,12 @@ def main():
                 if _api_up(args.port):
                     break
                 time.sleep(1)
+        if superset_started:
+            deadline = time.time() + 180
+            while not _superset_up() and time.time() < deadline:
+                time.sleep(2)
+            _say("Superset ready: " + SUPERSET_URL if _superset_up() else
+                 "Superset did not start within 180 s (see data\\bi\\logs\\superset.log); charts will show an error")
         _say(f"dashboard: {url}")
         if not args.no_browser:
             webbrowser.open(url)
@@ -203,6 +248,11 @@ def main():
                 local_kafka.stop()
             except Exception as e:  # noqa: BLE001
                 _say(f"could not stop Kafka cleanly: {e}")
+        if superset_started and not args.keep_superset:
+            try:
+                _stop_superset()
+            except Exception as e:  # noqa: BLE001
+                _say(f"could not stop Superset cleanly: {e}")
         _say(f"results kept in data\\streaming\\{run_name}")
 
 

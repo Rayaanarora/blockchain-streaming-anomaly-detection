@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 STREAM_ROOT = os.path.join(ROOT, "data", "streaming")
@@ -251,6 +252,30 @@ def create_app(run_dir: Optional[str] = None) -> FastAPI:
         """Offline evaluation tables (notebooks 01-04) for the model-evaluation view."""
         from src.api.analytics import offline_results
         return offline_results()
+
+    @app.get("/api/bi/config")
+    def bi_config():
+        """Embedded Superset dashboards (data/bi/embed.json) and whether Superset is reachable."""
+        from src.api.bi import SupersetEmbedder
+        state.setdefault("bi", SupersetEmbedder())
+        return state["bi"].config()
+
+    @app.post("/api/bi/guest-token")
+    def bi_guest_token(dashboard: str = Query(..., pattern=r"^[a-z]{2,20}$"), run: Optional[str] = None):
+        """Short-lived Superset guest token for one embedded dashboard; streaming charts are limited to `run`."""
+        from src.api.bi import SupersetEmbedder
+        state.setdefault("bi", SupersetEmbedder())
+        try:
+            return state["bi"].guest_token(dashboard, run)
+        except KeyError:
+            raise HTTPException(404, f"unknown dashboard '{dashboard}'")
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        except Exception as e:  # Superset down or misconfigured: report, never leak credentials
+            log.warning("guest token failed: %s", type(e).__name__)
+            raise HTTPException(502, f"Superset unavailable ({type(e).__name__})")
+
+    app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
     @app.post("/api/score")
     def score(events: List[dict] = Body(..., max_length=5000)):

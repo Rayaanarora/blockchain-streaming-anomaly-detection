@@ -40,3 +40,6 @@ results_fresh/
 results/logs/
 results/preprocessing/zenodo_slice_*.txt
 *_outputs.zip
+
+# BI layer: generated gold tables and logs (rebuild with scripts/build_bi_gold.py)
+data/bi/

@@ -1,0 +1,77 @@
+"""
+Axis titles and descriptions for every BSAD Superset chart (applied by build_dashboards.py).
+
+title -> (x-axis title, y-axis title, description). Axis titles are None for chart types without axes
+(big number, pie, Sankey, funnel, gauge, treemap, sunburst, radar, table); their description says what
+every value, colour and size means. Units are always stated.
+"""
+L = {
+    # ------------------------------------------------------------------ Live pipeline
+    "Events scored (run total)": (None, None, "Total events the Spark consumer scored in the selected run (both datasets)."),
+    "Flagged (run total)": (None, None, "Total events in the selected run whose score is at or above their model's decision threshold (Elliptic 0.37, Zenodo 0.6707)."),
+    "p95 end-to-end latency (ms)": (None, None, "Largest per-micro-batch 95th-percentile latency, in milliseconds, from producer send to the prediction row being written to Parquet. Elliptic events wait until their whole time-step snapshot has arrived, so they dominate this value."),
+    "Dead-lettered": (None, None, "Malformed or schema-invalid Kafka messages routed to the dead-letter queue instead of being scored."),
+    "Throughput by dataset (events per 5 s)": ("Scoring time (UTC, 5-second buckets)", "Events scored per 5 s", "Stacked area: events scored in each 5-second bucket, coloured by source dataset (Elliptic blue, Zenodo orange). Elliptic arrives in bursts because a snapshot is scored only once complete."),
+    "Routing: dataset → status → decision": (None, None, "Sankey diagram. Left: source dataset; middle: scoring status (scored, skipped_coinbase, …); right: decision (flagged / not flagged). Band width = number of events."),
+    "Micro-batch latency p50 / p95 (ms)": ("Micro-batch processing time (UTC)", "End-to-end latency (ms)", "Per Spark micro-batch: median (p50) and 95th-percentile (p95) latency from producer send to Parquet write, in milliseconds."),
+    "End-to-end latency by dataset (per micro-batch)": ("Source dataset", "Mean end-to-end latency per micro-batch (ms)", "Box plot over micro-batches: box = interquartile range, line = median, whiskers = 1.5 × IQR (Tukey), dots = outlier batches."),
+    "Events per Kafka partition (rows) × micro-batch (columns)": ("Spark micro-batch id", "Kafka partition", "Heatmap: number of events read from each Kafka partition (rows) in each micro-batch (columns). Darker blue = more events."),
+    "Rows written per micro-batch": ("Spark micro-batch id", "Rows", "Per micro-batch: prediction rows written to Parquet vs Elliptic rows held back until their time-step snapshot is complete (graph context)."),
+    "Live Elliptic scores: flagged vs not (threshold 0.37)": ("Illicit probability (model score, 0-1)", "Number of events", "Histogram (40 bins) of the served model's scores for this run's Elliptic events, split by decision. Scores ≥ 0.37 are flagged."),
+    "Latest flagged events": (None, None, "Most recent flagged events of the run, newest first. score = model output; threshold = model's decision threshold; time_step = Elliptic snapshot (blank for Zenodo); reason_codes = Zenodo robust-z explanations."),
+    "Pipeline runs": (None, None, "One row per streaming run: total events, flagged, events per dataset and the Elliptic model version that scored them."),
+    # ------------------------------------------------------------------ Detection quality
+    "Confusion matrix: actual (rows) × predicted (columns), test steps 35-49": ("Predicted class", "Actual class", "Served TGAT-BoostNet 4.0.0 on the 16,670 labelled test transactions. Rows = actual class, columns = predicted class; each cell shows the count and its share of all transactions. Darker = more."),
+    "Served 4.0.0 vs previous 3.0.0": (None, None, "Radar: each spoke is one test metric on steps 35-49 (0 at the centre, 1 at the rim). Blue = served TGAT-BoostNet 4.0.0, grey = previous GAT-BoostNet 3.0.0."),
+    "Served 4.0.0 test F1 (illicit, steps 35-49)": (None, None, "Gauge: illicit-class F1 of the served bundle 4.0.0 (CPU) on test steps 35-49, scale 0-1."),
+    "Score distribution by true class (share of each class per bin)": ("Illicit probability (bin centre, 0-1)", "Share of the class in this bin", "Served-model scores on the 16,670 labelled test transactions: for each score bin, the fraction of all illicit (red) and of all licit (grey) transactions that fall in it. Each class sums to 1, so the rare illicit class stays visible."),
+    "Threshold sweep (served model, test steps)": ("Decision threshold", "Metric value (0-1)", "Precision, recall and F1 of the served model if the decision threshold were moved from 0.05 to 0.95. The served threshold is 0.37 (chosen on validation steps 30-34, not on test)."),
+    "Precision / recall / F1 per test step": ("Elliptic time step (test 35-49)", "Metric value (0-1)", "Served model, one point per test time step. All three collapse after step 43 (the known distribution shift)."),
+    "From test set to caught": (None, None, "Funnel: all labelled test transactions → those actually illicit → illicit ones the served model flagged (true positives). Percentages are relative to the first stage."),
+    "Live outcomes by time step (stream ⨝ labels)": (None, None, "Sunburst: inner ring = Elliptic time step streamed in this run; outer ring = outcome after joining ground truth (TP caught illicit, FN missed illicit, FP false alarm, TN correct licit). Unknown-label transactions excluded."),
+    "Live outcome share": (None, None, "Share of this run's labelled Elliptic predictions by outcome: TP (illicit, flagged), FN (illicit, missed), FP (licit, flagged), TN (licit, not flagged)."),
+    "Live score distribution by true class": ("Illicit probability (model score, 0-1)", "Share of class (normalised)", "Normalised histograms of this run's Elliptic scores for actually-illicit vs actually-licit transactions."),
+    "Illicit transactions per test step: caught vs missed": ("Elliptic time step (test 35-49)", "Illicit transactions", "Stacked: illicit transactions the served model caught (TP) and missed (FN) in each test step."),
+    "Export checks (bundle 4.0.0)": (None, None, "Reproduction gates that bundle 4.0.0 had to pass before being served (data/validation/tgat_boostnet_bundle/reproduction.json)."),
+    # ------------------------------------------------------------------ Model comparison
+    "F1 vs PR-AUC, untuned, 5-seed mean (bubble = throughput tx/s)": ("PR-AUC (average precision)", "Illicit F1", "Each bubble is a model (notebook 03, untuned, 5-seed mean on test steps 35-49). Colour = model family; bubble size = inference throughput in transactions per second."),
+    "Illicit F1 leaderboard, untuned (notebook 03, 5-seed mean)": ("Model", "Illicit F1 (5-seed mean)", "Untuned models at threshold 0.5, mean over seeds 42, 123, 456, 789, 2024. TGAT-BoostNet here is the a-priori configuration (tuned results: 'Tuning effect' chart)."),
+    "F1 per model (rows) × test step (columns), untuned, 5-seed mean": ("Elliptic test time step", "Model", "Heatmap of illicit F1 per model (rows) and test step (columns), colour scale 0-1. The dark band from step 43 is the distribution shift that breaks every model."),
+    "Precision-recall curves (seed 42)": ("Recall", "Precision", "Precision-recall curve of each model's seed-42 test probabilities (steps 35-49). Higher and further right is better; area = PR-AUC."),
+    "ROC curves (seed 42)": ("False-positive rate", "True-positive rate", "ROC curve of each model's seed-42 test probabilities. The diagonal would be a random classifier; area = ROC-AUC."),
+    "Six metrics, six models (untuned, 5-seed mean)": (None, None, "Radar: each spoke is one metric (precision, recall, F1, MCC, ROC-AUC, PR-AUC) from 0 (centre) to 1 (rim); one polygon per model."),
+    "Spread of per-step F1, steps 35-49 (untuned)": ("Model", "Illicit F1 per test step", "Box plot over the 15 test steps: box = interquartile range of per-step F1, line = median, whiskers = min and max."),
+    "Tuning effect: untuned vs tuned F1 (notebook 04, 5 seeds)": ("Model family", "Illicit F1 (5-seed mean)", "Grey = untuned (threshold 0.5), blue = tuned on fit 1-29 / validation 30-34 and tested once on 35-49. Tuned LightGBM (0.821) is above tuned TGAT-BoostNet (0.810)."),
+    "Calibration, seed 42 (predicted vs observed illicit rate)": ("Predicted probability (bin centre, 0.1-wide bins)", "Observed illicit rate", "Reliability curve: for each bin of predicted probability, the fraction of transactions that are actually illicit. A perfectly calibrated model lies on the diagonal."),
+    "F1 vs inference latency (median ms per test snapshot, log)": ("Median latency per test snapshot, ms (log scale; ~4.5k tx per snapshot)", "Illicit F1 (5-seed mean)", "Accuracy against cost: one bubble per model, colour = model family, size = serialised model size (kB). Up and to the left is better."),
+    "ΔF1 of TGAT-BoostNet (a-priori) vs each baseline (bootstrap)": ("Baseline model", "ΔF1 = TGAT-BoostNet − baseline", "Paired bootstrap difference in illicit F1 on the test steps (notebook 03). Negative = the baseline is better; see the table in notebook 03 for 95 % intervals and Holm-corrected p-values."),
+    "Ablations: ΔF1 vs the a-priori configuration": ("Variant", "ΔF1 = variant − a-priori TGAT-BoostNet", "Each bar changes one design choice of the a-priori TGAT-BoostNet (4 heads, dim 32, w = 4.32). Positive = the variant scores higher."),
+    "Model size by family (kB)": (None, None, "Treemap: area = serialised model size in kB; outer boxes = model family, inner boxes = individual models."),
+    "Reproduced vs reported in paper": (None, None, "reported_f1_paper = number published by the original authors (reported in paper); reproduced_f1 = this repository's 5-seed reproduction on the same split."),
+    # ------------------------------------------------------------------ Data & preprocessing
+    "Elliptic class balance (203,769 tx)": (None, None, "Share of all Elliptic transactions by label: illicit, licit and unknown (unknown labels stay in the graph but never enter training or metrics)."),
+    "From raw graph to training labels": (None, None, "Funnel of transaction counts: all transactions → labelled → labelled in train steps 1-34 → illicit in train steps 1-34."),
+    "Mean of features f2-f9: illicit vs licit": ("Elliptic feature (anonymised)", "Class mean of the feature value", "Mean of each anonymised local feature over labelled illicit (red) and licit (grey) transactions, on the scale published by Elliptic (no extra scaling)."),
+    "Class composition over the 49 time steps": ("Elliptic time step (train 1-34 | test 35-49)", "Transactions", "Stacked area: transactions per time step by label (illicit, licit, unknown)."),
+    "Illicit share of labelled tx per step": ("Elliptic time step", "Illicit share of labelled transactions", "Fraction of labelled transactions that are illicit in each time step."),
+    "Elliptic graph size per time step (nodes, edges)": ("Elliptic time step", "Count", "Transactions (nodes) and payment-flow edges in each time-step graph. Edges never cross time steps."),
+    "Degree distribution by class": ("Node degree, in + out edges (bucket)", "Transactions (log scale)", "Number of transactions per degree bucket, by label."),
+    "Feature space f2 × f3 (15 % labelled sample, size = degree)": ("Feature f2 (Elliptic scale)", "Feature f3 (Elliptic scale)", "Each dot is one labelled transaction from a 15 % random sample; colour = label, size = node degree."),
+    "Top-20 features by mean |SHAP|": ("Feature", "Mean |SHAP value|", "Global feature importance of the booster: mean absolute SHAP contribution over test transactions (gat_* = the 32 learned GAT embedding dimensions)."),
+    "Top-20 features by mean |SHAP| (TGAT-BoostNet a-priori, seed 42)": ("Feature", "Mean |SHAP value|", "Global feature importance of the TGAT-BoostNet booster (a-priori config, seed 42): mean absolute SHAP contribution over test transactions (gat_* = the 32 learned GAT embedding dimensions)."),
+    "Spark Elliptic preprocessing: throughput vs input size": ("Transactions processed (prefix of the dataset)", "Spark throughput (transactions / s)", "Spark Elliptic preprocessing run on growing prefixes of the time steps (12, 24, 36, 49); one point per run."),
+    "TGAT-BoostNet (a-priori) before vs after the step-43 shift": ("Metric", "Value (mean over 5 seeds)", "Precision, recall and F1 of the a-priori TGAT-BoostNet on test steps 35-42 vs 43-49 (notebook 02)."),
+    "Learning curve, TGAT-BoostNet a-priori (test F1, 5-seed mean)": ("Last training time step", "Test score (0-1)", "Test F1 and PR-AUC on steps 35-49 when training only on steps 1…k (notebook 02, mean of 5 seeds)."),
+    # ------------------------------------------------------------------ Zenodo
+    "Transactions scored": (None, None, "Zenodo transactions scored by the Isolation Forest (coinbase transactions are skipped)."),
+    "Flagged as unusual": (None, None, "Transactions with anomaly score ≥ 0.6707. Unsupervised: 'unusual' relative to the fit window, not evidence of illicit activity."),
+    "Flag rate (per mille)": (None, None, "Flagged transactions per 1,000 scored."),
+    "Anomaly score histogram, 16.9 M tx (log count)": ("Isolation Forest anomaly score (bin centre)", "Transactions (log scale)", "Distribution of the anomaly score over all scored transactions (60 equal-width bins, computed with Spark). The flag threshold is 0.6707."),
+    "Why flagged: reason codes (size = count)": (None, None, "Treemap of the robust-z reason codes attached to flagged transactions: outer box = feature, inner box = direction (high / low). Area = number of flags citing it."),
+    "Flag rate along the chain (per 100 blocks)": ("Block height (100-block buckets)", "Flagged per 1,000 transactions", "Flag rate along blocks 480,000-489,999. A flat line means the detector is stable over time."),
+    "Data quality → scoring → decision": (None, None, "Sankey: data-quality status → scoring status → decision. Band width = number of transactions."),
+    "Score distribution per 1,000-block chunk (0.3 % sample)": ("1,000-block chunk", "Anomaly score", "Box plot per chunk over a ~0.3 % uniform sample: box = interquartile range, line = median, whiskers = 1.5 × IQR, dots = outliers."),
+    "Flag rate per chunk (‰)": ("1,000-block chunk", "Flagged per 1,000 transactions", "Flag rate of each 1,000-block chunk over the full dataset."),
+    "Inputs × outputs: flagged vs typical (log scale)": ("log(1 + number of inputs)", "log(1 + number of outputs)", "Each dot is a transaction: all flagged ones (red) and a 0.3 % sample of the rest (grey). Size = anomaly score."),
+    "Zenodo score deciles: inputs vs new-address share (bubble = flagged count)": ("Mean inputs per transaction (log scale)", "Mean share of never-seen-before addresses", "One bubble per anomaly-score decile (1 = least unusual, 10 = most); size = number of flagged transactions in the decile."),
+}

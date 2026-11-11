@@ -108,6 +108,11 @@ button.ctl:hover { border-color: var(--border-strong); color: var(--text-primary
 .view-head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
 .view-head h2 { font-size: 20px; margin: 0; letter-spacing: -.02em; font-weight: 650; }
 .view-head p { margin: 2px 0 0; color: var(--text-secondary); max-width: 860px; }
+.view-head .bi-meta { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.bi-meta a.ctl { text-decoration: none; }
+.bi-frame { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; min-height: 480px; }
+.bi-frame iframe { display: block; width: 100%; min-height: 480px; height: 1400px; border: 0; background: #13161b; }
+.bi-frame .state { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; min-height: 240px; line-height: 1.5; }
 
 .grid { display: grid; gap: 14px; margin-bottom: 14px; }
 .g-kpi { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
@@ -275,7 +280,8 @@ input[type=range] { accent-color: var(--accent); width: 220px; }
       <a href="#/investigate" data-v="investigate"><svg><use href="#i-search"/></svg>Investigate<span class="count" id="nav-alerts"></span></a>
       <div class="nav-label">Evaluate</div>
       <a href="#/models" data-v="models"><svg><use href="#i-models"/></svg>Model evaluation</a>
-      <a href="#/batch" data-v="batch"><svg><use href="#i-batch"/></svg>Batch &amp; models</a>
+      <a href="#/data" data-v="data"><svg><use href="#i-batch"/></svg>Data &amp; preprocessing</a>
+      <a href="#/batch" data-v="batch"><svg><use href="#i-batch"/></svg>Zenodo anomalies</a>
       <a href="#/log" data-v="log"><svg><use href="#i-log"/></svg>Event log</a>
     </nav>
     <div class="rail-foot" id="rail-foot"><div><span>API</span><span>…</span></div></div>
@@ -296,59 +302,16 @@ input[type=range] { accent-color: var(--accent); width: 220px; }
       <!-- ============================================================ OVERVIEW -->
       <section class="view" id="v-overview">
         <div class="view-head"><div><h2>Pipeline overview</h2>
-          <p>Kafka replay → Spark Structured Streaming → validation &amp; routing → per-dataset model → idempotent Parquet sink. Every value is read from the run's persisted output.</p></div></div>
+          <p>Kafka replay → Spark Structured Streaming → validation &amp; routing → per-dataset model → idempotent Parquet sink. Charts are Apache Superset dashboards reading the run's Parquet output live through DuckDB.</p></div><div class="right bi-meta" id="bi-meta-live"></div></div>
         <div class="card" style="margin-bottom:14px"><div class="card-h"><div><h3>Topology</h3><div class="desc">Live counts per stage for the selected run</div></div><div class="right" id="topo-meta"></div></div>
           <div id="topo" class="topo"><div class="skel" style="height:72px;width:100%"></div></div></div>
-        <div class="grid g-kpi" id="kpis"></div>
-        <div class="grid g-21">
-          <div class="card"><div class="card-h"><div><h3>Event flow</h3><div class="desc">Cumulative transactions scored since the first prediction · Elliptic rises in steps because each snapshot is scored only once complete · ticks mark flagged events</div></div>
-            <div class="right legend" id="flow-legend"></div></div><div class="chart" id="c-flow"></div></div>
-          <div class="card"><div class="card-h"><div><h3>End-to-end latency</h3><div class="desc">Producer send → prediction written, per micro-batch</div></div></div>
-            <div class="chart" id="c-latency"></div>
-            <div class="legend" style="margin-top:6px"><span><i class="line" style="background:var(--series-1)"></i>p50</span><span><i style="background:color-mix(in srgb,var(--series-1) 25%,transparent)"></i>p50–p95</span><span><i style="background:var(--text-muted);border-radius:50%;width:6px;height:6px"></i>max</span></div></div>
-        </div>
-        <div class="grid g-2">
-          <div class="card"><div class="card-h"><div><h3>Spark trigger time breakdown</h3><div class="desc">Where each micro-batch spends its time (StreamingQueryProgress.durationMs)</div></div><div class="right legend" id="trig-legend"></div></div>
-            <div class="chart" id="c-trigger"></div></div>
-          <div class="card"><div class="card-h"><div><h3>Kafka partition progress</h3><div class="desc">Committed end offset per partition after each batch</div></div></div>
-            <div class="chart" id="c-parts"></div></div>
-        </div>
+        <div class="bi-frame" id="bi-live" data-dash="live"><div class="skel" style="height:480px"></div></div>
       </section>
 
       <!-- ============================================================ DETECTION -->
       <section class="view" id="v-detection">
-        <div class="view-head"><div><h2>Detection quality on the stream</h2>
-          <p>Elliptic predictions from this run, compared with ground truth after scoring. Zenodo has no labels, so it is shown as an unsupervised score distribution.</p></div></div>
-        <div class="note" style="margin-bottom:14px"><svg><use href="#i-info"/></svg><span id="label-note">Ground-truth labels are joined at display time from <span class="mono">elliptic_txs_classes.csv</span>; the scorer never receives them. Unknown-label transactions are excluded from every metric.</span></div>
-        <div class="grid g-kpi" id="det-kpis"></div>
-        <div class="card" style="margin-bottom:14px"><div class="card-h"><div><h3>Score distribution per snapshot, split by ground truth</h3>
-          <div class="desc">Illicit above the axis, licit below (√ count scale shared across snapshots) · dashed line = served decision threshold</div></div>
-          <div class="right legend"><span><i style="background:var(--illicit)"></i>illicit</span><span><i style="background:var(--licit)"></i>licit</span></div></div>
-          <div class="chart" id="c-mirror"></div></div>
-        <div class="grid g-12">
-          <div class="card"><div class="card-h"><div><h3>Per-snapshot metrics</h3><div class="desc">At the served threshold</div></div></div>
-            <div class="chart" id="c-stepmetrics"></div>
-            <div class="legend" style="margin-top:6px"><span><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="var(--series-1)"/></svg>precision</span><span><svg width="10" height="10"><rect x="1" y="1" width="8" height="8" fill="var(--series-2)"/></svg>recall</span><span><svg width="10" height="10"><path d="M5 0 10 10H0Z" fill="var(--text-primary)"/></svg>F1</span></div>
-            <div class="tw" style="margin-top:10px" id="t-steps"></div></div>
-          <div class="card"><div class="card-h"><div><h3>Threshold explorer</h3><div class="desc">Recomputed in the browser from this run's labelled scores · hollow marker = served threshold</div></div>
-            <div class="right"><select class="sel" id="te-step" aria-label="Snapshot"></select></div></div>
-            <div class="range" style="margin-bottom:10px"><label for="te-thr" class="muted" style="font-size:12px;color:var(--text-secondary)">Threshold</label><input type="range" id="te-thr" min="0.01" max="0.99" step="0.01"><b class="mono" id="te-thr-v"></b>
-              <button class="ctl" id="te-reset" style="height:28px">Reset to served</button></div>
-            <div class="readout" id="te-readout"></div>
-            <div class="grid g-2" style="margin:12px 0 0">
-              <div><div class="desc" style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Precision–recall curve</div><div class="chart" id="c-pr"></div></div>
-              <div><div class="desc" style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Metrics vs threshold</div><div class="chart" id="c-thr"></div>
-                <div class="legend" style="margin-top:4px"><span><i class="line" style="background:var(--series-1)"></i>precision</span><span><i class="line" style="background:var(--series-2)"></i>recall</span><span><i class="line" style="background:var(--text-primary)"></i>F1</span></div></div>
-            </div>
-            <div id="te-cm" style="margin-top:12px"></div>
-          </div>
-        </div>
-        <div class="grid g-2">
-          <div class="card"><div class="card-h"><div><h3>Zenodo anomaly score — upper tail</h3><div class="desc">Share of streamed transactions scoring at least x (log scale) · Isolation Forest, not a probability</div></div></div>
-            <div class="chart" id="c-survival"></div></div>
-          <div class="card"><div class="card-h"><div><h3>What drives high Zenodo scores</h3><div class="desc" id="reason-scope">Reason codes of the highest-scoring transactions</div></div></div>
-            <div class="chart" id="c-reasons"></div></div>
-        </div>
+        <div class="view-head"><div><h2>Detection quality</h2><p>Served model TGAT-BoostNet 4.0.0 on Elliptic test steps 35–49, and this run's live outcomes joined to ground truth after scoring (labels never reach the scorer).</p></div><div class="right bi-meta" id="bi-meta-detect"></div></div>
+        <div class="bi-frame" id="bi-detect" data-dash="detect"><div class="skel" style="height:480px"></div></div>
       </section>
 
       <!-- ============================================================ INVESTIGATE -->
@@ -365,55 +328,20 @@ input[type=range] { accent-color: var(--accent); width: 220px; }
 
       <!-- ============================================================ MODELS -->
       <section class="view" id="v-models">
-        <div class="view-head"><div><h2>Model evaluation</h2>
-          <p>Elliptic temporal split: train steps 1–34, test 35–49, illicit = positive class, 5 seeds, all numbers reproduced by this repository's runs (notebooks 02–04). TGAT-BoostNet is highlighted.</p></div></div>
-        <div class="grid g-kpi" id="m-kpis"></div>
-        <div class="grid g-2">
-          <div class="card"><div class="card-h"><div><h3>Precision vs recall, with iso-F1 contours</h3><div class="desc">Each point is a model's 5-seed mean on test steps 35–49</div></div>
-            <div class="right legend"><span><i style="background:var(--series-1);border-radius:50%"></i>TGAT-BoostNet</span><span><i style="background:var(--licit);border-radius:50%"></i>other models</span></div></div>
-            <div class="chart" id="c-prscatter"></div></div>
-          <div class="card"><div class="card-h"><div><h3>Leaderboard</h3><div class="desc">Mean ± 1 sd over 5 seeds</div></div>
-            <div class="right"><div class="seg" id="lb-metric"><button aria-pressed="true" data-v="f1">F1</button><button aria-pressed="false" data-v="pr_auc">PR-AUC</button><button aria-pressed="false" data-v="mcc">MCC</button><button aria-pressed="false" data-v="roc_auc">ROC-AUC</button></div></div></div>
-            <div class="chart" id="c-forest"></div></div>
-        </div>
-        <div class="card" style="margin-bottom:14px"><div class="card-h"><div><h3>F1 per test time step</h3><div class="desc">Rows sorted by mean F1 · the dark-market shutdown after step 43 breaks every model</div></div>
-          <div class="right" id="heat-scale"></div></div>
-          <div class="chart" id="c-prev"></div>
-          <div class="chart" id="c-heat"></div></div>
-        <div class="grid g-3">
-          <div class="card"><div class="card-h"><div><h3>Why step 43 fails: concept drift</h3><div class="desc">Mean share of illicit among each test transaction's 10 nearest training neighbours</div></div></div>
-            <div class="chart" id="c-shift"></div><div class="foot">Post-43 illicit transactions look like licit training data, so no classifier trained on 1–34 can separate them. Class imbalance alone does not explain it.</div></div>
-          <div class="card"><div class="card-h"><div><h3>TGAT-BoostNet vs each baseline</h3><div class="desc">ΔF1 (ours − baseline) with 95% paired-bootstrap CI · Holm-corrected</div></div></div>
-            <div class="chart" id="c-sig"></div></div>
-          <div class="card"><div class="card-h"><div><h3>Effect of validation tuning</h3><div class="desc">Untuned (threshold 0.5) → tuned on fit 1–29 / val 30–34</div></div></div>
-            <div class="chart" id="c-tuned"></div></div>
-        </div>
-        <div class="grid g-2">
-          <div class="card"><div class="card-h"><div><h3>Accuracy vs inference cost</h3><div class="desc">F1 against per-snapshot latency (log scale) · line = Pareto frontier</div></div></div>
-            <div class="chart" id="c-pareto"></div></div>
-          <div class="card"><div class="card-h"><div><h3>Reproduced vs reported in paper</h3><div class="desc">Illicit F1 from the original publication vs this repository's 5-seed reproduction</div></div>
-            <div class="right legend"><span><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"/></svg>reported in paper</span><span><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="var(--series-1)"/></svg>reproduced</span></div></div>
-            <div class="chart" id="c-rvr"></div></div>
-        </div>
-        <div class="card"><div class="card-h"><div><h3>Ablation</h3><div class="desc">ΔF1 relative to the full a-priori TGAT-BoostNet (4 heads, dim 32, w = 4.32) · ± 1 sd</div></div></div>
-          <div class="chart" id="c-abl"></div></div>
+        <div class="view-head"><div><h2>Model evaluation</h2><p>Reproduced results: Elliptic train steps 1–34, test 35–49, illicit = positive, 5 seeds. Charts marked “untuned” use notebook 03’s a-priori TGAT-BoostNet; the tuning chart uses notebook 04.</p></div><div class="right bi-meta" id="bi-meta-models"></div></div>
+        <div class="bi-frame" id="bi-models" data-dash="models"><div class="skel" style="height:480px"></div></div>
       </section>
 
-      <!-- ============================================================ BATCH -->
+      <!-- ============================================================ DATA -->
+      <section class="view" id="v-data">
+        <div class="view-head"><div><h2>Data &amp; preprocessing</h2><p>Elliptic prepared with Apache Spark: class balance, graph structure per time step, feature profiles and Spark scaling.</p></div><div class="right bi-meta" id="bi-meta-data"></div></div>
+        <div class="bi-frame" id="bi-data" data-dash="data"><div class="skel" style="height:480px"></div></div>
+      </section>
+
+      <!-- ============================================================ ZENODO -->
       <section class="view" id="v-batch">
-        <div class="view-head"><div><h2>Batch scoring &amp; served models</h2>
-          <p>Full Zenodo dataset scored offline by Spark-prepared features, and the model bundles the streaming scorer loads.</p></div></div>
-        <div class="grid g-kpi" id="b-kpis"></div>
-        <div class="grid g-2">
-          <div class="card"><div class="card-h"><div><h3>Zenodo score distribution, full dataset</h3><div class="desc">All scored transactions (log count) · dashed line = flag threshold</div></div></div>
-            <div class="chart" id="c-zhist"></div></div>
-          <div class="card"><div class="card-h"><div><h3>Score quantiles per block chunk</h3><div class="desc">Bar p25–p75, whisker p01–p99, tick median, dot p99.9 · stability across 1,000-block chunks</div></div></div>
-            <div class="chart" id="c-chunks"></div></div>
-        </div>
-        <div class="grid g-2">
-          <div class="card"><div class="card-h"><div><h3>Served model bundles</h3><div class="desc">Highest version under artifacts/models/&lt;dataset&gt;/ is loaded by the scorer</div></div></div><div id="model-cards"></div></div>
-          <div class="card"><div class="card-h"><div><h3>Top-ranked Zenodo transactions</h3><div class="desc">Most unusual — not evidence of illicit activity (no labels exist)</div></div></div><div class="tw" id="t-top"></div></div>
-        </div>
+        <div class="view-head"><div><h2>Zenodo anomalies (batch)</h2><p>16.9 M Zenodo transactions scored by Isolation Forest and aggregated with Spark. Unsupervised: a flag means “unusual”, not “illicit”.</p></div><div class="right bi-meta" id="bi-meta-zenodo"></div></div>
+        <div class="bi-frame" id="bi-zenodo" data-dash="zenodo"><div class="skel" style="height:480px"></div></div>
       </section>
 
       <!-- ============================================================ LOG -->
@@ -432,6 +360,7 @@ input[type=range] { accent-color: var(--accent); width: 220px; }
 </div>
 <div class="tip" id="tip" hidden></div>
 
+<script src="/static/vendor/superset-embedded-sdk-0.4.0.js"></script>
 <script>
 "use strict";
 /* ================================================================== utilities */
@@ -529,373 +458,6 @@ function renderTopology() {
     `<div class="tstack">${md("elliptic")}${md("zenodo")}</div>` + link +
     node("Sink", "Parquet (idempotent)", `<b>${fmt(s.predictions_total)}</b> predictions · <b>${fmt(s.errors_total || 0)}</b> errors`);
   $("#topo-meta").innerHTML = info.spark_version ? `<span class="pill">Spark ${esc(info.spark_version)}</span><span class="pill">started ${esc((info.started_utc || "").replace("T", " ").replace("Z", " UTC"))}</span>` : "";
-}
-
-function spark(values, color = "var(--series-1)") {
-  const v = values.filter(x => x != null && isFinite(x));
-  if (v.length < 2) return `<svg class="spark" aria-hidden="true"></svg>`;
-  const W = 200, H = 30, max = Math.max(...v), min = Math.min(0, ...v);
-  const x = i => i / (v.length - 1) * W, y = d => H - 2 - (d - min) / ((max - min) || 1) * (H - 4);
-  const pts = v.map((d, i) => `${x(i).toFixed(1)},${y(d).toFixed(1)}`).join(" ");
-  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,${H} ${pts} ${W},${H}" fill="${color}" opacity=".12"/><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
-}
-
-function renderKpis() {
-  const s = S.data.summary || {}, b = S.data.batches || {batches: [], progress: []};
-  const bt = b.batches || [], pr = (b.progress || []).filter(p => p.num_input_rows);
-  if (!s.predictions_total && !s.dead_letter_total) { $("#kpis").innerHTML = `<div class="card">${empty("No predictions in this run yet. Start the pipeline with scripts\\run_pipeline.py.")}</div>`; return; }
-  const by = s.by_dataset || {}, flagged = Object.values(by).reduce((a, d) => a + d.flagged, 0), scored = Object.values(by).reduce((a, d) => a + d.scored, 0);
-  const k = [
-    ["Transactions scored", compact(scored), "", `${fmt(s.batches)} micro-batches`, spark(bt.map(x => x.results_written))],
-    ["Flagged", fmt(flagged), "", `${pct(flagged / (scored || 1), 2)} of scored · ${Object.entries(by).map(([d, v]) => `${DS_NAME[d] || d} ${fmt(v.flagged)}`).join(" · ")}`, spark(bt.map(x => x.flagged), "var(--illicit)")],
-    ["E2E latency p50", s.e2e_latency_ms ? fmt(s.e2e_latency_ms.p50 / 1000, 2) : "—", "s", s.e2e_latency_ms ? `p95 ${fmt(s.e2e_latency_ms.p95 / 1000, 2)} s · max ${fmt(s.e2e_latency_ms.max / 1000, 1)} s` : "", spark(bt.map(x => x.e2e_latency_ms_p50))],
-    ["Throughput", s.throughput && s.throughput.rows_per_second_over_run ? fmt(s.throughput.rows_per_second_over_run, 0) : "—", "tx/s", `Spark median ${fmt(s.spark_processed_rows_per_second_median, 0)} rows/s`, spark(pr.map(x => x.processed_rows_per_second))],
-    ["Dead-lettered", fmt(s.dead_letter_total), "", "malformed / schema-invalid", ""],
-    ["Duplicates dropped", fmt((s.duplicates_dropped_streaming || 0) + (s.duplicates_dropped_at_sink || 0)), "", `watermark ${fmt(s.duplicates_dropped_streaming)} · sink ${fmt(s.duplicates_dropped_at_sink)}`, ""],
-  ];
-  $("#kpis").innerHTML = k.map(([l, v, u, n, sp]) => `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}${u ? `<small>${u}</small>` : ""}</div><div class="n">${esc(n)}</div>${sp}</div>`).join("");
-}
-
-function renderFlow() {
-  const a = S.data.analytics || {}, flow = a.flow || {};
-  const dss = Object.keys(flow);
-  $("#flow-legend").innerHTML = dss.map(d => `<span><i class="line" style="background:${DS_COLOR[d]}"></i>${DS_NAME[d] || d}</span>`).join("") + (dss.length ? `<span><svg width="10" height="10"><path d="M5 1v8" stroke="var(--illicit)" stroke-width="2"/></svg>flagged</span>` : "");
-  mount("#c-flow", (el, W) => {
-    if (!dss.length) { el.innerHTML = empty("No scored events yet."); return; }
-    const H = 250, m = {l: 48, r: 70, t: 10, b: 50};
-    const tMax = Math.max(...dss.map(d => flow[d].t[flow[d].t.length - 1] || 0), 1);
-    const yMax = niceMax(Math.max(...dss.map(d => flow[d].scored[flow[d].scored.length - 1] || 0)));
-    const x = lin(0, tMax, m.l, W - m.r), y = lin(0, yMax, H - m.b, m.t);
-    let s = svgOpen(W, H, "Cumulative scored transactions over time") + yAxis(y, ticks(0, yMax, 4), m.l, W - m.r);
-    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)"/>`;
-    s += xLabels(x, ticks(0, tMax, 6), H - m.b, v => fmt(v) + "s");
-    for (const d of dss) {
-      const f = flow[d], pts = f.t.map((t, i) => `${x(t).toFixed(1)},${y(f.scored[i]).toFixed(1)}`);
-      s += `<polyline points="${m.l},${H - m.b} ${pts.join(" ")}" fill="none" stroke="${DS_COLOR[d]}" stroke-width="2" stroke-linejoin="round"/>`;
-      const li = f.t.length - 1; s += `<circle cx="${x(f.t[li])}" cy="${y(f.scored[li])}" r="4" fill="${DS_COLOR[d]}" stroke="var(--surface-1)" stroke-width="2"/>`;
-      s += `<text class="strong" x="${x(f.t[li]) + 8}" y="${y(f.scored[li]) + 4}">${DS_NAME[d]} ${compact(f.scored[li])}</text>`;
-    }
-    // flagged rug, one lane per dataset
-    const lanes = {}; dss.forEach((d, i) => lanes[d] = H - m.b + 24 + i * 9);
-    for (const e of (a.flag_events || [])) if (lanes[e.ds] != null) s += `<line x1="${x(e.t)}" x2="${x(e.t)}" y1="${lanes[e.ds] - 3}" y2="${lanes[e.ds] + 3}" stroke="var(--illicit)" stroke-width="1.5" opacity=".75"/>`;
-    s += `<line class="xh" y1="${m.t}" y2="${H - m.b}" stroke="var(--axis)" visibility="hidden"/><rect class="ov" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - 6}" fill="transparent"/></svg>`;
-    el.innerHTML = s;
-    const svg = el.querySelector("svg"), xh = el.querySelector(".xh");
-    el.querySelector(".ov").addEventListener("mousemove", ev => {
-      const r = svg.getBoundingClientRect(), t = x.inv(ev.clientX - r.left);
-      xh.setAttribute("x1", x(t)); xh.setAttribute("x2", x(t)); xh.setAttribute("visibility", "visible");
-      let html = `<div class="th">t = ${fmt(t, 1)} s</div>`;
-      for (const d of dss) { const f = flow[d]; let i = f.t.findIndex(v => v > t); i = i < 0 ? f.t.length - 1 : Math.max(0, i - 1);
-        html += tipRow(DS_NAME[d] + " scored", fmt(t < f.t[0] ? 0 : f.scored[i]), DS_COLOR[d]) + tipRow(DS_NAME[d] + " flagged", fmt(t < f.t[0] ? 0 : f.flagged[i])); }
-      showTip(ev, html);
-    });
-    el.querySelector(".ov").addEventListener("mouseleave", () => { hideTip(); xh.setAttribute("visibility", "hidden"); });
-  });
-}
-
-function renderLatency() {
-  const bt = ((S.data.batches || {}).batches || []).filter(b => b.e2e_latency_ms_p50 != null);
-  mount("#c-latency", (el, W) => {
-    if (!bt.length) { el.innerHTML = empty("No scored batches yet."); return; }
-    const H = 232, m = {l: 44, r: 12, t: 10, b: 28};
-    const xs = bt.map(b => b.batch_id), x0 = Math.min(...xs), x1 = Math.max(...xs, x0 + 1);
-    const ymax = niceMax(Math.max(...bt.map(b => b.e2e_latency_ms_p95 || b.e2e_latency_ms_p50)) / 1000);
-    const x = lin(x0, x1, m.l, W - m.r), y = lin(0, ymax, H - m.b, m.t);
-    let s = svgOpen(W, H, "Latency per batch") + yAxis(y, ticks(0, ymax, 4), m.l, W - m.r, v => fmt(v, v < 10 ? 1 : 0) + "s");
-    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)"/>`;
-    s += xLabels(x, ticks(x0, x1, 5).filter(v => Number.isInteger(v)), H - m.b, v => "#" + v);
-    const up = bt.map(b => `${x(b.batch_id)},${y((b.e2e_latency_ms_p95 || b.e2e_latency_ms_p50) / 1000)}`), lo = bt.map(b => `${x(b.batch_id)},${y(b.e2e_latency_ms_p50 / 1000)}`).reverse();
-    s += `<polygon points="${up.concat(lo).join(" ")}" fill="var(--series-1)" opacity=".2"/>`;
-    s += `<polyline points="${lo.slice().reverse().join(" ")}" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>`;
-    for (const b of bt) if (b.e2e_latency_ms_max != null && b.e2e_latency_ms_max / 1000 <= ymax * 1.0001) s += `<circle cx="${x(b.batch_id)}" cy="${y(b.e2e_latency_ms_max / 1000)}" r="2" fill="var(--text-muted)"/>`;
-    s += `<line class="xh" y1="${m.t}" y2="${H - m.b}" stroke="var(--axis)" visibility="hidden"/><rect class="ov" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/></svg>`;
-    el.innerHTML = s;
-    const svg = el.querySelector("svg"), xh = el.querySelector(".xh");
-    el.querySelector(".ov").addEventListener("mousemove", ev => {
-      const r = svg.getBoundingClientRect(), v = x.inv(ev.clientX - r.left);
-      const b = bt.reduce((a, c) => Math.abs(c.batch_id - v) < Math.abs(a.batch_id - v) ? c : a);
-      xh.setAttribute("x1", x(b.batch_id)); xh.setAttribute("x2", x(b.batch_id)); xh.setAttribute("visibility", "visible");
-      showTip(ev, `<div class="th">Batch #${b.batch_id}</div>${tipRow("p50", fmt(b.e2e_latency_ms_p50 / 1000, 2) + " s", "var(--series-1)")}${tipRow("p95", fmt(b.e2e_latency_ms_p95 / 1000, 2) + " s")}${tipRow("max", fmt(b.e2e_latency_ms_max / 1000, 2) + " s")}${tipRow("rows written", fmt(b.results_written))}`);
-    });
-    el.querySelector(".ov").addEventListener("mouseleave", () => { hideTip(); xh.setAttribute("visibility", "hidden"); });
-  });
-}
-
-const TRIG = [["addBatch", "score + write (addBatch)", "var(--series-1)"], ["queryPlanning", "query planning", "var(--series-2)"],
-              ["latestOffset", "fetch offsets", "var(--series-3)"], ["other", "WAL / commit / getBatch", "var(--series-4)"]];
-function renderTrigger() {
-  const pr = ((S.data.batches || {}).progress || []).filter(p => p.duration_ms);
-  $("#trig-legend").innerHTML = TRIG.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
-  mount("#c-trigger", (el, W) => {
-    if (!pr.length) { el.innerHTML = empty("No StreamingQueryProgress events yet."); return; }
-    const rows = pr.map(p => { const d = p.duration_ms; return {id: p.batch_id, rows: p.num_input_rows, addBatch: d.addBatch || 0, queryPlanning: d.queryPlanning || 0, latestOffset: d.latestOffset || 0,
-      other: (d.walCommit || 0) + (d.commitOffsets || 0) + (d.getBatch || 0), total: d.triggerExecution || 0}; });
-    const H = 230, m = {l: 44, r: 10, t: 10, b: 28};
-    const ymax = niceMax(Math.max(...rows.map(r => r.addBatch + r.queryPlanning + r.latestOffset + r.other)) / 1000);
-    const n = rows.length, bw = (W - m.l - m.r) / n, gap = bw > 6 ? 2 : bw > 3 ? 1 : 0;
-    const y = lin(0, ymax, H - m.b, m.t);
-    let s = svgOpen(W, H, "Trigger duration breakdown per batch") + yAxis(y, ticks(0, ymax, 4), m.l, W - m.r, v => fmt(v, v < 10 ? 1 : 0) + "s");
-    rows.forEach((r, i) => {
-      let acc = 0; const x0 = m.l + i * bw + gap / 2, w = Math.max(bw - gap, 1);
-      TRIG.forEach(([k, , c], j) => { const v = r[k] / 1000; if (v <= 0) return; const y0 = y(acc), y1 = y(acc + v); acc += v;
-        s += `<rect x="${x0}" y="${y1}" width="${w}" height="${Math.max(y0 - y1 - (j < 3 ? 0.5 : 0), 0.5)}" fill="${c}" rx="${j === 3 || acc * 1000 >= r.addBatch + r.queryPlanning + r.latestOffset + r.other - 1 ? Math.min(2, w / 2) : 0}"/>`; });
-      s += `<rect class="hit" data-i="${i}" x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent"/>`;
-    });
-    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)"/>`;
-    const step = Math.max(1, Math.ceil(n / 8));
-    rows.forEach((r, i) => { if (i % step === 0) s += `<text x="${m.l + i * bw + bw / 2}" y="${H - m.b + 16}" text-anchor="middle">#${r.id}</text>`; });
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const r = rows[+h.dataset.i];
-      showTip(ev, `<div class="th">Batch #${r.id} · ${fmt(r.rows)} rows</div>` + TRIG.map(([k, l, c]) => tipRow(l, fmt(r[k]) + " ms", c)).join("") + tipRow("trigger total", fmt(r.total) + " ms")); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-}
-
-function renderPartitions() {
-  const pr = ((S.data.batches || {}).progress || []).filter(p => p.sources && p.sources[0] && p.sources[0].end);
-  mount("#c-parts", (el, W) => {
-    if (!pr.length) { el.innerHTML = empty("No offset progress recorded."); return; }
-    const series = {};
-    pr.forEach(p => { const end = Object.values(p.sources[0].end)[0] || {}; for (const [k, v] of Object.entries(end)) (series[k] = series[k] || []).push({b: p.batch_id, o: v}); });
-    const keys = Object.keys(series).sort((a, b) => +a - +b);
-    const rowH = 66, H = keys.length * rowH + 22, m = {l: 84, r: 64, t: 6};
-    const b0 = Math.min(...pr.map(p => p.batch_id)), b1 = Math.max(...pr.map(p => p.batch_id), b0 + 1);
-    const omax = niceMax(Math.max(...keys.flatMap(k => series[k].map(d => d.o))));
-    const x = lin(b0, b1, m.l, W - m.r);
-    let s = svgOpen(W, H, "Kafka partition end offsets");
-    keys.forEach((k, i) => {
-      const top = m.t + i * rowH, y = lin(0, omax, top + rowH - 16, top + 6), d = series[k];
-      s += `<text class="strong" x="0" y="${top + rowH / 2}">partition ${k}</text>`;
-      s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>`;
-      let path = `M${x(d[0].b)},${y(0)}`; d.forEach((p, j) => { path += ` L${x(p.b)},${y(j ? d[j - 1].o : 0)} L${x(p.b)},${y(p.o)}`; });
-      s += `<path d="${path} L${x(d[d.length - 1].b)},${y(0)} Z" fill="var(--series-1)" opacity=".12"/><path d="${path.replace(/^M[^L]+/, `M${x(d[0].b)},${y(0)}`)}" fill="none" stroke="var(--series-1)" stroke-width="1.75" stroke-linejoin="round"/>`;
-      s += `<text class="ink" x="${W - m.r + 8}" y="${y(d[d.length - 1].o) + 4}">${compact(d[d.length - 1].o)}</text>`;
-      s += `<rect class="hit" data-k="${k}" x="${m.l}" y="${top}" width="${W - m.l - m.r}" height="${rowH}" fill="transparent"/>`;
-    });
-    s += xLabels(x, ticks(b0, b1, 5).filter(Number.isInteger), H - 18, v => "#" + v).replace(/y="[^"]+"/g, `y="${H - 4}"`);
-    el.innerHTML = s + "</svg>";
-    const svg = el.querySelector("svg");
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const r = svg.getBoundingClientRect(), v = x.inv(ev.clientX - r.left), d = series[h.dataset.k];
-      const p = d.reduce((a, c) => Math.abs(c.b - v) < Math.abs(a.b - v) ? c : a); const prev = d[d.indexOf(p) - 1];
-      showTip(ev, `<div class="th">Partition ${h.dataset.k} · batch #${p.b}</div>${tipRow("end offset", fmt(p.o))}${tipRow("consumed this batch", fmt(p.o - (prev ? prev.o : 0)))}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-}
-
-/* ================================================================== DETECTION */
-function renderDetection() {
-  const a = S.data.analytics || {}, e = a.elliptic;
-  if (!e) { for (const id of ["#det-kpis", "#c-mirror", "#c-stepmetrics", "#t-steps", "#te-readout", "#c-pr", "#c-thr", "#te-cm"]) { MOUNTS.delete($(id)); $(id).innerHTML = id === "#det-kpis" ? "" : ""; }
-    $("#c-mirror").innerHTML = empty("No scored Elliptic snapshots in this run."); }
-  else {
-    const o = e.overall;
-    $("#label-note").innerHTML = esc(e.label_note) + (e.labels_available ? "" : " <b>Label file not found: metrics unavailable.</b>");
-    const dk = [["Snapshots streamed", fmt(e.steps.length), e.steps.map(s => s.step).join(", ")],
-      ["Labelled transactions", compact(o.tp + o.fp + o.fn + o.tn), `${fmt(o.tp + o.fn)} illicit`],
-      ["Precision", pct(o.precision), `${fmt(o.tp)} TP · ${fmt(o.fp)} FP`], ["Recall", pct(o.recall), `${fmt(o.fn)} illicit missed`],
-      ["F1 (illicit)", fmt(o.f1, 3), `served threshold ${fmt(e.threshold, 2)} · model v${esc(e.model_version)}`]];
-    $("#det-kpis").innerHTML = dk.map(([l, v, n]) => `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${esc(n)}</div></div>`).join("");
-    renderMirror(e); renderStepMetrics(e); setupExplorer(e);
-  }
-  renderSurvival(a.zenodo); renderReasons(a.zenodo);
-}
-
-function renderMirror(e) {
-  mount("#c-mirror", (el, W) => {
-    const steps = e.steps, edges = e.bin_edges, nb = edges.length - 1;
-    const cols = W > 1100 ? Math.min(steps.length, 4) : W > 700 ? Math.min(steps.length, 3) : W > 460 ? Math.min(steps.length, 2) : 1;
-    const rows = Math.ceil(steps.length / cols), gw = W / cols, ph = 210, m = {l: 40, r: 14, t: 28, b: 24};
-    const vmax = Math.max(1, ...steps.flatMap(s => s.hist.illicit.concat(s.hist.licit)));
-    const H = rows * ph;
-    let s = svgOpen(W, H, "Score distribution per snapshot by ground-truth label");
-    steps.forEach((st, k) => {
-      const ox = (k % cols) * gw, oy = Math.floor(k / cols) * ph;
-      const x = lin(0, 1, ox + m.l, ox + gw - m.r), mid = oy + m.t + (ph - m.t - m.b) / 2, half = (ph - m.t - m.b) / 2;
-      const hy = v => Math.sqrt(v / vmax) * half;
-      s += `<text class="ink" x="${ox + m.l}" y="${oy + 14}">Step ${st.step}</text><text x="${ox + gw - m.r}" y="${oy + 14}" text-anchor="end">F1 ${fmt(st.f1, 3)} · ${fmt(st.illicit)} illicit / ${fmt(st.labelled)}</text>`;
-      for (const f of [0.25, 1]) { const v = f * vmax; s += `<line x1="${ox + m.l}" x2="${ox + gw - m.r}" y1="${mid - hy(v)}" y2="${mid - hy(v)}" stroke="var(--grid)"/><line x1="${ox + m.l}" x2="${ox + gw - m.r}" y1="${mid + hy(v)}" y2="${mid + hy(v)}" stroke="var(--grid)"/>`;
-        if (k % cols === 0) s += `<text x="${ox + m.l - 6}" y="${mid - hy(v) + 4}" text-anchor="end">${compact(v)}</text><text x="${ox + m.l - 6}" y="${mid + hy(v) + 4}" text-anchor="end">${compact(v)}</text>`; }
-      const bw = (x(1) - x(0)) / nb;
-      for (let i = 0; i < nb; i++) {
-        const xi = x(edges[i]) + 0.75, w = Math.max(bw - 1.5, 0.8), ill = st.hist.illicit[i], lic = st.hist.licit[i];
-        if (ill) s += `<rect x="${xi}" y="${mid - hy(ill)}" width="${w}" height="${hy(ill)}" fill="var(--illicit)" rx="${Math.min(1.5, w / 2)}"/>`;
-        if (lic) s += `<rect x="${xi}" y="${mid}" width="${w}" height="${hy(lic)}" fill="var(--licit)" rx="${Math.min(1.5, w / 2)}"/>`;
-        s += `<rect class="hit" data-k="${k}" data-i="${i}" x="${x(edges[i])}" y="${oy + m.t}" width="${bw}" height="${ph - m.t - m.b}" fill="transparent"/>`;
-      }
-      s += `<line x1="${ox + m.l}" x2="${ox + gw - m.r}" y1="${mid}" y2="${mid}" stroke="var(--axis)"/>`;
-      const tx = x(e.threshold); s += `<line x1="${tx}" x2="${tx}" y1="${oy + m.t - 4}" y2="${oy + ph - m.b}" stroke="var(--text-secondary)" stroke-dasharray="4 3" stroke-width="1.25"/>`;
-      for (const v of [0, 0.5, 1]) s += `<text x="${x(v)}" y="${oy + ph - 8}" text-anchor="middle">${v}</text>`;
-    });
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const st = steps[+h.dataset.k], i = +h.dataset.i;
-      showTip(ev, `<div class="th">Step ${st.step} · score ${fmt(edges[i], 3)}–${fmt(edges[i + 1], 3)}</div>${tipRow("illicit", fmt(st.hist.illicit[i]), "var(--illicit)")}${tipRow("licit", fmt(st.hist.licit[i]), "var(--licit)")}${tipRow("unknown label", fmt(st.hist.unknown[i]))}${tipRow("side of threshold", edges[i] >= e.threshold ? "flagged" : "not flagged")}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-}
-
-function renderStepMetrics(e) {
-  mount("#c-stepmetrics", (el, W) => {
-    const st = e.steps, rowH = 30, m = {l: 64, r: 16, t: 8, b: 26}, H = st.length * rowH + m.t + m.b;
-    const x = lin(0, 1, m.l, W - m.r);
-    let s = svgOpen(W, H, "Precision, recall and F1 per snapshot");
-    for (const v of [0, 0.25, 0.5, 0.75, 1]) s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--grid)"/><text x="${x(v)}" y="${H - 8}" text-anchor="middle">${v}</text>`;
-    st.forEach((r, i) => {
-      const cy = m.t + i * rowH + rowH / 2, vals = [r.precision, r.recall, r.f1].filter(v => v != null);
-      s += `<text class="strong" x="0" y="${cy + 4}">Step ${r.step}</text>`;
-      if (vals.length) s += `<line x1="${x(Math.min(...vals))}" x2="${x(Math.max(...vals))}" y1="${cy}" y2="${cy}" stroke="var(--axis)" stroke-width="2"/>`;
-      if (r.precision != null) s += `<circle cx="${x(r.precision)}" cy="${cy}" r="5" fill="var(--series-1)" stroke="var(--surface-1)" stroke-width="2"/>`;
-      if (r.recall != null) s += `<rect x="${x(r.recall) - 4.5}" y="${cy - 4.5}" width="9" height="9" fill="var(--series-2)" stroke="var(--surface-1)" stroke-width="2"/>`;
-      if (r.f1 != null) s += `<path d="M${x(r.f1)} ${cy - 6} L${x(r.f1) + 6} ${cy + 5} L${x(r.f1) - 6} ${cy + 5}Z" fill="var(--text-primary)" stroke="var(--surface-1)" stroke-width="1.5"/>`;
-      s += `<rect class="hit" data-i="${i}" x="0" y="${cy - rowH / 2}" width="${W}" height="${rowH}" fill="transparent"/>`;
-    });
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const r = st[+h.dataset.i];
-      showTip(ev, `<div class="th">Step ${r.step}</div>${tipRow("precision", fmt(r.precision, 3), "var(--series-1)")}${tipRow("recall", fmt(r.recall, 3), "var(--series-2)")}${tipRow("F1", fmt(r.f1, 3))}${tipRow("TP / FP / FN", `${r.tp} / ${r.fp} / ${r.fn}`)}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-  $("#t-steps").innerHTML = `<table><thead><tr><th>Step</th><th class="num">Streamed</th><th class="num">Illicit</th><th class="num">Flagged</th><th class="num">TP</th><th class="num">FP</th><th class="num">FN</th><th class="num">F1</th></tr></thead><tbody>${
-    e.steps.map(r => `<tr><td>${r.step}</td><td class="num">${fmt(r.n)}</td><td class="num">${fmt(r.illicit)}</td><td class="num">${fmt(r.flagged)}</td><td class="num">${r.tp}</td><td class="num">${r.fp}</td><td class="num">${r.fn}</td><td class="num ${r.f1 != null && r.f1 < 0.3 ? "bad-t" : ""}">${fmt(r.f1, 3)}</td></tr>`).join("")}</tbody></table>`;
-}
-
-/* threshold explorer: everything recomputed client-side from the labelled score arrays */
-function prData(score, label) {
-  const idx = score.map((_, i) => i).sort((a, b) => score[b] - score[a]);
-  const P = label.reduce((a, v) => a + (v === 1), 0);
-  let tp = 0, fp = 0, ap = 0, prevR = 0; const curve = [{r: 0, p: 1, t: 1}];
-  for (let k = 0; k < idx.length; k++) {
-    const i = idx[k]; if (label[i] === 1) tp++; else fp++;
-    if (k === idx.length - 1 || score[idx[k + 1]] !== score[i]) { const r = P ? tp / P : 0, p = tp / (tp + fp); ap += (r - prevR) * p; prevR = r; curve.push({r, p, t: score[i]}); }
-  }
-  return {curve, ap, P};
-}
-function counts(score, label, t) { let tp = 0, fp = 0, fn = 0, tn = 0; for (let i = 0; i < score.length; i++) { const f = score[i] >= t; if (label[i] === 1) f ? tp++ : fn++; else f ? fp++ : tn++; }
-  const p = tp + fp ? tp / (tp + fp) : null, r = tp + fn ? tp / (tp + fn) : null, f1 = tp + fp + fn ? 2 * tp / (2 * tp + fp + fn) : null; return {tp, fp, fn, tn, p, r, f1}; }
-
-function setupExplorer(e) {
-  const sel = $("#te-step"), steps = e.steps.map(s => s.step);
-  const want = S.te.step;
-  sel.innerHTML = `<option value="all">All snapshots</option>` + steps.map(s => `<option value="${s}">Step ${s}</option>`).join("");
-  sel.value = steps.includes(+want) ? want : "all"; S.te.step = sel.value;
-  if (S.te.thr == null) S.te.thr = e.threshold;
-  $("#te-thr").value = S.te.thr;
-  updateExplorer();
-}
-function explorerData() {
-  const e = S.data.analytics.elliptic, L = e.labelled, st = S.te.step;
-  if (st === "all") return {score: L.score, label: L.label};
-  const score = [], label = []; for (let i = 0; i < L.score.length; i++) if (L.step[i] === +st) { score.push(L.score[i]); label.push(L.label[i]); }
-  return {score, label};
-}
-function updateExplorer() {
-  const e = S.data.analytics && S.data.analytics.elliptic; if (!e) return;
-  const {score, label} = explorerData(), t = +S.te.thr, served = e.threshold;
-  $("#te-thr-v").textContent = t.toFixed(2);
-  const c = counts(score, label, t), cs = counts(score, label, served), pr = prData(score, label);
-  const delta = (a, b, d = 3) => a == null || b == null ? "" : ` <span style="font-size:11px;font-weight:500;color:${a - b >= 0 ? "var(--good-text)" : "var(--critical-text)"}">${a - b >= 0 ? "+" : ""}${fmt(a - b, d)}</span>`;
-  $("#te-readout").innerHTML = [["Precision", c.p, cs.p], ["Recall", c.r, cs.r], ["F1", c.f1, cs.f1]].map(([l, v, sv]) => `<div><span>${l}</span><b>${fmt(v, 3)}</b>${t !== served ? delta(v, sv) : ""}</div>`).join("") +
-    `<div><span>PR-AUC (AP)</span><b>${fmt(pr.ap, 3)}</b></div>`;
-  const cell = (n, lab, good) => { const tot = score.length || 1; return `<div style="background:color-mix(in srgb, ${good ? "var(--series-1)" : "var(--illicit)"} ${Math.round(8 + 30 * Math.sqrt(n / tot))}%, var(--surface-2));border-radius:8px;padding:10px 12px"><span style="font-size:11px;color:var(--text-secondary)">${lab}</span><div style="font-size:18px;font-weight:650;color:var(--text-primary)" class="num">${fmt(n)}</div></div>`; };
-  $("#te-cm").innerHTML = `<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;font-size:11.5px;color:var(--text-muted)">
-    <span></span><span style="text-align:center">predicted illicit</span><span style="text-align:center">predicted licit</span>
-    <span>actual illicit</span>${cell(c.tp, "true positive", true)}${cell(c.fn, "false negative (missed)", false)}
-    <span>actual licit</span>${cell(c.fp, "false positive (false alarm)", false)}${cell(c.tn, "true negative", true)}</div>`;
-  mount("#c-pr", (el, W) => {
-    if (!pr.P) { el.innerHTML = empty("No illicit transactions in this selection, so precision–recall is undefined."); return; }
-    const H = 230, m = {l: 40, r: 12, t: 8, b: 30}, x = lin(0, 1, m.l, W - m.r), y = lin(0, 1, H - m.b, m.t);
-    let s = svgOpen(W, H, "Precision recall curve") + yAxis(y, [0, 0.25, 0.5, 0.75, 1], m.l, W - m.r, v => v);
-    s += xLabels(x, [0, 0.25, 0.5, 0.75, 1], H - m.b, v => v) + `<text x="${W - m.r}" y="${H - 1}" text-anchor="end">recall</text>`;
-    for (const f of [0.2, 0.4, 0.6, 0.8]) { let d = ""; for (let r = f / (2 - f) + 0.001; r <= 1.0001; r += 0.01) { const p = f * r / (2 * r - f); if (p > 1 || p < 0) continue; d += (d ? "L" : "M") + x(r).toFixed(1) + "," + y(p).toFixed(1); }
-      s += `<path d="${d}" fill="none" stroke="var(--grid)" stroke-width="1"/><text x="${x(1) - 2}" y="${y(f / (2 - f)) - 3}" text-anchor="end" style="font-size:10px">F1=${f}</text>`; }
-    s += `<path d="${pr.curve.map((p, i) => (i ? "L" : "M") + x(p.r).toFixed(1) + "," + y(p.p).toFixed(1)).join("")}" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>`;
-    if (cs.r != null && cs.p != null) s += `<circle cx="${x(cs.r)}" cy="${y(cs.p)}" r="6" fill="var(--surface-1)" stroke="var(--text-primary)" stroke-width="2"/>`;
-    if (c.r != null && c.p != null) s += `<circle cx="${x(c.r)}" cy="${y(c.p)}" r="5" fill="var(--text-primary)" stroke="var(--surface-1)" stroke-width="2"/>`;
-    s += `<rect class="ov" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/>`;
-    el.innerHTML = s + "</svg>";
-    const svg = el.querySelector("svg");
-    el.querySelector(".ov").addEventListener("mousemove", ev => { const r = svg.getBoundingClientRect(), rv = x.inv(ev.clientX - r.left);
-      const p = pr.curve.reduce((a, b) => Math.abs(b.r - rv) < Math.abs(a.r - rv) ? b : a);
-      showTip(ev, `<div class="th">threshold ≥ ${fmt(p.t, 3)}</div>${tipRow("recall", fmt(p.r, 3))}${tipRow("precision", fmt(p.p, 3))}`); });
-    el.querySelector(".ov").addEventListener("mouseleave", hideTip);
-  });
-  mount("#c-thr", (el, W) => {
-    const H = 230, m = {l: 40, r: 12, t: 8, b: 30}, x = lin(0, 1, m.l, W - m.r), y = lin(0, 1, H - m.b, m.t);
-    const ts = []; for (let v = 0.01; v <= 0.991; v += 0.01) ts.push(+v.toFixed(2));
-    const cc = ts.map(v => ({t: v, ...counts(score, label, v)}));
-    let s = svgOpen(W, H, "Precision recall and F1 versus threshold") + yAxis(y, [0, 0.25, 0.5, 0.75, 1], m.l, W - m.r, v => v);
-    s += xLabels(x, [0, 0.25, 0.5, 0.75, 1], H - m.b, v => v) + `<text x="${W - m.r}" y="${H - 1}" text-anchor="end">threshold</text>`;
-    for (const [k, col] of [["p", "var(--series-1)"], ["r", "var(--series-2)"], ["f1", "var(--text-primary)"]]) {
-      const pts = cc.filter(d => d[k] != null).map(d => `${x(d.t).toFixed(1)},${y(d[k]).toFixed(1)}`).join(" ");
-      s += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="${k === "f1" ? 2.25 : 1.75}" stroke-linejoin="round"/>`;
-    }
-    s += `<line x1="${x(served)}" x2="${x(served)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--text-secondary)" stroke-dasharray="4 3"/><text x="${x(served) + 4}" y="${m.t + 10}">served ${served}</text>`;
-    s += `<line x1="${x(t)}" x2="${x(t)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--text-primary)" stroke-width="1.5"/>`;
-    s += `<rect class="ov" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent" style="cursor:pointer"/>`;
-    el.innerHTML = s + "</svg>";
-    const svg = el.querySelector("svg"), ov = el.querySelector(".ov");
-    const near = ev => { const r = svg.getBoundingClientRect(), tv = clamp(x.inv(ev.clientX - r.left), 0.01, 0.99); return cc.reduce((a, b) => Math.abs(b.t - tv) < Math.abs(a.t - tv) ? b : a); };
-    ov.addEventListener("mousemove", ev => { const d = near(ev); showTip(ev, `<div class="th">threshold ${d.t.toFixed(2)} <span style="color:var(--text-muted);font-weight:400">· click to apply</span></div>${tipRow("precision", fmt(d.p, 3), "var(--series-1)")}${tipRow("recall", fmt(d.r, 3), "var(--series-2)")}${tipRow("F1", fmt(d.f1, 3))}`); });
-    ov.addEventListener("mouseleave", hideTip);
-    ov.addEventListener("click", ev => { S.te.thr = near(ev).t; $("#te-thr").value = S.te.thr; updateExplorer(); });
-  });
-}
-$("#te-thr").addEventListener("input", ev => { S.te.thr = +ev.target.value; updateExplorer(); });
-$("#te-step").addEventListener("change", ev => { S.te.step = ev.target.value; updateExplorer(); });
-$("#te-reset").addEventListener("click", () => { const e = S.data.analytics && S.data.analytics.elliptic; if (!e) return; S.te.thr = e.threshold; $("#te-thr").value = e.threshold; updateExplorer(); });
-
-function renderSurvival(z) {
-  mount("#c-survival", (el, W) => {
-    if (!z) { el.innerHTML = empty("No scored Zenodo transactions in this run."); return; }
-    const H = 240, m = {l: 50, r: 16, t: 10, b: 30};
-    const sc = z.ecdf.score, ps = z.ecdf.p, n = z.n;
-    const lo = Math.floor(sc[0] * 20) / 20, hi = Math.ceil(Math.max(sc[sc.length - 1], z.threshold) * 20) / 20;
-    const yMin = Math.min(1 / n, 0.001);
-    const x = lin(lo, hi, m.l, W - m.r), y = logScale(yMin, 1, H - m.b, m.t);
-    // survival from exact tail values for the top, quantiles for the body
-    const tail = z.tail, pts = [];
-    sc.forEach((v, i) => { const surv = 1 - ps[i]; if (surv >= tail.length / n) pts.push([v, Math.max(surv, yMin)]); });
-    tail.forEach((v, i) => pts.push([v, (tail.length - i) / n]));
-    pts.sort((a, b) => a[0] - b[0]);
-    let s = svgOpen(W, H, "Zenodo score survival curve");
-    for (let d = 0; d >= Math.log10(yMin) - 1e-9; d--) { const v = Math.pow(10, d); s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${v >= 0.01 ? pct(v, 0) : pct(v, 1)}</text>`; }
-    s += xLabels(x, ticks(lo, hi, 6), H - m.b, v => fmt(v, 2)) + `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)"/>`;
-    const tx = x(z.threshold);
-    s += `<rect x="${tx}" y="${m.t}" width="${W - m.r - tx}" height="${H - m.t - m.b}" fill="var(--illicit)" opacity=".07"/>`;
-    s += `<path d="${pts.map((p, i) => (i ? "L" : "M") + x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join("")}" fill="none" stroke="var(--series-2)" stroke-width="2" stroke-linejoin="round"/>`;
-    s += `<line x1="${tx}" x2="${tx}" y1="${m.t}" y2="${H - m.b}" stroke="var(--text-secondary)" stroke-dasharray="4 3"/><text x="${tx - 4}" y="${m.t + 10}" text-anchor="end">threshold ${fmt(z.threshold, 3)} · ${fmt(z.flagged)} flagged</text>`;
-    s += `<line class="xh" y1="${m.t}" y2="${H - m.b}" stroke="var(--axis)" visibility="hidden"/><rect class="ov" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/>`;
-    el.innerHTML = s + "</svg>";
-    const svg = el.querySelector("svg"), xh = el.querySelector(".xh");
-    el.querySelector(".ov").addEventListener("mousemove", ev => { const r = svg.getBoundingClientRect(), v = x.inv(ev.clientX - r.left);
-      let k = pts.findIndex(p => p[0] >= v); if (k < 0) k = pts.length - 1; const p = pts[k];
-      xh.setAttribute("x1", x(p[0])); xh.setAttribute("x2", x(p[0])); xh.setAttribute("visibility", "visible");
-      showTip(ev, `<div class="th">score ≥ ${fmt(p[0], 3)}</div>${tipRow("share of transactions", pct(p[1], p[1] < 0.01 ? 2 : 1), "var(--series-2)")}${tipRow("≈ count", fmt(p[1] * n))}`); });
-    el.querySelector(".ov").addEventListener("mouseleave", () => { hideTip(); xh.setAttribute("visibility", "hidden"); });
-  });
-}
-
-function renderReasons(z) {
-  if (z && z.reasons_scope) $("#reason-scope").textContent = "Reason codes (feature z-score vs. fit window) of the " + z.reasons_scope;
-  mount("#c-reasons", (el, W) => {
-    if (!z || !z.reasons || !z.reasons.length) { el.innerHTML = empty("No reason codes in this run."); return; }
-    const R = z.reasons.slice(0, 10), rowH = 26, m = {l: Math.min(230, W * 0.42), r: 56, t: 6, b: 26}, H = R.length * rowH + m.t + m.b;
-    const zmax = niceMax(Math.max(...R.flatMap(r => r.z)));
-    const x = lin(0, zmax, m.l, W - m.r), cmax = Math.max(...R.map(r => r.count));
-    let s = svgOpen(W, H, "Reason codes");
-    for (const v of ticks(0, zmax, 5)) s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--grid)"/><text x="${x(v)}" y="${H - 8}" text-anchor="middle">${v}σ</text>`;
-    R.forEach((r, i) => {
-      const cy = m.t + i * rowH + rowH / 2;
-      s += `<text class="strong" x="${m.l - 10}" y="${cy + 4}" text-anchor="end">${esc(r.feature.replace(/^log_/, "").replace(/_/g, " "))}</text>`;
-      r.z.forEach((v, j) => { const jit = ((j * 9301 + 49297) % 233280) / 233280 - 0.5; s += `<circle cx="${x(v)}" cy="${cy + jit * (rowH - 10)}" r="2.2" fill="var(--series-2)" opacity=".45"/>`; });
-      s += `<line x1="${x(r.z_median)}" x2="${x(r.z_median)}" y1="${cy - 9}" y2="${cy + 9}" stroke="var(--text-primary)" stroke-width="2"/>`;
-      s += `<rect x="${W - m.r + 8}" y="${cy - 4}" width="${(m.r - 14) * r.count / cmax}" height="8" rx="2" fill="var(--text-muted)" opacity=".5"/>`;
-      s += `<rect class="hit" data-i="${i}" x="0" y="${cy - rowH / 2}" width="${W}" height="${rowH}" fill="transparent"/>`;
-    });
-    s += `<text x="${W - m.r + 8}" y="${H - 8}">count</text>`;
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const r = R[+h.dataset.i];
-      showTip(ev, `<div class="th">${esc(r.feature)}</div>${tipRow("appears in", fmt(r.count) + " transactions")}${tipRow("top reason for", fmt(r.rank1))}${tipRow("median deviation", fmt(r.z_median, 1) + " σ")}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
 }
 
 /* ================================================================== INVESTIGATE */
@@ -1006,277 +568,6 @@ function renderGraph(el, W, g) {
     nd.addEventListener("mouseleave", hideTip); });
 }
 
-/* ================================================================== MODELS */
-const SHORT = n => n.replace("TGAT-BoostNet (ours)", "TGAT-BoostNet").replace(" (w=4.32)", "").replace(" (no cost weight)", " unweighted");
-function renderModels() {
-  const o = S.data.offline; if (!o) return;
-  const ms = o.models.slice(), ours = ms.find(m => m.ours), byF1 = ms.slice().sort((a, b) => b.f1 - a.f1);
-  const rank = byF1.indexOf(ours) + 1, fpBest = byF1[0];
-  const tunedOurs = (o.tuned || []).find(t => t.family.startsWith("TGAT") && t.kind === "tuned");
-  const tunedAll = (o.tuned || []).filter(t => t.kind === "tuned").sort((a, b) => b.f1 - a.f1);
-  $("#m-kpis").innerHTML = [
-    ["Models reproduced", fmt(ms.length), "5 seeds each, same split"],
-    ["TGAT-BoostNet F1 (a-priori)", fmt(ours && ours.f1, 3), `rank ${rank} of ${ms.length} · best ${SHORT(fpBest.model)} ${fmt(fpBest.f1, 3)}`],
-    ["TGAT-BoostNet F1 (tuned)", tunedOurs ? fmt(tunedOurs.f1, 3) : "—", tunedOurs ? `± ${fmt(tunedOurs.f1_sd, 3)} · rank ${tunedAll.indexOf(tunedOurs) + 1} of ${tunedAll.length} tuned` : ""],
-    ["TGAT-BoostNet PR-AUC", fmt(ours && ours.pr_auc, 3), `ROC-AUC ${fmt(ours && ours.roc_auc, 3)}`],
-    ["Worst test step", "43", "every model F1 ≤ 0.034"]].map(([l, v, n]) => `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${esc(n)}</div></div>`).join("");
-
-  mount("#c-prscatter", (el, W) => {
-    const H = 360, m = {l: 44, r: 16, t: 10, b: 34};
-    const pmin = Math.floor(Math.min(...ms.map(d => d.precision)) * 10) / 10, rmin = Math.floor(Math.min(...ms.map(d => d.recall)) * 10) / 10;
-    const x = lin(rmin, Math.min(1, Math.ceil(Math.max(...ms.map(d => d.recall)) * 10 + 0.5) / 10), m.l, W - m.r), y = lin(pmin, 1, H - m.b, m.t);
-    let s = svgOpen(W, H, "Precision versus recall per model") + yAxis(y, ticks(pmin, 1, 5), m.l, W - m.r, v => fmt(v, 1));
-    s += xLabels(x, ticks(x.d[0], x.d[1], 5), H - m.b, v => fmt(v, 1)) + `<text x="${W - m.r}" y="${H - 2}" text-anchor="end">recall (illicit)</text><text x="${m.l + 4}" y="${m.t + 10}">precision</text>`;
-    for (const f of [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]) { let d = ""; for (let r = Math.max(x.d[0], f / (2 - f) + 1e-3); r <= x.d[1] + 1e-9; r += 0.004) { const p = f * r / (2 * r - f); if (p > 1 || p < pmin) continue; d += (d ? "L" : "M") + x(r).toFixed(1) + "," + y(p).toFixed(1); }
-      if (d) { const lastR = x.d[1], lp = f * lastR / (2 * lastR - f); s += `<path d="${d}" fill="none" stroke="var(--grid)" stroke-width="1.25"/>`; if (lp >= pmin && lp <= 1) s += `<text x="${x(lastR) - 3}" y="${y(lp) - 4}" text-anchor="end" style="font-size:10px">F1 ${f}</text>`; } }
-    const order = ms.slice().sort((a, b) => a.ours - b.ours);
-    order.forEach(d => { const i = ms.indexOf(d);
-      if (d.recall_sd && d.precision_sd) s += `<line x1="${x(d.recall - d.recall_sd)}" x2="${x(d.recall + d.recall_sd)}" y1="${y(d.precision)}" y2="${y(d.precision)}" stroke="${d.ours ? "var(--series-1)" : "var(--licit)"}" opacity=".6"/><line x1="${x(d.recall)}" x2="${x(d.recall)}" y1="${y(d.precision - d.precision_sd)}" y2="${y(d.precision + d.precision_sd)}" stroke="${d.ours ? "var(--series-1)" : "var(--licit)"}" opacity=".6"/>`;
-      s += `<circle class="hit" data-i="${i}" cx="${x(d.recall)}" cy="${y(d.precision)}" r="${d.ours ? 7 : 5}" fill="${d.ours ? "var(--series-1)" : "var(--licit)"}" stroke="var(--surface-1)" stroke-width="2" style="cursor:pointer"/>`; });
-    const lab = new Set([ours, byF1[0], byF1[1], ...ms.slice().sort((a, b) => a.f1 - b.f1).slice(0, 2)].filter(Boolean));
-    for (const it of placeLabels([...lab].map(d => ({d, x: x(d.recall), y: y(d.precision)})))) { const d = it.d, left = it.x > W - 150;
-      s += `<text class="${d.ours ? "ink" : "strong"}" x="${it.x + (left ? -10 : 10)}" y="${it.y + (d.ours ? 16 : 4)}" text-anchor="${left ? "end" : "start"}">${esc(SHORT(d.model))}</text>`; }
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const d = ms[+h.dataset.i];
-      showTip(ev, `<div class="th">${esc(d.model)}</div>${tipRow("precision", fmt(d.precision, 3) + " ± " + fmt(d.precision_sd, 3))}${tipRow("recall", fmt(d.recall, 3) + " ± " + fmt(d.recall_sd, 3))}${tipRow("F1", fmt(d.f1, 3))}${tipRow("F1 rank", (byF1.indexOf(d) + 1) + " / " + ms.length)}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-  renderForest();
-  renderHeat();
-  renderShift(); renderSig(); renderTuned(); renderPareto(); renderRvr(); renderAbl();
-}
-
-function renderForest() {
-  const o = S.data.offline, k = S.lbMetric, ms = o.models.filter(m => m[k] != null).sort((a, b) => b[k] - a[k]);
-  mount("#c-forest", (el, W) => {
-    const rowH = 20, m = {l: Math.min(190, W * .38), r: 56, t: 4, b: 24}, H = ms.length * rowH + m.t + m.b;
-    const lo = Math.min(...ms.map(d => d[k] - (d[k + "_sd"] || 0))), hi = Math.max(...ms.map(d => d[k] + (d[k + "_sd"] || 0)));
-    const x0 = Math.max(0, Math.floor(lo * 20) / 20), x1 = Math.min(1, Math.ceil(hi * 20) / 20);
-    const x = lin(x0, x1, m.l, W - m.r);
-    let s = svgOpen(W, H, "Leaderboard forest plot");
-    for (const v of ticks(x0, x1, 5)) s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--grid)"/><text x="${x(v)}" y="${H - 8}" text-anchor="middle">${fmt(v, 2)}</text>`;
-    ms.forEach((d, i) => { const cy = m.t + i * rowH + rowH / 2, c = d.ours ? "var(--series-1)" : "var(--licit)", sd = d[k + "_sd"] || 0;
-      if (d.ours) s += `<rect x="0" y="${cy - rowH / 2}" width="${W}" height="${rowH}" fill="var(--accent-soft)" rx="4"/>`;
-      s += `<text class="${d.ours ? "ink" : "strong"}" x="${m.l - 10}" y="${cy + 4}" text-anchor="end">${i + 1}. ${esc(SHORT(d.model))}</text>`;
-      s += `<line x1="${x(Math.max(x0, d[k] - sd))}" x2="${x(Math.min(x1, d[k] + sd))}" y1="${cy}" y2="${cy}" stroke="${c}" stroke-width="2"/>`;
-      s += `<circle cx="${x(d[k])}" cy="${cy}" r="${d.ours ? 5 : 4}" fill="${c}" stroke="var(--surface-1)" stroke-width="1.5"/>`;
-      s += `<text class="${d.ours ? "ink" : ""}" x="${W - m.r + 8}" y="${cy + 4}">${fmt(d[k], 3)}</text>`;
-      s += `<rect class="hit" data-i="${i}" x="0" y="${cy - rowH / 2}" width="${W}" height="${rowH}" fill="transparent"/>`; });
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const d = ms[+h.dataset.i];
-      showTip(ev, `<div class="th">${esc(d.model)}</div>${["f1", "pr_auc", "mcc", "roc_auc", "precision", "recall"].map(q => tipRow(q.replace("_", "-").toUpperCase(), fmt(d[q], 3) + (d[q + "_sd"] != null ? " ± " + fmt(d[q + "_sd"], 3) : ""))).join("")}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-}
-$$("#lb-metric button").forEach(b => b.addEventListener("click", () => { $$("#lb-metric button").forEach(x => x.setAttribute("aria-pressed", x === b)); S.lbMetric = b.dataset.v; renderForest(); }));
-
-function renderHeat() {
-  const o = S.data.offline, rows = o.per_step_f1; if (!rows.length) return;
-  const models = Object.keys(rows[0]).filter(k => k !== "time_step");
-  const mean = Object.fromEntries(models.map(mo => [mo, rows.reduce((a, r) => a + (r[mo] || 0), 0) / rows.length]));
-  models.sort((a, b) => mean[b] - mean[a]);
-  const steps = rows.map(r => r.time_step), prev = Object.fromEntries((o.prevalence || []).map(p => [p.time_step, p]));
-  $("#heat-scale").innerHTML = `<span style="font-size:11px;color:var(--text-muted)">F1 0</span><span style="display:inline-block;width:120px;height:10px;border-radius:3px;background:linear-gradient(90deg, ${seq(0)}, ${seq(0.5)}, ${seq(1)})"></span><span style="font-size:11px;color:var(--text-muted)">1</span>`;
-  const geom = W => { const l = Math.min(200, W * 0.3), r = 52; return {l, r, cw: (W - l - r) / steps.length}; };
-  mount("#c-prev", (el, W) => {
-    const g = geom(W), H = 74, vmax = niceMax(Math.max(...steps.map(s => (prev[s] || {}).illicit || 0)));
-    const y = lin(0, vmax, H - 6, 16);
-    let s = svgOpen(W, H, "Illicit transactions per test step") + `<text class="strong" x="${g.l - 10}" y="${H / 2 + 4}" text-anchor="end">illicit tx in step</text>`;
-    s += `<line x1="${g.l}" x2="${W - g.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>`;
-    steps.forEach((st, i) => { const v = (prev[st] || {}).illicit || 0, x0 = g.l + i * g.cw + 2, w = g.cw - 4;
-      s += `<rect x="${x0}" y="${y(v)}" width="${w}" height="${y(0) - y(v)}" rx="${Math.min(3, w / 2)}" fill="${st >= 43 ? "var(--illicit)" : "var(--licit)"}"/><text x="${x0 + w / 2}" y="${y(v) - 4}" text-anchor="middle" style="font-size:10px">${v}</text>`;
-      s += `<rect class="hit" data-i="${i}" x="${g.l + i * g.cw}" y="0" width="${g.cw}" height="${H}" fill="transparent"/>`; });
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const p = prev[steps[+h.dataset.i]] || {};
-      showTip(ev, `<div class="th">Step ${steps[+h.dataset.i]}</div>${tipRow("labelled", fmt(p.labelled))}${tipRow("illicit", fmt(p.illicit), "var(--illicit)")}${tipRow("prevalence", pct(p.prevalence, 1))}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-  mount("#c-heat", (el, W) => {
-    const g = geom(W), rh = 22, H = models.length * rh + 26;
-    let s = svgOpen(W, H, "F1 heatmap models by time step");
-    models.forEach((mo, j) => { const cy = j * rh, ours = mo.includes("TGAT");
-      s += `<text class="${ours ? "ink" : "strong"}" x="${g.l - 10}" y="${cy + rh / 2 + 4}" text-anchor="end">${esc(SHORT(mo))}</text>`;
-      rows.forEach((r, i) => { const v = r[mo]; s += `<rect class="hit" data-i="${i}" data-j="${j}" x="${g.l + i * g.cw + 1}" y="${cy + 1}" width="${g.cw - 2}" height="${rh - 2}" rx="3" fill="${v == null ? "var(--surface-2)" : seq(v)}"/>`;
-        if (g.cw > 34 && v != null) s += `<text x="${g.l + i * g.cw + g.cw / 2}" y="${cy + rh / 2 + 3.5}" text-anchor="middle" style="font-size:9.5px;fill:${v > 0.55 ? "var(--surface-1)" : "var(--text-secondary)"};pointer-events:none">${v.toFixed(2).replace(/^0/, "")}</text>`; });
-      s += `<text class="${ours ? "ink" : ""}" x="${W - g.r + 8}" y="${cy + rh / 2 + 4}">${fmt(mean[mo], 3)}</text>`;
-      if (ours) s += `<rect x="${g.l - 1}" y="${cy}" width="${W - g.l - g.r + 2}" height="${rh}" rx="4" fill="none" stroke="var(--series-1)" stroke-width="1.5"/>`; });
-    steps.forEach((st, i) => s += `<text x="${g.l + i * g.cw + g.cw / 2}" y="${H - 8}" text-anchor="middle" class="${st === 43 ? "ink" : ""}">${st}</text>`);
-    s += `<text x="${W - g.r + 8}" y="${H - 8}">mean</text>`;
-    const i43 = steps.indexOf(43); if (i43 >= 0) s += `<rect x="${g.l + i43 * g.cw}" y="0" width="${g.cw}" height="${models.length * rh}" fill="none" stroke="var(--illicit)" stroke-width="1.5" rx="4" stroke-dasharray="3 3"/>`;
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const r = rows[+h.dataset.i], mo = models[+h.dataset.j];
-      showTip(ev, `<div class="th">${esc(mo)} · step ${r.time_step}</div>${tipRow("F1 (5-seed mean)", fmt(r[mo], 3))}${tipRow("illicit in step", fmt((prev[r.time_step] || {}).illicit))}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-}
-
-function renderShift() {
-  const s43 = S.data.offline.step43;
-  mount("#c-shift", (el, W) => {
-    if (!s43) { el.innerHTML = empty("Step-43 audit not found."); return; }
-    const rows = ["illicit", "licit"].map(c => ({c, a: s43.class_similarity_shift.find(r => r.class === c && r.window === "35-42"), b: s43.class_similarity_shift.find(r => r.class === c && r.window === "43-49")}));
-    const H = 150, m = {l: 76, r: 20, t: 26, b: 26}, x = lin(0, 1, m.l, W - m.r), rh = (H - m.t - m.b) / 2;
-    let s = svgOpen(W, H, "kNN illicit fraction before and after step 43");
-    for (const v of [0, 0.25, 0.5, 0.75, 1]) s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t - 6}" y2="${H - m.b}" stroke="var(--grid)"/><text x="${x(v)}" y="${H - 8}" text-anchor="middle">${pct(v, 0)}</text>`;
-    rows.forEach((r, i) => { if (!r.a || !r.b) return; const cy = m.t + i * rh + rh / 2, xa = x(r.a.knn10_illicit_fraction_mean), xb = x(r.b.knn10_illicit_fraction_mean);
-      s += `<text class="strong" x="0" y="${cy + 4}">${r.c} test tx</text><line x1="${xa}" x2="${xb}" y1="${cy}" y2="${cy}" stroke="var(--axis)" stroke-width="3"/>`;
-      s += `<circle cx="${xa}" cy="${cy}" r="6" fill="var(--surface-1)" stroke="var(--text-primary)" stroke-width="2"/><circle cx="${xb}" cy="${cy}" r="6" fill="var(--illicit)" stroke="var(--surface-1)" stroke-width="2"/>`;
-      s += `<text class="ink" x="${xa}" y="${cy - 11}" text-anchor="middle">${pct(r.a.knn10_illicit_fraction_mean, 1)}</text><text class="ink" x="${xb}" y="${cy - 11}" text-anchor="middle">${pct(r.b.knn10_illicit_fraction_mean, 1)}</text>`; });
-    s += `<g transform="translate(${m.l},10)"><circle cx="4" cy="0" r="4" fill="var(--surface-1)" stroke="var(--text-primary)" stroke-width="1.5"/><text x="12" y="4">steps 35–42</text><circle cx="96" cy="0" r="4" fill="var(--illicit)"/><text x="104" y="4">steps 43–49</text></g>`;
-    el.innerHTML = s + "</svg>";
-  });
-}
-
-function renderSig() {
-  const sig = (S.data.offline.significance || []).slice().sort((a, b) => a.d_f1 - b.d_f1);
-  mount("#c-sig", (el, W) => {
-    if (!sig.length) { el.innerHTML = empty("No significance table."); return; }
-    const rowH = 19, m = {l: Math.min(150, W * .42), r: 12, t: 4, b: 40}, H = sig.length * rowH + m.t + m.b;
-    const lo = Math.min(-0.05, ...sig.map(d => d.lo)), hi = Math.max(0.05, ...sig.map(d => d.hi)), x = lin(lo, hi, m.l, W - m.r);
-    let s = svgOpen(W, H, "Delta F1 with confidence intervals");
-    for (const v of ticks(lo, hi, 4)) s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--grid)"/><text x="${x(v)}" y="${H - m.b + 14}" text-anchor="middle">${v > 0 ? "+" : ""}${fmt(v, 2)}</text>`;
-    s += `<line x1="${x(0)}" x2="${x(0)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--text-secondary)"/>`;
-    s += `<text x="${x(lo)}" y="${H - 6}">← baseline better</text><text x="${x(hi)}" y="${H - 6}" text-anchor="end">ours better →</text>`;
-    sig.forEach((d, i) => { const cy = m.t + i * rowH + rowH / 2, sigf = d.p_holm < 0.05, c = !sigf ? "var(--licit)" : d.d_f1 > 0 ? "var(--series-1)" : "var(--illicit)";
-      s += `<text class="strong" x="${m.l - 8}" y="${cy + 4}" text-anchor="end">${esc(SHORT(d.model))}</text><line x1="${x(d.lo)}" x2="${x(d.hi)}" y1="${cy}" y2="${cy}" stroke="${c}" stroke-width="2"/>`;
-      s += sigf ? `<circle cx="${x(d.d_f1)}" cy="${cy}" r="4" fill="${c}"/>` : `<circle cx="${x(d.d_f1)}" cy="${cy}" r="3.5" fill="var(--surface-1)" stroke="${c}" stroke-width="1.5"/>`;
-      s += `<rect class="hit" data-i="${i}" x="0" y="${cy - rowH / 2}" width="${W}" height="${rowH}" fill="transparent"/>`; });
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const d = sig[+h.dataset.i];
-      showTip(ev, `<div class="th">vs ${esc(d.model)}</div>${tipRow("ΔF1", (d.d_f1 > 0 ? "+" : "") + fmt(d.d_f1, 3))}${tipRow("95% CI", `[${fmt(d.lo, 3)}, ${fmt(d.hi, 3)}]`)}${tipRow("p (bootstrap, Holm)", d.p_holm < 0.001 ? "< 0.001" : fmt(d.p_holm, 3))}${tipRow("p (McNemar, Holm)", d.p_mcnemar_holm < 0.001 ? "< 0.001" : fmt(d.p_mcnemar_holm, 3))}<div style="margin-top:4px;color:var(--text-secondary)">${esc(d.verdict)}</div>`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-}
-
-function renderTuned() {
-  const t = S.data.offline.tuned || [], fams = [...new Set(t.map(r => r.family))];
-  mount("#c-tuned", (el, W) => {
-    if (!t.length) { el.innerHTML = empty("No tuning table."); return; }
-    const H = 260, m = {l: 44, r: Math.min(150, W * 0.45), t: 16, b: 28};
-    const vals = t.map(r => r.f1), lo = Math.floor(Math.min(...vals) * 100) / 100 - 0.005, hi = Math.ceil(Math.max(...vals) * 100) / 100 + 0.005;
-    const xa = m.l + 10, xb = W - m.r, y = lin(lo, hi, H - m.b, m.t);
-    let s = svgOpen(W, H, "Untuned versus tuned F1") + yAxis(y, ticks(lo, hi, 4), m.l, W - m.r + 10, v => fmt(v, 2));
-    s += `<text x="${xa}" y="${H - 8}" text-anchor="middle">untuned</text><text x="${xb}" y="${H - 8}" text-anchor="middle">tuned</text>`;
-    const labels = [];
-    fams.forEach(f => { const u = t.find(r => r.family === f && r.kind === "untuned"), tu = t.find(r => r.family === f && r.kind === "tuned"); if (!u || !tu) return;
-      const ours = f.startsWith("TGAT"), c = ours ? "var(--series-1)" : "var(--licit)";
-      s += `<line x1="${xa}" x2="${xb}" y1="${y(u.f1)}" y2="${y(tu.f1)}" stroke="${c}" stroke-width="${ours ? 2.5 : 1.75}"/><circle cx="${xa}" cy="${y(u.f1)}" r="4" fill="${c}" stroke="var(--surface-1)" stroke-width="1.5"/><circle cx="${xb}" cy="${y(tu.f1)}" r="4.5" fill="${c}" stroke="var(--surface-1)" stroke-width="1.5"/>`;
-      labels.push({y: y(tu.f1), text: `${SHORT(f)} ${fmt(tu.f1, 3)}`, ours}); });
-    labels.sort((a, b) => a.y - b.y); for (let i = 1; i < labels.length; i++) if (labels[i].y - labels[i - 1].y < 13) labels[i].y = labels[i - 1].y + 13;
-    for (const l of labels) s += `<text class="${l.ours ? "ink" : "strong"}" x="${xb + 10}" y="${l.y + 4}">${esc(l.text)}</text>`;
-    el.innerHTML = s + "</svg>";
-  });
-}
-
-function renderPareto() {
-  const e = (S.data.offline.efficiency || []).filter(d => d.latency_ms > 0);
-  mount("#c-pareto", (el, W) => {
-    if (!e.length) { el.innerHTML = empty("No efficiency table."); return; }
-    const H = 320, m = {l: 44, r: 20, t: 12, b: 34};
-    const l0 = Math.pow(10, Math.floor(Math.log10(Math.min(...e.map(d => d.latency_ms))))), l1 = Math.pow(10, Math.ceil(Math.log10(Math.max(...e.map(d => d.latency_ms)))));
-    const flo = Math.floor(Math.min(...e.map(d => d.F1)) * 10) / 10;
-    const x = logScale(l0, l1, m.l, W - m.r), y = lin(flo, Math.min(1, Math.ceil(Math.max(...e.map(d => d.F1)) * 20) / 20), H - m.b, m.t);
-    let s = svgOpen(W, H, "F1 versus latency") + yAxis(y, ticks(y.d[0], y.d[1], 4), m.l, W - m.r, v => fmt(v, 2));
-    for (let v = l0; v <= l1 * 1.0001; v *= 10) s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--grid)"/><text x="${x(v)}" y="${H - m.b + 16}" text-anchor="middle">${v >= 1 ? fmt(v) : v} ms</text>`;
-    s += `<text x="${W - m.r}" y="${H - 2}" text-anchor="end">latency per snapshot (log)</text>`;
-    const sorted = e.slice().sort((a, b) => a.latency_ms - b.latency_ms); const front = []; let best = -1; for (const d of sorted) if (d.F1 > best) { front.push(d); best = d.F1; }
-    s += `<path d="${front.map((d, i) => (i ? `H${x(d.latency_ms)}V${y(d.F1)}` : `M${x(d.latency_ms)},${y(d.F1)}`)).join("")}" fill="none" stroke="var(--text-secondary)" stroke-width="1.25" stroke-dasharray="4 3"/>`;
-    e.forEach((d, i) => { const ours = d.model.includes("TGAT"); s += `<circle class="hit" data-i="${i}" cx="${x(d.latency_ms)}" cy="${y(d.F1)}" r="${ours ? 7 : 5}" fill="${ours ? "var(--series-1)" : "var(--licit)"}" stroke="var(--surface-1)" stroke-width="2"/>`; });
-    const cand = e.filter(d => d.model.includes("TGAT")).concat(front.slice().reverse()).map(d => ({d, x: x(d.latency_ms) + 9, y: y(d.F1) + (d.model.includes("TGAT") ? 16 : -8)}));
-    for (const it of placeLabels(cand)) s += `<text class="${it.d.model.includes("TGAT") ? "ink" : "strong"}" x="${it.x}" y="${it.y}">${esc(SHORT(it.d.model))}</text>`;
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const d = e[+h.dataset.i];
-      showTip(ev, `<div class="th">${esc(d.model)}</div>${tipRow("F1", fmt(d.F1, 3))}${tipRow("latency p50", fmt(d.latency_ms, 2) + " ms")}${tipRow("latency p95", fmt(d.latency_p95_ms, 2) + " ms")}${tipRow("throughput", compact(d.throughput_tx_s) + " tx/s")}${tipRow("train time", fmt(d.train_s, 1) + " s")}${tipRow("size", fmt(d.size_kb, 0) + " KB")}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-}
-
-function renderRvr() {
-  const r = (S.data.offline.reproduced_vs_reported || []).map(d => ({model: d.model, src: d.source, feat: d.features, rep: d["reported F1 (paper)"], ours: parseFloat(String(d["reproduced F1 (ours, mean ± std)"]).split(" ± ")[0])})).filter(d => d.rep != null && isFinite(d.ours));
-  mount("#c-rvr", (el, W) => {
-    if (!r.length) { el.innerHTML = empty("No comparison table."); return; }
-    const rowH = 22, m = {l: Math.min(220, W * .42), r: 16, t: 4, b: 26}, H = r.length * rowH + m.t + m.b, x = lin(0, 1, m.l, W - m.r);
-    let s = svgOpen(W, H, "Reported versus reproduced F1");
-    for (const v of [0, 0.25, 0.5, 0.75, 1]) s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--grid)"/><text x="${x(v)}" y="${H - 8}" text-anchor="middle">${v}</text>`;
-    r.forEach((d, i) => { const cy = m.t + i * rowH + rowH / 2;
-      s += `<text class="strong" x="${m.l - 8}" y="${cy + 4}" text-anchor="end">${esc(d.model)} <tspan style="fill:var(--text-muted)">${esc(d.src)}</tspan></text>`;
-      s += `<line x1="${x(d.rep)}" x2="${x(d.ours)}" y1="${cy}" y2="${cy}" stroke="var(--axis)" stroke-width="2"/><circle cx="${x(d.rep)}" cy="${cy}" r="4.5" fill="var(--surface-1)" stroke="var(--text-secondary)" stroke-width="1.5"/><circle cx="${x(d.ours)}" cy="${cy}" r="4.5" fill="var(--series-1)" stroke="var(--surface-1)" stroke-width="1.5"/>`;
-      s += `<rect class="hit" data-i="${i}" x="0" y="${cy - rowH / 2}" width="${W}" height="${rowH}" fill="transparent"/>`; });
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const d = r[+h.dataset.i];
-      showTip(ev, `<div class="th">${esc(d.model)} · ${esc(d.src)}</div>${tipRow("reported in paper", fmt(d.rep, 3))}${tipRow("reproduced (5 seeds)", fmt(d.ours, 3), "var(--series-1)")}${tipRow("difference", (d.ours - d.rep > 0 ? "+" : "") + fmt(d.ours - d.rep, 3))}${tipRow("features", esc(d.feat))}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-}
-
-function renderAbl() {
-  const a = (S.data.offline.ablation || []).filter(d => d.d_f1 != null);
-  mount("#c-abl", (el, W) => {
-    if (!a.length) { el.innerHTML = empty("No ablation table."); return; }
-    const rowH = 24, m = {l: Math.min(280, W * .4), r: 70, t: 4, b: 40}, H = a.length * rowH + m.t + m.b;
-    const ext = Math.max(0.02, ...a.map(d => Math.abs(d.d_f1) + (d.f1_sd || 0))), x = lin(-ext, ext, m.l, W - m.r);
-    let s = svgOpen(W, H, "Ablation delta F1");
-    for (const v of ticks(-ext, ext, 6)) s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--grid)"/><text x="${x(v)}" y="${H - 8}" text-anchor="middle">${v > 0 ? "+" : ""}${fmt(v, 3)}</text>`;
-    s += `<line x1="${x(0)}" x2="${x(0)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--text-secondary)"/>`;
-    s += `<text x="${x(-ext)}" y="${H - 22}">← variant scores lower</text><text x="${x(ext)}" y="${H - 22}" text-anchor="end">variant scores higher →</text>`;
-    a.forEach((d, i) => { const cy = m.t + i * rowH + rowH / 2, full = i === 0 && d.d_f1 === 0;
-      s += `<text class="${full ? "ink" : "strong"}" x="${m.l - 8}" y="${cy + 4}" text-anchor="end">${esc(d.variant)}</text>`;
-      if (!full) { const x0 = x(Math.min(0, d.d_f1)), w = Math.abs(x(d.d_f1) - x(0)); s += `<rect x="${x0}" y="${cy - 5}" width="${Math.max(w, 1)}" height="10" rx="3" fill="var(--licit)"/>`;
-        if (d.f1_sd) s += `<line x1="${x(d.d_f1 - d.f1_sd)}" x2="${x(d.d_f1 + d.f1_sd)}" y1="${cy}" y2="${cy}" stroke="var(--text-secondary)" stroke-width="1.25"/>`; }
-      else s += `<circle cx="${x(0)}" cy="${cy}" r="4.5" fill="var(--series-1)"/>`;
-      s += `<text x="${W - m.r + 8}" y="${cy + 4}">F1 ${fmt(d.f1, 3)}</text>`; });
-    el.innerHTML = s + "</svg>";
-  });
-}
-
-/* ================================================================== BATCH */
-function renderBatch() {
-  const b = S.data.batchResults || {}, z = b.zenodo_score_summary;
-  const models = S.data.models || {};
-  $("#b-kpis").innerHTML = z ? [["Zenodo transactions scored", compact(z.total_rows), "full dataset, 1,000-block chunks"], ["Flagged", fmt(Object.values(z.chunks).reduce((a, c) => a + c.flagged, 0)), pct(Object.values(z.chunks).reduce((a, c) => a + c.flagged, 0) / z.total_rows, 3) + " of rows"],
-    ["Batch scoring rate", compact(z.rows_per_second), "rows/s"], ["Batch wall time", fmt(z.score_seconds / 60, 1) + " min", `model ${z.model_id} v${z.model_version}`]].map(([l, v, n]) => `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${esc(n)}</div></div>`).join("") : "";
-  mount("#c-zhist", (el, W) => {
-    if (!z) { el.innerHTML = empty("No Zenodo batch summary."); return; }
-    const edges = z.histogram_bins, n = edges.length - 1, counts = new Array(n).fill(0);
-    for (const c of Object.values(z.chunks)) (c.histogram || []).forEach((v, i) => counts[i] += v);
-    const H = 260, m = {l: 48, r: 12, t: 12, b: 30}, cmax = Math.max(...counts, 1);
-    const x = lin(edges[0], edges[n], m.l, W - m.r), y = logScale(1, Math.pow(10, Math.ceil(Math.log10(cmax))), H - m.b, m.t);
-    let s = svgOpen(W, H, "Zenodo full dataset score histogram");
-    for (let v = 1; v <= y.d[1]; v *= 10) s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${compact(v)}</text>`;
-    const bw = (x(edges[n]) - x(edges[0])) / n;
-    counts.forEach((c, i) => { if (c > 0) { const top = y(c); s += `<rect x="${x(edges[i]) + 1}" y="${top}" width="${Math.max(bw - 2, 1)}" height="${H - m.b - top}" rx="2" fill="${edges[i] >= z.threshold ? "var(--illicit)" : "var(--series-2)"}"/>`; }
-      s += `<rect class="hit" data-i="${i}" x="${x(edges[i])}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent"/>`; });
-    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)"/>` + xLabels(x, ticks(edges[0], edges[n], 6), H - m.b, v => fmt(v, 2));
-    const tx = x(z.threshold); s += `<line x1="${tx}" x2="${tx}" y1="${m.t}" y2="${H - m.b}" stroke="var(--text-secondary)" stroke-dasharray="4 3"/><text x="${tx - 4}" y="${m.t + 10}" text-anchor="end">threshold ${fmt(z.threshold, 3)}</text>`;
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const i = +h.dataset.i;
-      showTip(ev, `<div class="th">score ${fmt(edges[i], 3)}–${fmt(edges[i + 1], 3)}</div>${tipRow("transactions", fmt(counts[i]))}${tipRow("share", pct(counts[i] / z.total_rows, 3))}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-  mount("#c-chunks", (el, W) => {
-    if (!z) { el.innerHTML = empty("No Zenodo batch summary."); return; }
-    const ch = Object.entries(z.chunks), H = 260, m = {l: 48, r: 12, t: 12, b: 44};
-    const all = ch.flatMap(([, c]) => Object.values(c.score_quantiles)).concat([z.threshold]);
-    const y = lin(Math.floor(Math.min(...all) * 20) / 20, Math.ceil(Math.max(...all) * 20) / 20, H - m.b, m.t), cw = (W - m.l - m.r) / ch.length;
-    let s = svgOpen(W, H, "Score quantiles per chunk") + `<text x="${m.l - 8}" y="${H - m.b + 30}" text-anchor="end">flag rate</text>` + yAxis(y, ticks(y.d[0], y.d[1], 5), m.l, W - m.r, v => fmt(v, 2));
-    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(z.threshold)}" y2="${y(z.threshold)}" stroke="var(--text-secondary)" stroke-dasharray="4 3"/><text x="${W - m.r}" y="${y(z.threshold) - 5}" text-anchor="end">threshold</text>`;
-    ch.forEach(([name, c], i) => { const q = c.score_quantiles, cx = m.l + i * cw + cw / 2, bw = Math.min(28, cw * 0.4);
-      s += `<line x1="${cx}" x2="${cx}" y1="${y(q.p01)}" y2="${y(q.p99)}" stroke="var(--series-2)" stroke-width="1.5"/><rect x="${cx - bw / 2}" y="${y(q.p75)}" width="${bw}" height="${y(q.p25) - y(q.p75)}" rx="3" fill="var(--series-2)" opacity=".55"/>`;
-      s += `<line x1="${cx - bw / 2}" x2="${cx + bw / 2}" y1="${y(q.p50)}" y2="${y(q.p50)}" stroke="var(--text-primary)" stroke-width="2"/><circle cx="${cx}" cy="${y(q.p999)}" r="3.5" fill="var(--illicit)"/>`;
-      s += `<text x="${cx}" y="${H - m.b + 16}" text-anchor="middle">${esc(name.split("-")[0].slice(0, 3))}k</text>${cw >= 46 ? `<text x="${cx}" y="${H - m.b + 30}" text-anchor="middle">${fmt(c.flag_rate * 1000, 2)}‰</text>` : ""}`;
-      s += `<rect class="hit" data-i="${i}" x="${m.l + i * cw}" y="${m.t}" width="${cw}" height="${H - m.t - m.b}" fill="transparent"/>`; });
-    el.innerHTML = s + "</svg>";
-    el.querySelectorAll(".hit").forEach(h => { h.addEventListener("mousemove", ev => { const [name, c] = ch[+h.dataset.i], q = c.score_quantiles;
-      showTip(ev, `<div class="th">blocks ${esc(name)}</div>${tipRow("rows", fmt(c.rows))}${tipRow("flagged", fmt(c.flagged) + " (" + fmt(c.flag_rate * 1000, 2) + "‰)")}${["p01", "p25", "p50", "p75", "p99", "p999"].map(k => tipRow(k, fmt(q[k], 4))).join("")}`); });
-      h.addEventListener("mouseleave", hideTip); });
-  });
-  $("#model-cards").innerHTML = Object.keys(models).length ? Object.entries(models).map(([ds, v]) => `<div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;background:var(--surface-2)">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="chip"><i style="background:${DS_COLOR[ds]}"></i><b>${esc(v.model_id)}</b></span><span class="pill mono">v${esc(v.model_version)}</span>${v.config ? `<span class="pill mono">${esc(v.config)}</span>` : ""}<span class="pill">threshold ${fmt(v.decision_threshold ?? v.threshold, 3)}</span>${v.requires_graph != null ? `<span class="pill">graph context ${v.requires_graph ? "required" : "not needed"}</span>` : ""}</div>
-      <div style="margin-top:8px;color:var(--text-secondary);font-size:12.5px">${esc(v.score_semantics)}</div><div class="src" style="margin-top:6px">${esc(v.score_type)} · created ${esc(v.created_utc || "—")}</div></div>`).join("") : empty("No exported models found.");
-  const top = b.zenodo_top_ranked || [];
-  $("#t-top").innerHTML = top.length ? `<table><thead><tr><th>Block</th><th>tx hash</th><th class="num">Score</th><th>Top reasons</th></tr></thead><tbody>${top.slice(0, 20).map(t => `<tr><td class="num">${t.block_number}</td><td class="mono" title="${esc(t.tx_hash)}">${esc(t.tx_hash.slice(0, 14))}…</td><td class="num">${fmt(t.score, 4)}</td><td style="color:var(--text-muted)">${esc((t.reason_codes || "").split(";").slice(0, 2).join(" · "))}</td></tr>`).join("")}</tbody></table>` : empty("No ranked transactions.");
-}
-
 /* ================================================================== LOG */
 async function loadLog() {
   try {
@@ -1297,40 +588,77 @@ async function loadLog() {
 }
 for (const id of ["#f-dataset", "#f-status", "#f-flagged"]) $(id).addEventListener("change", loadLog);
 
+/* ================================================================== Superset embeds */
+// Each chart view is an Apache Superset dashboard embedded with @superset-ui/embedded-sdk. The browser
+// gets a short-lived guest token from /api/bi/guest-token; streaming charts are limited to the selected run.
+const BI = {cfg: null, live: {}};
+const VIEW_DASH = {overview: "live", detection: "detect", models: "models", data: "data", batch: "zenodo"};
+const RUN_SCOPED = new Set(["live", "detect"]);
+async function biConfig(force) {
+  if (!BI.cfg || force || !BI.cfg.available) {
+    try { BI.cfg = await api("/api/bi/config", false); } catch (e) { BI.cfg = {available: false, reason: e.message}; }
+  }
+  return BI.cfg;
+}
+function biRunKey(key) { return RUN_SCOPED.has(key) && /^run_\d{8}_\d{6}$/.test(S.run || "") ? S.run : ""; }
+async function mountBI(key, force) {
+  const el = $(`#bi-${key}`); if (!el) return;
+  const cfg = await biConfig(force);
+  const meta = $(`#bi-meta-${key}`);
+  if (!cfg.available || !window.supersetEmbeddedSdk) {
+    el.innerHTML = `<div class="state">${svgIcon("i-info")}<div><b>Superset dashboards unavailable</b><br>${esc(cfg.reason || "embedded SDK failed to load")}</div>
+      <button class="ctl" onclick="mountBI('${key}', true)">Retry</button></div>`;
+    if (meta) meta.innerHTML = "";
+    return;
+  }
+  const d = cfg.dashboards[key], run = biRunKey(key);
+  if (meta) meta.innerHTML = `<span class="pill">Apache Superset · ${d.charts} charts</span>${run ? `<span class="pill mono">${esc(run)}</span>` : ""}
+    <a class="ctl" style="height:28px" href="${esc(cfg.superset_url)}" target="_blank" rel="noopener">Open in Superset</a>`;
+  const cur = BI.live[key];
+  if (cur && cur.run === run && !force) return;
+  if (cur && cur.timer) clearInterval(cur.timer);
+  el.innerHTML = "";
+  const dash = await window.supersetEmbeddedSdk.embedDashboard({
+    id: d.embed_uuid, supersetDomain: cfg.superset_url, mountPoint: el,
+    fetchGuestToken: async () => {
+      const r = await fetch(`/api/bi/guest-token?dashboard=${key}${run ? `&run=${encodeURIComponent(run)}` : ""}`, {method: "POST"});
+      if (!r.ok) throw new Error(`guest token → HTTP ${r.status}`);
+      return (await r.json()).token;
+    },
+    dashboardUiConfig: {hideTitle: true, hideChartControls: false, filters: {visible: false, expanded: false}},
+  });
+  const fit = async () => {  // grow the iframe to the dashboard's height so the page, not the frame, scrolls
+    try { const sz = await dash.getScrollSize(); const f = el.querySelector("iframe"); if (f && sz && sz.height > 50) f.style.height = `${sz.height + 4}px`; } catch (e) {}
+  };
+  BI.live[key] = {run, dash, timer: setInterval(fit, 1500)};
+  fit();
+}
+function svgIcon(id) { return `<svg width="18" height="18" style="flex:none;color:var(--text-muted)"><use href="#${id}"/></svg>`; }
+
 /* ================================================================== routing & refresh */
-const TITLES = {overview: "Overview", detection: "Detection quality", investigate: "Investigate", models: "Model evaluation", batch: "Batch & models", log: "Event log"};
+const TITLES = {overview: "Overview", detection: "Detection quality", investigate: "Investigate", models: "Model evaluation", data: "Data & preprocessing", batch: "Zenodo anomalies", log: "Event log"};
 async function refreshRun() {
   const jobs = [
     api("/api/health").then(renderHealth).catch(e => { $("#health").innerHTML = `<span class="dot" style="background:var(--critical)"></span>API error`; $("#health").title = e.message; }),
     api("/api/summary").then(s => S.data.summary = s).catch(() => {}),
     api("/api/batches").then(b => S.data.batches = b).catch(() => {}),
   ];
-  if (S.view === "overview" || S.view === "detection") jobs.push(api("/api/stream-analytics").then(a => S.data.analytics = a).catch(e => { S.data.analytics = {}; console.error(e); }));
   await Promise.all(jobs);
-  if (S.view === "overview") { renderTopology(); renderKpis(); renderFlow(); renderLatency(); renderTrigger(); renderPartitions(); }
-  if (S.view === "detection") renderDetection();
+  if (S.view === "overview") renderTopology();
   if (S.view === "investigate") await loadAlerts();
   if (S.view === "log") await loadLog();
   const s = S.data.summary || {}, by = s.by_dataset || {};
   $("#run-crumb").textContent = `run ${S.run || "default"} · ${compact(s.predictions_total)} predictions · updated ${new Date().toLocaleTimeString()}`;
   $("#rail-foot").innerHTML = Object.entries(by).map(([d, v]) => `<div><span><span class="swatch" style="background:${DS_COLOR[d]}"></span> ${DS_NAME[d] || d}</span><span class="mono">v${esc(v.model_version)}</span></div>`).join("") || `<div><span>no models in run</span></div>`;
 }
-async function loadStatic() {
-  const [o, b, m] = await Promise.allSettled([api("/api/offline", false), api("/api/batch-results", false), api("/api/models", false)]);
-  if (o.status === "fulfilled") S.data.offline = o.value;
-  if (b.status === "fulfilled") S.data.batchResults = b.value;
-  if (m.status === "fulfilled") S.data.models = m.value;
-}
 function route() {
   const v = (location.hash.replace(/^#\/?/, "").split("?")[0]) || "overview";
   S.view = TITLES[v] ? v : "overview";
   $$(".view").forEach(x => x.classList.toggle("active", x.id === "v-" + S.view));
-  $$(".nav a").forEach(a => a.toggleAttribute("aria-current", a.dataset.v === S.view) || a.dataset.v === S.view && a.setAttribute("aria-current", "page"));
   $$(".nav a").forEach(a => a.dataset.v === S.view ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
   $("#view-title").textContent = TITLES[S.view];
   hideTip();
-  if (S.view === "models") { if (S.data.offline) renderModels(); else $("#c-prscatter").innerHTML = fail("offline tables unavailable"); }
-  if (S.view === "batch") renderBatch();
+  if (VIEW_DASH[S.view]) mountBI(VIEW_DASH[S.view]);
   refreshRun().then(() => requestAnimationFrame(() => MOUNTS.forEach((m, el) => { if (el.offsetParent && Math.abs(el.clientWidth - m.w) > 2) draw(el); })));
 }
 async function loadRuns() {
@@ -1344,8 +672,8 @@ async function loadRuns() {
     S.run = want;
   } catch (e) { S.run = null; }
 }
-$("#run").addEventListener("change", e => { S.run = e.target.value; S.selAlert = null; S.te = {thr: null, step: "all"}; const u = new URL(location); u.searchParams.set("run", S.run); history.replaceState(null, "", u); refreshRun(); });
-$("#refresh").addEventListener("click", refreshRun);
+$("#run").addEventListener("change", e => { S.run = e.target.value; S.selAlert = null; S.te = {thr: null, step: "all"}; const u = new URL(location); u.searchParams.set("run", S.run); history.replaceState(null, "", u); refreshRun(); if (VIEW_DASH[S.view]) mountBI(VIEW_DASH[S.view]); });
+$("#refresh").addEventListener("click", () => { refreshRun(); if (VIEW_DASH[S.view]) mountBI(VIEW_DASH[S.view], true); });
 $("#auto").addEventListener("click", () => { S.live = !S.live; $("#auto").setAttribute("aria-pressed", S.live); $("#auto").innerHTML = `<svg><use href="#i-${S.live ? "pause" : "play"}"/></svg><span>${S.live ? "Live" : "Paused"}</span>`; });
 function applyTheme(t) { if (t) document.documentElement.setAttribute("data-theme", t); const dark = t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
   $("#theme").innerHTML = `<svg><use href="#i-${dark ? "sun" : "moon"}"/></svg><span class="sr">Switch to ${dark ? "light" : "dark"} theme</span>`; }
@@ -1353,10 +681,10 @@ $("#theme").addEventListener("click", () => { const cur = document.documentEleme
   const next = cur === "dark" ? "light" : "dark"; try { localStorage.setItem("bsad-theme", next); } catch (e) {} applyTheme(next); MOUNTS.forEach((m, el) => el.offsetParent && draw(el)); });
 let saved = null; try { saved = localStorage.getItem("bsad-theme"); } catch (e) {}
 applyTheme(saved || "dark");
-setInterval(() => { if (S.live && !document.hidden && ["overview", "detection", "investigate", "log"].includes(S.view)) refreshRun(); }, 5000);
+setInterval(() => { if (S.live && !document.hidden && ["overview", "investigate", "log"].includes(S.view)) refreshRun(); }, 5000);
 window.addEventListener("hashchange", route);
 document.addEventListener("scroll", hideTip, {passive: true});
-loadRuns().then(loadStatic).then(route);
+loadRuns().then(route);
 </script>
 </body>
 </html>

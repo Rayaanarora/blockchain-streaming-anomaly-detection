@@ -15,6 +15,7 @@ An end-to-end pipeline that prepares Bitcoin transaction data with Apache Spark,
 | Unsupervised anomaly scoring of all 16.9 M Zenodo transactions | ✅ no labels exist, so no accuracy claim |
 | Kafka → Spark Structured Streaming → scoring → Parquet, with checkpoints, de-duplication, dead letters, crash recovery | ✅ replay of stored data, integration-tested |
 | Dashboard over the persisted outputs | ✅ |
+| Big-data visualization: Apache Superset (5 dashboards, 62 charts) embedded in the dashboard, built through Superset's official MCP server | ✅ Spark aggregates → DuckDB views → Superset; see [`docs/BI_SUPERSET.md`](docs/BI_SUPERSET.md) |
 | Live blockchain ingestion | ⛔ not implemented (replay only) |
 | Temporal graph model | ⛔ the graph models see one time-step snapshot; nothing models temporal evolution |
 | Distributed training / multi-node cluster | ⛔ single workstation; Spark is used for data preparation and streaming |
@@ -37,7 +38,10 @@ flowchart LR
   EM --> SC
   ZM --> SC
   SC --> P[(predictions / dead_letter / monitoring)]
-  P --> D[FastAPI + dashboard]
+  P --> DK[(DuckDB views)]
+  ZS --> G[(Spark gold tables)] --> DK
+  DK --> SS[Apache Superset] --> D[FastAPI + dashboard]
+  P --> D
   ZS --> D
 ```
 
@@ -234,7 +238,7 @@ With the prepared data and the model bundles in place, this runs the whole strea
 .venv\Scripts\python.exe scripts\run_pipeline.py
 ```
 
-It starts Kafka, creates a fresh topic and run directory (`data\streaming\run_<timestamp>`), starts the Spark consumer, replays Elliptic steps 42–43 and 3,000 Zenodo transactions, and opens the dashboard on that run. Progress is printed until every event is scored. Press Ctrl+C to stop everything it started. Options: `--elliptic-steps 35 36`, `--zenodo-limit 5000`, `--rate 500`, `--no-browser`, `--exit-when-done`.
+It starts Apache Superset (the console's charts, in the background), Kafka, creates a fresh topic and run directory (`data\streaming\run_<timestamp>`), starts the Spark consumer, replays Elliptic steps 42–43 and 3,000 Zenodo transactions, and opens the dashboard on that run. Progress is printed until every event is scored. Press Ctrl+C to stop everything it started. Options: `--elliptic-steps 35 36`, `--zenodo-limit 5000`, `--rate 500`, `--no-browser`, `--exit-when-done`, `--no-superset` (skip the charts, saves memory), `--keep-superset`.
 
 ## How to run (individual stages)
 
